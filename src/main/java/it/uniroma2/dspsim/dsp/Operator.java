@@ -4,6 +4,7 @@ import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -17,6 +18,9 @@ public class Operator {
 	private double serviceTimeVariance = 0.0;
 
 	private ArrayList<NodeType> instances;
+
+	private Collection<Operator> upstreamOperators = new ArrayList<>();
+	private Collection<Operator> downstreamOperators = new ArrayList<>();
 
 	public Operator (String name, double serviceTimeMean, double serviceTimeVariance,
 					 int maxParallelism) {
@@ -86,4 +90,34 @@ public class Operator {
 		return r;
 	}
 
+	public void addUpstream (Operator op) {
+		upstreamOperators.add(op);
+	}
+
+	public void addDownstream (Operator op) {
+		downstreamOperators.add(op);
+	}
+
+	public boolean isSource() {
+		return upstreamOperators.isEmpty();
+	}
+
+	public boolean isSink() {
+		return downstreamOperators.isEmpty();
+	}
+
+	public Collection<Operator> getUpstreamOperators() {
+		return upstreamOperators;
+	}
+
+	public Collection<Operator> getDownstreamOperators() {
+		return downstreamOperators;
+	}
+
+	@Override
+	public String toString() {
+		return "Operator{" +
+				"name='" + name + '\'' +
+				'}';
+	}
 }
