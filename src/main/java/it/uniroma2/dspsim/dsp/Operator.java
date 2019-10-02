@@ -79,7 +79,7 @@ public class Operator {
 
 		final double rho = utilization(inputRate, parallelism, usedNodeTypes);
 		if (rho >= 1.0)	 {
-			return 9999.0; // TODO
+			return Double.POSITIVE_INFINITY;
 		}
 
 		final double st_mean = serviceTimeMean / currentSpeedup;

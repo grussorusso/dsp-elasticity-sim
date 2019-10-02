@@ -14,9 +14,9 @@ public class Application {
 		Application app = new Application();
 
 		final int maxParallelism = 3;
-		Operator op1 = new Operator("filter", 1, 0.0, maxParallelism);
+		Operator op1 = new Operator("filter", 1/100.0, 0.0, maxParallelism);
 		app.addOperator(op1);
-		Operator op2 = new Operator("rank", 2, 0.0, maxParallelism);
+		Operator op2 = new Operator("rank", 1/50.0, 0.0, maxParallelism);
 		app.addOperator(op2);
 
 		app.addEdge(op1, op2);
