@@ -7,48 +7,14 @@ public class Application {
 	private List<Operator> operators = new ArrayList<>();
 	private List<ArrayList<Operator>> sourceSinkPaths;
 
-	private Application() {}
+	public Application() {}
 
-	static public Application buildDefaultApplication ()
-	{
-		Application app = new Application();
 
-		final int maxParallelism = 3;
-		Operator op1 = new Operator("filter", 1/100.0, 0.0, maxParallelism);
-		app.addOperator(op1);
-		Operator op2 = new Operator("rank", 1/50.0, 0.0, maxParallelism);
-		app.addOperator(op2);
-
-		app.addEdge(op1, op2);
-		return app;
-	}
-
-	static public Application buildForkJoinApplication ()
-	{
-		Application app = new Application();
-
-		final int maxParallelism = 3;
-		Operator op1 = new Operator("splitter", 1, 0.0, maxParallelism);
-		app.addOperator(op1);
-		Operator op2 = new Operator("parallel1", 2, 0.0, maxParallelism);
-		app.addOperator(op2);
-		Operator op3 = new Operator("parallel2", 2, 0.0, maxParallelism);
-		app.addOperator(op3);
-		Operator op4 = new Operator("join", 2, 0.0, maxParallelism);
-		app.addOperator(op4);
-
-		app.addEdge(op1, op2);
-		app.addEdge(op1, op3);
-		app.addEdge(op2, op4);
-		app.addEdge(op3, op4);
-		return app;
-	}
-
-	private void addOperator (Operator op) {
+	public void addOperator (Operator op) {
 		operators.add(op);
 	}
 
-	private void addEdge (Operator op1, Operator op2) {
+	public void addEdge (Operator op1, Operator op2) {
 		op1.addDownstream(op2);
 		op2.addUpstream(op1);
 
@@ -133,5 +99,13 @@ public class Application {
 
 
 		return latency;
+	}
+
+	public List<Operator> getOperators() {
+		return operators;
+	}
+
+	public List<ArrayList<Operator>> getSourceSinkPaths() {
+		return sourceSinkPaths;
 	}
 }

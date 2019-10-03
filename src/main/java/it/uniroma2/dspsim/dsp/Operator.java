@@ -3,10 +3,7 @@ package it.uniroma2.dspsim.dsp;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class Operator {
 
@@ -22,8 +19,8 @@ public class Operator {
 	private Collection<Operator> upstreamOperators = new ArrayList<>();
 	private Collection<Operator> downstreamOperators = new ArrayList<>();
 
-	public Operator (String name, double serviceTimeMean, double serviceTimeVariance,
-					 int maxParallelism) {
+	public Operator(String name, double serviceTimeMean, double serviceTimeVariance,
+					int maxParallelism) {
 		this.name = name;
 
 		this.maxParallelism = maxParallelism;
@@ -37,20 +34,20 @@ public class Operator {
 		instances.add(defaultType);
 	}
 
-	public void setSelectivity (double selectivity) {
+	public void setSelectivity(double selectivity) {
 		this.selectivity = selectivity;
 	}
 
-	public double utilization (double inputRate) {
+	public double utilization(double inputRate) {
 		return utilization(inputRate, instances.size(), new HashSet<NodeType>(instances));
 	}
 
-	public double responseTime (double inputRate) {
+	public double responseTime(double inputRate) {
 		return responseTime(inputRate, instances.size(), new HashSet<NodeType>(instances));
 	}
 
 
-	public double utilization (double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
+	public double utilization(double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
 		if (usedNodeTypes.size() > parallelism)
 			throw new RuntimeException("Cannot use more resource types than replicas...");
 
@@ -66,7 +63,7 @@ public class Operator {
 		return rho;
 	}
 
-	public double responseTime (double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
+	public double responseTime(double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
 		if (usedNodeTypes.size() > parallelism)
 			throw new RuntimeException("Cannot use more resource types than replicas...");
 
@@ -78,7 +75,7 @@ public class Operator {
 			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
 
 		final double rho = utilization(inputRate, parallelism, usedNodeTypes);
-		if (rho >= 1.0)	 {
+		if (rho >= 1.0) {
 			return Double.POSITIVE_INFINITY;
 		}
 
@@ -90,11 +87,11 @@ public class Operator {
 		return r;
 	}
 
-	public void addUpstream (Operator op) {
+	public void addUpstream(Operator op) {
 		upstreamOperators.add(op);
 	}
 
-	public void addDownstream (Operator op) {
+	public void addDownstream(Operator op) {
 		downstreamOperators.add(op);
 	}
 
@@ -119,5 +116,18 @@ public class Operator {
 		return "Operator{" +
 				"name='" + name + '\'' +
 				'}';
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Operator operator = (Operator) o;
+		return name.equals(operator.name);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name);
 	}
 }

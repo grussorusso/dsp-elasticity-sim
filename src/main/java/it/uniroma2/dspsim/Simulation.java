@@ -1,6 +1,7 @@
 package it.uniroma2.dspsim;
 
 import it.uniroma2.dspsim.dsp.Application;
+import it.uniroma2.dspsim.dsp.ApplicationBuilder;
 import it.uniroma2.dspsim.dsp.edf.ApplicationManager;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.CountMetric;
@@ -51,7 +52,9 @@ public class Simulation {
 				statistics.updateMetric(STAT_LATENCY_VIOLATIONS, 1);
 			}
 
-			System.out.println(inputRate + "\t" + responseTime);
+			//System.out.println(inputRate + "\t" + responseTime);
+
+			time++;
 		}
 	}
 
@@ -62,7 +65,7 @@ public class Simulation {
 			final String inputFile = "/home/gabriele/profile.dat";
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
-			Application app = Application.buildDefaultApplication();
+			Application app = ApplicationBuilder.defaultApplication();
 			ApplicationManager am = new ApplicationManager(app);
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);
