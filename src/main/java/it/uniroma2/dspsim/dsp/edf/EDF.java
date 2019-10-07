@@ -2,43 +2,92 @@ package it.uniroma2.dspsim.dsp.edf;
 
 import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class EDF {
 
 	private Application application;
-	private ComputingInfrastructure infrastructure;
 
 	private ApplicationManager applicationManager;
-	private List<OperatorManager> operatorManagers;
+	private Map<Operator, OperatorManager> operatorManagers;
 
-	public EDF (Application application, ComputingInfrastructure infrastructure)
+	public EDF (Application application)
 	{
 		this.application = application;
-		this.infrastructure = infrastructure;
 
 		/* Create OMs */
 		final List<Operator> operators = application.getOperators();
 		final int numOperators = operators.size();
 
-		operatorManagers = new ArrayList<>(numOperators);
+		operatorManagers = new HashMap<>(numOperators);
 		for (Operator op : operators) {
 			OperatorManager om = new DoNothingOM(op); // TODO configurable type of OM
-			operatorManagers.add(om);
+			operatorManagers.put(op, om);
 		}
 	}
 
-	public void pickReconfigurations (MonitoringInfo monitoringInfo) {
-		// TODO create OMMonitoringInfo
+	public Map<Operator, Reconfiguration> pickReconfigurations (MonitoringInfo monitoringInfo) {
+		Map<Operator, OMMonitoringInfo> omMonitoringInfo = new HashMap<>();
+		for (Operator op : operatorManagers.keySet()) {
+			omMonitoringInfo.put(op, new OMMonitoringInfo());
+			omMonitoringInfo.get(op).setInputRate(0.0);
+		}
 
-		// TODO let each OM pick a reconfiguration
+		/* Compute operator input rate */
+		boolean done = false;
+
+		while (!done) {
+			done = true;
+
+			for (Operator src : application.getOperators()) {
+				if (!src.isSource())
+					continue;
+
+				/* BFS visit */
+				Set<Operator> checked = new HashSet<>();
+				Deque<Operator> queue = new ArrayDeque<>();
+				queue.push(src);
+
+				while (!queue.isEmpty()) {
+					Operator op = queue.pop();
+					if (!checked.contains(op)) {
+						double rate = 0.0;
+
+						if (op.isSource())	{
+							rate = monitoringInfo.getInputRate(); // TODO what if we have multiple sources?
+						} else {
+							for (Operator up : op.getUpstreamOperators()) {
+								rate += omMonitoringInfo.get(up).getInputRate() * up.getSelectivity();
+							}
+						}
+
+						double oldValue = omMonitoringInfo.get(op).getInputRate();
+						done &= (oldValue == rate);
+
+						omMonitoringInfo.get(op).setInputRate(rate);
+
+						for (Operator down : op.getDownstreamOperators())  {
+							queue.push(down);
+						}
+
+						checked.add(op);
+					}
+				}
+			}
+		}
+
+		Map<Operator, Reconfiguration> reconfigurations = new HashMap<>();
+		for (Operator op : application.getOperators()) {
+			Reconfiguration rcf = operatorManagers.get(op).pickReconfiguration(omMonitoringInfo.get(op));
+			reconfigurations.put(op, rcf);
+		}
 
 		// TODO let the AM filter reconfigurations
+
+		return reconfigurations;
 	}
 
 }

@@ -1,4 +1,5 @@
 import it.uniroma2.dspsim.dsp.Application;
+import it.uniroma2.dspsim.dsp.ApplicationBuilder;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.junit.Before;
 import org.junit.Test;
@@ -14,10 +15,10 @@ public class TestApplication {
 	@Test
 	public void testPaths()
 	{
-		Application app = Application.buildDefaultApplication();
+		Application app = ApplicationBuilder.defaultApplication();
 		System.out.println(app.getAllPaths());
 
-		app = Application.buildForkJoinApplication();
+		app = ApplicationBuilder.buildForkJoinApplication();
 		System.out.println(app.getAllPaths());
 	}
 }

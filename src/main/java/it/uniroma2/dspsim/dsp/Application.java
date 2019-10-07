@@ -108,4 +108,12 @@ public class Application {
 	public List<ArrayList<Operator>> getSourceSinkPaths() {
 		return sourceSinkPaths;
 	}
+
+	public double computeDeploymentCost() {
+		double totalCost = 0.0;
+		for (Operator op : getOperators())
+			totalCost += op.computeDeploymentCost();
+
+		return totalCost;
+	}
 }

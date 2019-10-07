@@ -2,12 +2,18 @@ package it.uniroma2.dspsim;
 
 import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.ApplicationBuilder;
+import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.ApplicationManager;
+import it.uniroma2.dspsim.dsp.edf.EDF;
+import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.CountMetric;
+import it.uniroma2.dspsim.stats.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
 
 import java.io.IOException;
+import java.util.Map;
 
 public class Simulation {
 
@@ -19,6 +25,8 @@ public class Simulation {
 
 	/* Statistics */
 	private static final String STAT_LATENCY_VIOLATIONS = "LatencyViolations";
+	private static final String STAT_RECONFIGURATIONS = "Reconfigurations";
+	private static final String STAT_RESOURCES_COST = "ResourcesCost";
 
 	private InputRateFileReader inputRateFileReader;
 	private ApplicationManager applicationManager;
@@ -36,6 +44,8 @@ public class Simulation {
 
 	private void registerMetrics () {
 		statistics.registerMetric(new CountMetric(STAT_LATENCY_VIOLATIONS));
+		statistics.registerMetric(new CountMetric(STAT_RECONFIGURATIONS));
+		statistics.registerMetric(new RealValuedCountMetric(STAT_RESOURCES_COST));
 	}
 
 	public void run (long stopTime) throws IOException {
@@ -43,14 +53,32 @@ public class Simulation {
 
 
 		Application app = applicationManager.getApplication();
+		EDF edf = new EDF(app);
+		MonitoringInfo monitoringInfo = new MonitoringInfo();
 
 		while (inputRateFileReader.hasNext() && (stopTime <= 0 || time <= stopTime)) {
 			double inputRate = inputRateFileReader.next();
-			double responseTime = app.endToEndLatency(inputRate);
 
+			double responseTime = app.endToEndLatency(inputRate);
 			if (responseTime > LATENCY_SLO) {
 				statistics.updateMetric(STAT_LATENCY_VIOLATIONS, 1);
 			}
+
+			statistics.updateMetric(STAT_RESOURCES_COST, app.computeDeploymentCost());
+
+			/* Reconfiguration */
+			monitoringInfo.setInputRate(inputRate);
+			Map<Operator, Reconfiguration> reconfigurations = edf.pickReconfigurations(monitoringInfo);
+
+			boolean appReconfigured = false;
+			for (Reconfiguration rcf : reconfigurations.values()) {
+				appReconfigured |= rcf.isReconfiguration();
+				System.out.println(rcf.toString());
+			}
+			if (appReconfigured)
+				statistics.updateMetric(STAT_RECONFIGURATIONS, 1);
+
+			// TODO apply reconfigurations
 
 			//System.out.println(inputRate + "\t" + responseTime);
 

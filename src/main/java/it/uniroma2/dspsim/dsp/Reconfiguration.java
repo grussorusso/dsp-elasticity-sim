@@ -46,4 +46,30 @@ public class Reconfiguration {
 	public NodeType[] getInstancesToRemove() {
 		return instancesToRemove;
 	}
+
+	@Override
+	public String toString() {
+		if (!isReconfiguration())
+			return "(do nothing)";
+
+		StringBuilder sb = new StringBuilder();
+
+		if (instancesToAdd != null) {
+			for (NodeType nt : instancesToAdd) {
+				sb.append('+');
+				sb.append(nt.getName());
+				sb.append(' ');
+			}
+		}
+
+		if (instancesToRemove != null) {
+			for (NodeType nt : instancesToRemove) {
+				sb.append('-');
+				sb.append(nt.getName());
+				sb.append(' ');
+			}
+		}
+
+		return sb.toString();
+	}
 }

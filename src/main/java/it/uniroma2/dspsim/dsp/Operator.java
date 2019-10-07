@@ -118,6 +118,30 @@ public class Operator {
 				'}';
 	}
 
+	public String getName() {
+		return name;
+	}
+
+	public int getMaxParallelism() {
+		return maxParallelism;
+	}
+
+	public double getSelectivity() {
+		return selectivity;
+	}
+
+	public double getServiceTimeMean() {
+		return serviceTimeMean;
+	}
+
+	public double getServiceTimeVariance() {
+		return serviceTimeVariance;
+	}
+
+	public ArrayList<NodeType> getInstances() {
+		return instances;
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -129,5 +153,14 @@ public class Operator {
 	@Override
 	public int hashCode() {
 		return Objects.hash(name);
+	}
+
+	public double computeDeploymentCost() {
+		double c = 0.0;
+
+		for (NodeType nt : instances)
+			c += nt.getCost();
+
+		return c;
 	}
 }
