@@ -3,7 +3,9 @@ package it.uniroma2.dspsim.dsp.edf;
 import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
-import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
+import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
+import it.uniroma2.dspsim.dsp.edf.om.ThresholdBasedOM;
 
 import java.util.*;
 
@@ -24,7 +26,7 @@ public class EDF {
 
 		operatorManagers = new HashMap<>(numOperators);
 		for (Operator op : operators) {
-			OperatorManager om = new DoNothingOM(op); // TODO configurable type of OM
+			OperatorManager om = new ThresholdBasedOM(op); // TODO configurable type of OM
 			operatorManagers.put(op, om);
 		}
 	}
@@ -79,6 +81,14 @@ public class EDF {
 			}
 		}
 
+		/* Add other monitoring information */
+		for (Operator op : application.getOperators()) {
+			OMMonitoringInfo opInfo = omMonitoringInfo.get(op);
+			final double u = op.utilization(opInfo.getInputRate());
+			opInfo.setCpuUtilization(u);
+		}
+
+		/* Let each OM make a decision. */
 		Map<Operator, Reconfiguration> reconfigurations = new HashMap<>();
 		for (Operator op : application.getOperators()) {
 			Reconfiguration rcf = operatorManagers.get(op).pickReconfiguration(omMonitoringInfo.get(op));

@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp;
 
+import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 
@@ -11,23 +12,20 @@ public class Operator {
 	private int maxParallelism;
 
 	private double selectivity = 1.0;
-	private double serviceTimeMean = 1.0;
-	private double serviceTimeVariance = 0.0;
 
+	private OperatorQueueModel queueModel;
 	private ArrayList<NodeType> instances;
 
 	private Collection<Operator> upstreamOperators = new ArrayList<>();
 	private Collection<Operator> downstreamOperators = new ArrayList<>();
 
-	public Operator(String name, double serviceTimeMean, double serviceTimeVariance,
-					int maxParallelism) {
+	public Operator(String name, OperatorQueueModel queueModel, int maxParallelism) {
 		this.name = name;
 
 		this.maxParallelism = maxParallelism;
 		instances = new ArrayList<>(maxParallelism);
 
-		this.serviceTimeMean = serviceTimeMean;
-		this.serviceTimeVariance = serviceTimeVariance;
+		this.queueModel = queueModel;
 
 		/* Add initial replica */
 		NodeType defaultType = ComputingInfrastructure.getInfrastructure().getNodeTypes()[0];
@@ -51,40 +49,47 @@ public class Operator {
 		if (usedNodeTypes.size() > parallelism)
 			throw new RuntimeException("Cannot use more resource types than replicas...");
 
-		// TODO we assume uniform stream repartition
-		final double ratePerReplica = inputRate / instances.size();
-
 		double currentSpeedup = Double.POSITIVE_INFINITY;
 		for (NodeType nt : usedNodeTypes)
 			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
 
-		final double st_mean = serviceTimeMean / currentSpeedup;
-		double rho = ratePerReplica * st_mean;
-		return rho;
+		return queueModel.utilization(inputRate, instances.size(), currentSpeedup);
 	}
 
 	public double responseTime(double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
 		if (usedNodeTypes.size() > parallelism)
 			throw new RuntimeException("Cannot use more resource types than replicas...");
 
-		// TODO we assume uniform stream repartition
-		final double ratePerReplica = inputRate / instances.size();
-
 		double currentSpeedup = Double.POSITIVE_INFINITY;
 		for (NodeType nt : usedNodeTypes)
 			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
 
-		final double rho = utilization(inputRate, parallelism, usedNodeTypes);
-		if (rho >= 1.0) {
-			return Double.POSITIVE_INFINITY;
+		return queueModel.responseTime(inputRate, instances.size(), currentSpeedup);
+	}
+
+	/**
+	 * Applies a reconfiguration.
+	 * @param reconfiguration Reconfiguration to apply.
+	 */
+	public void reconfigure (Reconfiguration reconfiguration) {
+		int parallelism = instances.size();
+
+		if (reconfiguration.getInstancesToAdd() != null) {
+			for (NodeType nt : reconfiguration.getInstancesToAdd()) {
+				instances.add(nt);
+				parallelism++;
+			}
 		}
 
-		final double st_mean = serviceTimeMean / currentSpeedup;
-		final double st_var = serviceTimeVariance / (currentSpeedup * currentSpeedup);
-		final double es2 = st_var + st_mean * st_mean;
-		final double r = st_mean + ratePerReplica / 2.0 * es2 / (1.0 - rho);
+		if (reconfiguration.getInstancesToRemove() != null) {
+			for (NodeType nt : reconfiguration.getInstancesToRemove()) {
+				instances.remove(nt);
+				parallelism--;
+			}
+		}
 
-		return r;
+		if (parallelism != instances.size())
+			throw new RuntimeException("something gone wrong in the reconfiguration");
 	}
 
 	public void addUpstream(Operator op) {
@@ -130,12 +135,8 @@ public class Operator {
 		return selectivity;
 	}
 
-	public double getServiceTimeMean() {
-		return serviceTimeMean;
-	}
-
-	public double getServiceTimeVariance() {
-		return serviceTimeVariance;
+	public OperatorQueueModel getQueueModel() {
+		return queueModel;
 	}
 
 	public ArrayList<NodeType> getInstances() {

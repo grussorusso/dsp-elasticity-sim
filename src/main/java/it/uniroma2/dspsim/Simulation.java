@@ -69,21 +69,34 @@ public class Simulation {
 			/* Reconfiguration */
 			monitoringInfo.setInputRate(inputRate);
 			Map<Operator, Reconfiguration> reconfigurations = edf.pickReconfigurations(monitoringInfo);
+			applyReconfigurations(reconfigurations);
 
-			boolean appReconfigured = false;
-			for (Reconfiguration rcf : reconfigurations.values()) {
-				appReconfigured |= rcf.isReconfiguration();
-				System.out.println(rcf.toString());
-			}
-			if (appReconfigured)
-				statistics.updateMetric(STAT_RECONFIGURATIONS, 1);
-
-			// TODO apply reconfigurations
 
 			//System.out.println(inputRate + "\t" + responseTime);
 
 			time++;
 		}
+	}
+
+	private boolean applyReconfigurations(Map<Operator, Reconfiguration> reconfigurations) {
+		// TODO we assume to have unlimited resources
+		boolean appReconfigured = false;
+
+		for (Operator op : reconfigurations.keySet()) {
+			Reconfiguration rcf = reconfigurations.get(op);
+			if (!rcf.isReconfiguration())
+				continue;
+
+			System.out.println(rcf.toString()); // TODO
+
+			op.reconfigure(rcf);
+			appReconfigured = true;
+		}
+
+		if (appReconfigured)
+			statistics.updateMetric(STAT_RECONFIGURATIONS, 1);
+
+		return appReconfigured;
 	}
 
 	public static void main (String args[]) {
