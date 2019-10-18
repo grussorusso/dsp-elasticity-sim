@@ -1,5 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
@@ -7,7 +9,7 @@ import it.uniroma2.dspsim.infrastructure.NodeType;
 
 public class ThresholdBasedOM extends OperatorManager {
 
-	private double scaleOutThreshold = 0.7;
+	private double scaleOutThreshold;
 	private NodeType defaultNodeType = null;
 
 	public ThresholdBasedOM(Operator operator) {
@@ -20,6 +22,8 @@ public class ThresholdBasedOM extends OperatorManager {
 				defaultNodeType = nt;
 			}
 		}
+
+		this.scaleOutThreshold = Configuration.getInstance().getDouble(ConfigurationKeys.OM_THRESHOLD_KEY, 0.7);
 	}
 
 	public ThresholdBasedOM(Operator operator, double scaleOutThreshold) {
