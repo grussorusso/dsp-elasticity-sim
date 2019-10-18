@@ -20,8 +20,7 @@ public class Simulation {
 	/** Simulated time */
 	private long time = 0l;
 
-	// TODO should be configurable
-	private static final double LATENCY_SLO = 0.100;
+	private final double LATENCY_SLO;
 
 	/* Statistics */
 	private static final String STAT_LATENCY_VIOLATIONS = "LatencyViolations";
@@ -36,6 +35,9 @@ public class Simulation {
 	public Simulation (InputRateFileReader inputRateFileReader, ApplicationManager applicationManager) {
 		this.inputRateFileReader = inputRateFileReader;
 		this.applicationManager = applicationManager;
+
+		Configuration conf = Configuration.getInstance();
+		this.LATENCY_SLO = conf.getDouble(Configuration.SLO_LATENCY_KEY, 0.100);
 	}
 
 	public void run() throws IOException {
@@ -87,8 +89,6 @@ public class Simulation {
 			if (!rcf.isReconfiguration())
 				continue;
 
-			System.out.println(rcf.toString()); // TODO
-
 			op.reconfigure(rcf);
 			appReconfigured = true;
 		}
@@ -102,6 +102,10 @@ public class Simulation {
 	public static void main (String args[]) {
 		ComputingInfrastructure.initDefaultInfrastructure(3);
 
+		Configuration conf = Configuration.getInstance();
+		conf.parseDefaultConfigurationFile();
+		// TODO parse cli args and other configuration files (if any)
+
 		try {
 			final String inputFile = "/home/gabriele/profile.dat";
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
@@ -111,6 +115,9 @@ public class Simulation {
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);
 			simulation.run();
+
+			/* Dump used configuration. */
+			conf.dump(System.out);
 
 			/* Dump statistics to standard output. */
 			Statistics.getInstance().dumpAll();

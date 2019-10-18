@@ -1,8 +1,10 @@
 package it.uniroma2.dspsim.dsp.edf;
 
+import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
+import it.uniroma2.dspsim.dsp.edf.om.DoNothingOM;
 import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
 import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
 import it.uniroma2.dspsim.dsp.edf.om.ThresholdBasedOM;
@@ -24,11 +26,27 @@ public class EDF {
 		final List<Operator> operators = application.getOperators();
 		final int numOperators = operators.size();
 
+		Configuration conf = Configuration.getInstance();
+
 		operatorManagers = new HashMap<>(numOperators);
 		for (Operator op : operators) {
-			OperatorManager om = new ThresholdBasedOM(op); // TODO configurable type of OM
-			operatorManagers.put(op, om);
+			operatorManagers.put(op, newOperatorManager(op, conf));
 		}
+	}
+
+	protected OperatorManager newOperatorManager (Operator op, Configuration configuration) {
+		OperatorManager om = null;
+
+		final String omType = configuration.getString(Configuration.OM_TYPE_KEY, "threshold");
+		if (omType.equalsIgnoreCase("threshold")) {
+			om = new ThresholdBasedOM(op);
+		} else if (omType.equalsIgnoreCase("donothing")) {
+			om = new DoNothingOM(op);
+		} else {
+			throw new RuntimeException("Invalid omType: " + omType);
+		}
+
+		return om;
 	}
 
 	public Map<Operator, Reconfiguration> pickReconfigurations (MonitoringInfo monitoringInfo) {
