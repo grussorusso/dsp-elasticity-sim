@@ -6,10 +6,6 @@ import java.util.Properties;
 
 public class Configuration {
 
-	public static final String SLO_LATENCY_KEY = "dsp.slolatency";
-	public static final String OM_TYPE_KEY = "edf.om.type";
-	public static final String OM_THRESHOLD_KEY = "edf.om.threshold";
-
 	private static Configuration instance = null;
 
 	private Configuration() {

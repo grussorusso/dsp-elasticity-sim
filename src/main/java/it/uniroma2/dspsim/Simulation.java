@@ -37,7 +37,7 @@ public class Simulation {
 		this.applicationManager = applicationManager;
 
 		Configuration conf = Configuration.getInstance();
-		this.LATENCY_SLO = conf.getDouble(Configuration.SLO_LATENCY_KEY, 0.100);
+		this.LATENCY_SLO = conf.getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.100);
 	}
 
 	public void run() throws IOException {

@@ -1,6 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf;
 
 import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
@@ -37,7 +38,7 @@ public class EDF {
 	protected OperatorManager newOperatorManager (Operator op, Configuration configuration) {
 		OperatorManager om = null;
 
-		final String omType = configuration.getString(Configuration.OM_TYPE_KEY, "threshold");
+		final String omType = configuration.getString(ConfigurationKeys.OM_TYPE_KEY, "threshold");
 		if (omType.equalsIgnoreCase("threshold")) {
 			om = new ThresholdBasedOM(op);
 		} else if (omType.equalsIgnoreCase("donothing")) {
