@@ -118,9 +118,6 @@ public class Simulation {
 		ComputingInfrastructure.initDefaultInfrastructure(3);
 
 
-		LoggerFactory.getLogger(Simulation.class).error("ciao");
-		LoggerFactory.getLogger(Simulation.class).warn("ciao2");
-
 		try {
 			final String inputFile = "/home/gabriele/profile.dat";
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
