@@ -11,11 +11,17 @@ import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.CountMetric;
 import it.uniroma2.dspsim.stats.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.utils.LoggingUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
 
 public class Simulation {
+
+	static {
+	}
 
 	/** Simulated time */
 	private long time = 0l;
@@ -31,6 +37,8 @@ public class Simulation {
 	private ApplicationManager applicationManager;
 
 	private Statistics statistics = Statistics.getInstance();
+
+	private Logger logger = LoggerFactory.getLogger(Simulation.class);
 
 	public Simulation (InputRateFileReader inputRateFileReader, ApplicationManager applicationManager) {
 		this.inputRateFileReader = inputRateFileReader;
@@ -53,6 +61,7 @@ public class Simulation {
 	public void run (long stopTime) throws IOException {
 		registerMetrics();
 
+		logger.warn("Starting simulation");
 
 		Application app = applicationManager.getApplication();
 		EDF edf = new EDF(app);
@@ -100,11 +109,17 @@ public class Simulation {
 	}
 
 	public static void main (String args[]) {
-		ComputingInfrastructure.initDefaultInfrastructure(3);
+		LoggingUtils.configureLogging();
 
 		Configuration conf = Configuration.getInstance();
 		conf.parseDefaultConfigurationFile();
 		// TODO parse cli args and other configuration files (if any)
+
+		ComputingInfrastructure.initDefaultInfrastructure(3);
+
+
+		LoggerFactory.getLogger(Simulation.class).error("ciao");
+		LoggerFactory.getLogger(Simulation.class).warn("ciao2");
 
 		try {
 			final String inputFile = "/home/gabriele/profile.dat";
