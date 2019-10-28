@@ -23,7 +23,7 @@ public class ComputingInfrastructure {
 			final String name = String.format("Res-%d", i);
 			final double cpuSpeedup = 1.0 + i*0.1;
 			final double cost = cpuSpeedup;
-			infrastructure.nodeTypes[i] = new NodeType(name,  cost, cpuSpeedup);
+			infrastructure.nodeTypes[i] = new NodeType(i, name,  cost, cpuSpeedup);
 		}
 
 		return infrastructure;
