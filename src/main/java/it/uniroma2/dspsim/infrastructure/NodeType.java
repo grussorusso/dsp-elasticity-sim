@@ -8,11 +8,17 @@ public class NodeType {
 	private String name;
 	private double cost;
 	private double cpuSpeedup;
+	private int index;
 
-	public NodeType (String name, double cost, double cpuSpeedup) {
+	public NodeType (int index, String name, double cost, double cpuSpeedup) {
+		this.index = index;
 		this.name = name;
 		this.cost = cost;
 		this.cpuSpeedup = cpuSpeedup;
+	}
+
+	public int getIndex() {
+		return this.index;
 	}
 
 	public String getName() {
