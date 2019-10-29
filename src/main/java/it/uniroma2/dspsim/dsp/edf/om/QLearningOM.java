@@ -125,7 +125,16 @@ public class QLearningOM extends OperatorManager {
 
 		// TODO learning step here
 		if (lastChosenAction != null) {
-			// oldState, oldAction -> currentState with reward to be computed
+			final double reward = computeCost(lastChosenAction, currentState, monitoringInfo.getInputRate());
+
+			final double ALPHA = 0.2; // TODO should change over time
+			final double oldQ  = qTable.getQ(lastState, lastChosenAction);
+			final double newQ = (1.0-ALPHA)*oldQ + ALPHA*(reward + qTable.getQ(currentState, greedyActionSelection(currentState)));
+
+			final double bellmanError = Math.abs(newQ-oldQ);
+			System.out.println(bellmanError); // TODO create a statistic
+
+			qTable.setQ(lastState, lastChosenAction, newQ);
 		}
 
 		//  pick best action
@@ -190,4 +199,28 @@ public class QLearningOM extends OperatorManager {
 		return newAction;
 	}
 
+	private double computeCost (Action a, State newState, double newInputRate) {
+		final double wReconf = 0.33; // TODO config param
+		final double wSLO = 0.33;// TODO config param
+		final double wResources = 0.33;// TODO config param
+
+		double cost = 0.0;
+
+		if (a.delta != 0)
+			cost += wReconf;
+
+		/* TODO Given the application latency SLO,
+		   we should give the OperatorManager a per-operator SLO
+		   at the beginning (e.g., each operator gets at most 1/n of the application SLO,
+		   where n is the number of operators on a source-sink path.
+		*/
+		final double OPERATOR_SLO = 0.1;
+
+		if (operator.responseTime(newInputRate) > OPERATOR_SLO)
+			cost += wSLO;
+
+		cost += operator.computeNormalizedDeploymentCost()*wResources;
+
+		return cost;
+	}
 }
