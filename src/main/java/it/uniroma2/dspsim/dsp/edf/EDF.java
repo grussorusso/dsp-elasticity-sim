@@ -5,10 +5,7 @@ import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
-import it.uniroma2.dspsim.dsp.edf.om.DoNothingOM;
-import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
-import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
-import it.uniroma2.dspsim.dsp.edf.om.ThresholdBasedOM;
+import it.uniroma2.dspsim.dsp.edf.om.*;
 
 import java.util.*;
 
@@ -38,9 +35,11 @@ public class EDF {
 	protected OperatorManager newOperatorManager (Operator op, Configuration configuration) {
 		OperatorManager om = null;
 
-		final String omType = configuration.getString(ConfigurationKeys.OM_TYPE_KEY, "threshold");
+		final String omType = configuration.getString(ConfigurationKeys.OM_TYPE_KEY, "qlearning");
 		if (omType.equalsIgnoreCase("threshold")) {
 			om = new ThresholdBasedOM(op);
+		} else if (omType.equalsIgnoreCase("qlearning")) {
+			om = new QLearningOM(op);
 		} else if (omType.equalsIgnoreCase("donothing")) {
 			om = new DoNothingOM(op);
 		} else {
