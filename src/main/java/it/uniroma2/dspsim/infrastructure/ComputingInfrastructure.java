@@ -32,4 +32,18 @@ public class ComputingInfrastructure {
 	public NodeType[] getNodeTypes() {
 		return nodeTypes;
 	}
+
+	public NodeType getMostExpensiveResType () {
+		Double cost = null;
+		NodeType nodeType = null;
+
+		for (NodeType nt : nodeTypes) {
+			if (nodeType == null || nt.getCost() > cost) {
+				cost = nt.getCost();
+				nodeType = nt;
+			}
+		}
+
+		return nodeType;
+	}
 }
