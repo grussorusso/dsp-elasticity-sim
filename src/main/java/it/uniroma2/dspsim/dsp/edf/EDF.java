@@ -40,6 +40,10 @@ public class EDF {
 			om = new ThresholdBasedOM(op);
 		} else if (omType.equalsIgnoreCase("qlearning")) {
 			om = new QLearningOM(op);
+		} else if (omType.equalsIgnoreCase("rl-qlearning")) {
+			om = new RLQLearningOM(op);
+		} else if (omType.equalsIgnoreCase("deep-qlearning")) {
+			om = new DeepQLearningOM(op);
 		} else if (omType.equalsIgnoreCase("donothing")) {
 			om = new DoNothingOM(op);
 		} else {
