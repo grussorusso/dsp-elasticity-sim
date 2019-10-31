@@ -4,9 +4,12 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import org.deeplearning4j.datasets.iterator.INDArrayDataSetIterator;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.layers.Convolution1DLayer;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -17,13 +20,16 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Random;
 
 public class DeepQLearningOM extends ReinforcementLearningOM {
 
-    private int numStates;
+    private int numStatesFeatures;
     private int numActions;
 
     private MultiLayerConfiguration networkConf;
@@ -38,7 +44,7 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         super(operator);
 
         // TODO parametrize
-        this.numStates = 3;
+        this.numStatesFeatures = 4;
         this.numActions = 7;
 
         this.gamma = 0.9;
@@ -49,7 +55,7 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
                 .updater(new Sgd(0.05))
                 .list(
                         new DenseLayer.Builder()
-                                .nIn(numStates)
+                                .nIn(numStatesFeatures)
                                 .nOut(32)
                                 .activation(new ActivationReLU())
                                 .build(),
@@ -81,11 +87,8 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         // get old state input array
         INDArray trainingInput = stateToArray(oldState);
 
-        // create dataset with new training input and oldQ as label
-        DataSet dataSet = new DataSet(trainingInput, oldQ);
-
         // training step
-        this.network.fit(dataSet);
+        this.network.fit(trainingInput, oldQ);
     }
 
     private INDArray getQ(State state) {
@@ -94,10 +97,22 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
     }
 
     private INDArray stateToArray(State s) {
-        INDArray array = Nd4j.create(s.getK().length);
+        INDArray array = Nd4j.create(this.numStatesFeatures);
         for (int i = 0; i < s.getK().length; i++) {
             array.put(0, i, s.getK()[i]);
         }
+        array.put(0, this.numStatesFeatures - 1, s.getLambda());
+        return array;
+    }
+
+    private INDArray stateToOneHotVector(State s) {
+        INDArray array = Nd4j.create(this.numStatesFeatures);
+        // generate one hot vector starting from (1, 0, 0, ... , 0)
+        // to represent (1, 0, 0, 1) state
+        // and proceed with (0, 1, 0, ... , 0)
+        // to represent (1, 0, 0, 2) state and so on until
+        // (0, 0, 0, ... , 1) to represent (0, 0, maxParallelism, maxLambdaLevel) state
+        //TODO
         return array;
     }
 
