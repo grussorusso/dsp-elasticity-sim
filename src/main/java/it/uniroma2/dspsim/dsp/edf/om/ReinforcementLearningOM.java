@@ -4,10 +4,22 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyFactory;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 
-public abstract class ReinforcementLearningOM extends OperatorManager {
+import java.util.HashMap;
+
+public abstract class ReinforcementLearningOM extends OperatorManager implements ActionSelectionPolicyCallback {
+
+    //TODO configuration
+    private static final String EPSILON = "epsilon";
+    private static final String EG_RANDOM_SEED = "eg_rng_seed";
+    private static final String RANDOM_SEED = "ras_rng_seed";
+
     protected Action lastChosenAction;
     protected State lastState;
 
@@ -18,6 +30,8 @@ public abstract class ReinforcementLearningOM extends OperatorManager {
     private double wSLO;
     private double wResources;
 
+    private ActionSelectionPolicy actionSelectionPolicy;
+
     public ReinforcementLearningOM(Operator operator) {
         super(operator);
 
@@ -27,6 +41,13 @@ public abstract class ReinforcementLearningOM extends OperatorManager {
         this.wReconf = 0.33;
         this.wSLO = 0.33;
         this.wResources = 0.33;
+        HashMap<String, Object> aSMetadata = new HashMap<>();
+        aSMetadata.put(EPSILON, 0.05);
+        this.actionSelectionPolicy = ActionSelectionPolicyFactory.getPolicy(
+                ActionSelectionPolicyType.EPSILON_GREEDY,
+                aSMetadata,
+                this
+        );
     }
 
     @Override
@@ -43,7 +64,8 @@ public abstract class ReinforcementLearningOM extends OperatorManager {
         }
 
         // pick new action
-        lastChosenAction = pickNewAction(currentState);
+        //lastChosenAction = pickNewAction(currentState);
+        lastChosenAction = selectNewAction(currentState);
 
         // update state
         lastState = currentState;
@@ -106,7 +128,21 @@ public abstract class ReinforcementLearningOM extends OperatorManager {
                         ComputingInfrastructure.getInfrastructure().getNodeTypes()[action.getResTypeIndex()]);
     }
 
-    protected abstract void learningStep(State oldState, Action action, State currentState, double reward);
+    private Action selectNewAction(State s) {
+        return this.actionSelectionPolicy.selectAction(s);
+    }
 
-    protected abstract Action pickNewAction(State state);
+    /**
+     * ACTION SELECTION POLICY CALLBACK INTERFACE
+     */
+
+    @Override
+    public boolean actionValidation(State s, Action a) {
+        return a.isValidInState(s, this.operator);
+    }
+
+    /**
+     * ABSTRACT METHODS
+     */
+    protected abstract void learningStep(State oldState, Action action, State currentState, double reward);
 }

@@ -8,8 +8,10 @@ import java.util.Objects;
 public class Action extends AbstractAction {
     private int delta;
     private int resTypeIndex;
+    private int index;
 
-    public Action (int delta, int resTypeIndex) {
+    public Action (int index, int delta, int resTypeIndex) {
+        this.index = index;
         this.delta = delta;
         this.resTypeIndex = resTypeIndex;
     }
@@ -31,12 +33,17 @@ public class Action extends AbstractAction {
         if (!(o instanceof Action)) return false;
         Action action = (Action) o;
         return getDelta() == action.getDelta() &&
-                getResTypeIndex() == action.getResTypeIndex();
+                getResTypeIndex() == action.getResTypeIndex() &&
+                getIndex() == action.getIndex();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getDelta(), getResTypeIndex());
+        return Objects.hash(getDelta(), getResTypeIndex(), getIndex());
+    }
+
+    public int getIndex() {
+        return index;
     }
 
     public int getDelta() {

@@ -11,8 +11,9 @@ public class ActionIterator implements Iterator<Action> {
      * (do nothing action), (-1, 0), (-1, 1), ...
      * (+1, 0), (+1, 1...)
      */
-    private int delta = 0;
-    private int resTypeIndex = 0;
+    private int delta = -1;
+    private int resTypeIndex = -1;
+    private int actionIndex = 0;
     boolean first = true;
 
     @Override
@@ -24,23 +25,20 @@ public class ActionIterator implements Iterator<Action> {
     public Action next() {
         if (first) {
             first = false;
-            return new Action(0, 0);
+            return new Action(0,0, 0);
         }
 
         if (!hasNext())
             return null;
 
         ++resTypeIndex;
+        ++actionIndex;
         if (resTypeIndex >= (ComputingInfrastructure.getInfrastructure().getNodeTypes().length)) {
+            // start generating actions (1, x)
             resTypeIndex = 0;
-
-            /* Next delta */
-            if (delta == 0)
-                delta = -1;
-            else
-                delta = 1;
+            delta = 1;
         }
 
-        return new Action(delta, resTypeIndex);
+        return new Action(actionIndex, delta, resTypeIndex);
     }
 }

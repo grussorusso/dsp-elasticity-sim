@@ -32,7 +32,6 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
     private Random actionSelectionRng = new Random();
 
     private double gamma;
-    private double epsilon;
 
 
     public DeepQLearningOM(Operator operator) {
@@ -40,11 +39,9 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
 
         // TODO parametrize
         this.numStates = 3;
-        this.numActions = 9;
+        this.numActions = 7;
 
         this.gamma = 0.9;
-
-        this.epsilon = 0.05;
 
         this.networkConf = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
@@ -76,100 +73,19 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         // get current state network output
         INDArray newQ = getQ(currentState);
 
-        // get action index
-        int actionIndex = actionToIndex(action);
-        if (actionIndex != -1) {
-            // update old state output in actionIndex position with new estimation
-            // we get min(newQ) because we want to minimize cost
-            // reward = cost -> minimize Q equals minimize cost
-            // TODO right?
-            oldQ.put(0, actionIndex, reward + gamma * (double) newQ.minNumber());
+        // update old state output in actionIndex position with new estimation
+        // we get min(newQ) because we want to minimize cost
+        // reward = cost -> minimize Q equals minimize cost
+        oldQ.put(0, action.getIndex(), reward + gamma * (double) newQ.minNumber());
 
-            // get old state input array
-            INDArray trainingInput = stateToArray(oldState);
+        // get old state input array
+        INDArray trainingInput = stateToArray(oldState);
 
-            // create dataset with new training input and oldQ as label
-            DataSet dataSet = new DataSet(trainingInput, oldQ);
+        // create dataset with new training input and oldQ as label
+        DataSet dataSet = new DataSet(trainingInput, oldQ);
 
-            // training step
-            this.network.fit(dataSet);
-        }
-    }
-
-    private int actionToIndex(Action action) {
-        // iterate over actions to find action index
-        ActionIterator ait = new ActionIterator();
-        int count = 0;
-        while (ait.hasNext()) {
-            final Action a = ait.next();
-            if (action.equals(a)) {
-                return count;
-            }
-            count++;
-        }
-        return -1;
-    }
-
-    // array's arg min
-    private int argMin(INDArray array) {
-        double min = Double.POSITIVE_INFINITY;
-        int index = -1;
-        for (int i = 0; i < array.length(); i++) {
-            if (min > array.getDouble(i)) {
-                min = array.getDouble(i);
-                index = i;
-            }
-        }
-        return index;
-    }
-
-    @Override
-    protected Action pickNewAction(State state) {
-        return epsilonGreedyActionSelection(state, epsilon);
-    }
-
-    private Action epsilonGreedyActionSelection (State s, double epsilon) {
-        if (actionSelectionRng.nextDouble() <= epsilon)
-            return randomActionSelection(s);
-        else
-            return greedyActionSelection(s);
-    }
-
-    private Action randomActionSelection(State s) {
-        ArrayList<Action> actions = new ArrayList<>();
-        ActionIterator ait = new ActionIterator();
-        while (ait.hasNext()) {
-            final Action a = ait.next();
-            if (!a.isValidInState(s, this.operator))
-                continue;
-            actions.add(a);
-        }
-
-        int aIndex = actionSelectionRng.nextInt(actions.size());
-        System.out.println(aIndex);
-        return actions.get(aIndex);
-    }
-
-
-    private Action greedyActionSelection (State s) {
-        int prediction = argMin(getQ(s));
-        ActionIterator ait = new ActionIterator();
-        Action newAction = null;
-        int count = 0;
-        while (ait.hasNext()) {
-            final Action a = ait.next();
-            if (count == prediction) {
-                if (!a.isValidInState(s, this.operator))
-                    // TODO if action predicted isn't valid in state s?
-                    newAction = new Action(0, 0);
-                else
-                    newAction = a;
-                break;
-            }
-            count++;
-        }
-        System.out.println(prediction);
-        return newAction;
+        // training step
+        this.network.fit(dataSet);
     }
 
     private INDArray getQ(State state) {
@@ -183,5 +99,16 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
             array.put(0, i, s.getK()[i]);
         }
         return array;
+    }
+
+    /**
+     * ACTION SELECTION POLICY CALLBACK INTERFACE
+     */
+
+    @Override
+    public double evaluateQ(State s, Action a) {
+        // return network Q-function prediction associated to action a in state s
+        INDArray networkOutput = getQ(s);
+        return networkOutput.getDouble(a.getIndex());
     }
 }
