@@ -19,7 +19,6 @@ public class ActionSelectionPolicyFactory {
 
     public static ActionSelectionPolicy getPolicy(ActionSelectionPolicyType type,
                                                   ActionSelectionPolicyCallback aspCallback) {
-
         switch (type) {
             case RANDOM:
                 return new RandomActionSelectionPolicy(aspCallback);

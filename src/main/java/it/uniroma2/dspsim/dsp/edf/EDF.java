@@ -35,7 +35,14 @@ public class EDF {
 	}
 
 	protected OperatorManager newOperatorManager (Operator op, Configuration configuration) {
-		return OperatorManagerFactory.createOperatorManager(op, configuration);
+		// get operator manager type from configurations
+		final String omType = configuration.getString(ConfigurationKeys.OM_TYPE_KEY, "qlearning");
+
+		// decode operator manager type
+		// WARNING : could throw IllegalArgumentException
+		OperatorManagerType operatorManagerType = OperatorManagerType.fromString(omType);
+
+		return OperatorManagerFactory.createOperatorManager(operatorManagerType, op);
 	}
 
 	public Map<Operator, Reconfiguration> pickReconfigurations (MonitoringInfo monitoringInfo) {
