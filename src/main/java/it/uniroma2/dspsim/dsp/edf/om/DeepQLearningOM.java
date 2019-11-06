@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
@@ -40,18 +41,16 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
 
     public DeepQLearningOM(Operator operator) {
         super(operator);
-    }
 
-    @Override
-    public void configure() {
-        super.configure();
+        // get configuration instance
+        Configuration configuration = Configuration.getInstance();
 
         // gamma
-        this.gamma = this.getMetadata(ConfigurationKeys.DQL_OM_GAMMA_KEY, Double.class.getName());
+        this.gamma = configuration.getDouble(ConfigurationKeys.DQL_OM_GAMMA_KEY, 0.9);
         // gamma decay
-        this.gammaDecay = this.getMetadata(ConfigurationKeys.DQL_OM_GAMMA_DECAY_KEY, Double.class.getName());
+        this.gammaDecay = configuration.getDouble(ConfigurationKeys.DQL_OM_GAMMA_DECAY_KEY, 0.9);
         // nd4j random seed
-        long nd4jSeed = this.getMetadata(ConfigurationKeys.DQL_OM_ND4j_RANDOM_SEED_KET, Long.class.getName());
+        long nd4jSeed = configuration.getLong(ConfigurationKeys.DQL_OM_ND4j_RANDOM_SEED_KET, 1234L);
         Nd4j.getRandom().setSeed(nd4jSeed);
 
         // states and actions

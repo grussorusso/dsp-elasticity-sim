@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete;
 
+import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.State;
@@ -15,16 +16,13 @@ public class RandomActionSelectionPolicy extends ActionSelectionPolicy {
 
     private Random rng;
 
-    public RandomActionSelectionPolicy(ActionSelectionPolicyCallback aSCallback) {
-        super(aSCallback);
+    public RandomActionSelectionPolicy(ActionSelectionPolicyCallback aspCallback) {
+        super(aspCallback);
 
-        this.rng = new Random();
-    }
+        // get configuration instance
+        Configuration configuration = Configuration.getInstance();
 
-    public RandomActionSelectionPolicy(HashMap<String, Object> metadata, ActionSelectionPolicyCallback aSCallback) {
-        super(metadata, aSCallback);
-
-        this.rng = new Random(this.getMetadata(ConfigurationKeys.ASP_R_RANDOM_SEED_KEY, Long.class.getName()));
+        this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_R_RANDOM_SEED_KEY, 1234L));
     }
 
     @Override
@@ -33,7 +31,7 @@ public class RandomActionSelectionPolicy extends ActionSelectionPolicy {
         ActionIterator ait = new ActionIterator();
         while (ait.hasNext()) {
             final Action a = ait.next();
-            if (!aSCallback.actionValidation(s, a))
+            if (!aspCallback.actionValidation(s, a))
                 continue;
             actions.add(a);
         }

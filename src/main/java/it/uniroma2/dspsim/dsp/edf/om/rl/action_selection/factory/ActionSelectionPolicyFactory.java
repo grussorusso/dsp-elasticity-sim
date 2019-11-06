@@ -1,5 +1,10 @@
-package it.uniroma2.dspsim.dsp.edf.om.rl.action_selection;
+package it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.EpsilonGreedyActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.GreedyActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.RandomActionSelectionPolicy;
@@ -13,15 +18,15 @@ public class ActionSelectionPolicyFactory {
     }
 
     public static ActionSelectionPolicy getPolicy(ActionSelectionPolicyType type,
-                                                  HashMap<String, Object> metadata,
-                                                  ActionSelectionPolicyCallback aSCallback) {
+                                                  ActionSelectionPolicyCallback aspCallback) {
+
         switch (type) {
             case RANDOM:
-                return new RandomActionSelectionPolicy(metadata, aSCallback);
+                return new RandomActionSelectionPolicy(aspCallback);
             case GREEDY:
-                return new GreedyActionSelectionPolicy(metadata, aSCallback);
+                return new GreedyActionSelectionPolicy(aspCallback);
             case EPSILON_GREEDY:
-                return new EpsilonGreedyActionSelectionPolicy(metadata, aSCallback);
+                return new EpsilonGreedyActionSelectionPolicy(aspCallback);
             default:
                 throw new IllegalArgumentException("Invalid action selection policy type");
         }

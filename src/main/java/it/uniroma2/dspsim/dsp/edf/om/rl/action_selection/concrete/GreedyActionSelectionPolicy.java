@@ -10,12 +10,8 @@ import java.util.HashMap;
 
 public class GreedyActionSelectionPolicy extends ActionSelectionPolicy {
 
-    public GreedyActionSelectionPolicy(ActionSelectionPolicyCallback aSCallback) {
-        super(aSCallback);
-    }
-
-    public GreedyActionSelectionPolicy(HashMap<String, Object> metadata, ActionSelectionPolicyCallback aSCallback) {
-        super(metadata, aSCallback);
+    public GreedyActionSelectionPolicy(ActionSelectionPolicyCallback aspCallback) {
+        super(aspCallback);
     }
 
     @Override
@@ -25,9 +21,9 @@ public class GreedyActionSelectionPolicy extends ActionSelectionPolicy {
         double bestQ = 0.0;
         while (ait.hasNext()) {
             final Action a = ait.next();
-            if (!this.aSCallback.actionValidation(s, a))
+            if (!this.aspCallback.actionValidation(s, a))
                 continue;
-            final double q = this.aSCallback.evaluateQ(s, a);
+            final double q = this.aspCallback.evaluateQ(s, a);
 
             if (newAction == null || q < bestQ) {
                 bestQ = q;

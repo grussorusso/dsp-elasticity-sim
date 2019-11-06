@@ -1,11 +1,12 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete;
 
+import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyComposition;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyFactory;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 
 import java.util.HashMap;
@@ -13,42 +14,37 @@ import java.util.Random;
 
 public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyComposition {
 
-    private double epsilon; // TODO should change over time
+    private double epsilon;
     private double epsilonDecay;
     private Random rng;
 
-    public EpsilonGreedyActionSelectionPolicy(ActionSelectionPolicyCallback aSCallback) {
-        super(aSCallback);
-        this.init(null, aSCallback);
-    }
+    public EpsilonGreedyActionSelectionPolicy(ActionSelectionPolicyCallback aspCallback) {
+        super(aspCallback);
 
-    public EpsilonGreedyActionSelectionPolicy(HashMap<String, Object> metadata, ActionSelectionPolicyCallback aSCallback) {
-        super(metadata, aSCallback);
-        this.init(metadata, aSCallback);
-    }
+        // get configuration instance
+        Configuration configuration = Configuration.getInstance();
 
-    private void init(HashMap<String, Object> metadata, ActionSelectionPolicyCallback aSCallback) {
         // add greedy action selection policy
         this.policies.add(ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.GREEDY,
-                metadata,
-                aSCallback
+                aspCallback
         ));
+
         // add random action selection policy
         this.policies.add(ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.RANDOM,
-                metadata,
-                aSCallback
+                aspCallback
         ));
 
+        // TODO epsilon should change over time
         // init epsilon
-        this.epsilon = this.getMetadata(ConfigurationKeys.ASP_EG_EPSILON_KEY, Double.class.getName());
+        this.epsilon = configuration.getDouble(ConfigurationKeys.ASP_EG_EPSILON_KEY, 0.05);
 
         // init epsilon decay
-        this.epsilonDecay = this.getMetadata(ConfigurationKeys.ASP_EG_EPSILON_DECAY_KEY, Double.class.getName());
+        this.epsilonDecay = configuration.getDouble(ConfigurationKeys.ASP_EG_EPSILON_DECAY_KEY, 0.9);
 
         // init random number generator
-        this.rng = new Random(this.getMetadata(ConfigurationKeys.ASP_EG_RANDOM_SEED_KEY, Long.class.getName()));
+        this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_EG_RANDOM_SEED_KEY, 1234L));
     }
 
     @Override

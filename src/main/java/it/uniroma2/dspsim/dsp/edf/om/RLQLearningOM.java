@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
@@ -7,13 +8,8 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyFactory;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.GreedyActionSelectionPolicy;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
-
-import java.util.ArrayList;
-import java.util.Random;
 
 public class RLQLearningOM extends ReinforcementLearningOM {
     private QTable qTable;
@@ -25,21 +21,18 @@ public class RLQLearningOM extends ReinforcementLearningOM {
 
     public RLQLearningOM(Operator operator) {
         super(operator);
-    }
 
-    @Override
-    public void configure() {
-        super.configure();
+        // get configuration instance
+        Configuration configuration = Configuration.getInstance();
 
         this.qTable = new GuavaBasedQTable(0.0);
 
-        // TODO should change over time
-        this.alpha = this.getMetadata(ConfigurationKeys.QL_OM_ALPHA_KEY, Double.class.getName());
-        this.alphaDecay = this.getMetadata(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, Double.class.getName());
+        // TODO alpha should change over time
+        this.alpha = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.2);
+        this.alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.9);
 
         this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.GREEDY,
-                null,
                 this
         );
     }
