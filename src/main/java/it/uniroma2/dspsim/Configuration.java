@@ -62,6 +62,17 @@ public class Configuration {
 		return defaultValue;
 	}
 
+	public Long getLong (String key, Long defaultValue) {
+		if (properties.containsKey(key)) {
+			try {
+				return Long.parseLong(properties.getProperty(key));
+			} catch (NumberFormatException e) { }
+		}
+
+		properties.setProperty(key, Long.toString(defaultValue));
+		return defaultValue;
+	}
+
 	public Double getDouble (String key, Double defaultValue) {
 		if (properties.containsKey(key)) {
 			try {

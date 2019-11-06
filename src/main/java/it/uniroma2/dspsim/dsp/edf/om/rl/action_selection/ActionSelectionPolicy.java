@@ -28,4 +28,15 @@ public abstract class ActionSelectionPolicy implements ActionSelectionPolicyInte
         this.metadata = new HashMap<>();
         this.aSCallback = aSCallback;
     }
+
+    protected  <T> T getMetadata(String key, String className) {
+        if (this.metadata.containsKey(key) && this.metadata.get(key) != null)
+            try {
+                return (T) this.metadata.get(key);
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException(key + " must be of type " + className);
+            }
+        else
+            throw new IllegalArgumentException(key + " must be not null and of type " + className);
+    }
 }

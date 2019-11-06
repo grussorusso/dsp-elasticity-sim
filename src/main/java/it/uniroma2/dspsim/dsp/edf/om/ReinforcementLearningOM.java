@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
@@ -15,13 +16,8 @@ import java.util.HashMap;
 
 public abstract class ReinforcementLearningOM extends OperatorManager implements ActionSelectionPolicyCallback {
 
-    //TODO configuration
-    private static final String EPSILON = "epsilon";
-    private static final String EG_RANDOM_SEED = "eg_rng_seed";
-    private static final String RANDOM_SEED = "ras_rng_seed";
-
-    protected Action lastChosenAction;
-    protected State lastState;
+    private Action lastChosenAction;
+    private State lastState;
 
     private int maxInputRate;
     private int inputRateLevels;
@@ -32,22 +28,55 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
 
     private ActionSelectionPolicy actionSelectionPolicy;
 
-    public ReinforcementLearningOM(Operator operator) {
+    // metadata container
+    // in this hasmap are stored all parameters
+    // if there is no parameter, use default ones
+    protected HashMap<String, Object> metadata;
+
+    protected ReinforcementLearningOM(Operator operator) {
         super(operator);
 
-        // TODO define in configuration
-        this.maxInputRate = 600;
-        this.inputRateLevels = 20;
-        this.wReconf = 0.33;
-        this.wSLO = 0.33;
-        this.wResources = 0.33;
-        HashMap<String, Object> aSMetadata = new HashMap<>();
-        aSMetadata.put(EPSILON, 0.05);
-        this.actionSelectionPolicy = ActionSelectionPolicyFactory.getPolicy(
-                ActionSelectionPolicyType.EPSILON_GREEDY,
-                aSMetadata,
-                this
-        );
+        // init metadata
+        this.metadata = new HashMap<>();
+    }
+
+    public void addMetadata(String key, Object value) {
+        this.metadata.put(key, value);
+    }
+
+    /**
+     * configure operator manager using metadata info
+     */
+    public void configure() {
+        // input rate discretization
+        this.maxInputRate = this.getMetadata(ConfigurationKeys.RL_OM_MAX_INPUT_RATE_KEY, Integer.class.getName());
+        this.inputRateLevels = this.getMetadata(ConfigurationKeys.RL_OM_INPUT_RATE_LEVELS_KEY, Integer.class.getName());
+
+        // reward weights
+        this.wReconf = this.getMetadata(ConfigurationKeys.RL_OM_RECONFIG_WEIGHT_KEY, Double.class.getName());
+        this.wSLO = this.getMetadata(ConfigurationKeys.RL_OM_SLO_WEIGHT_KEY, Double.class.getName());
+        this.wResources = this.getMetadata(ConfigurationKeys.RL_OM_RESOURCES_WEIGHT_KEY, Double.class.getName());
+
+        // action selection policy
+        HashMap<String, Object> aspMetadata = this.getMetadata(ConfigurationKeys.RL_OM_ASP_METADATA_KEY,
+                HashMap.class.getName());
+        ActionSelectionPolicyType aspType = this.getMetadata(ConfigurationKeys.ASP_TYPE_KEY,
+                ActionSelectionPolicyType.class.getName());
+
+        this.actionSelectionPolicy = ActionSelectionPolicyFactory
+                .getPolicy(aspType, aspMetadata, this);
+    }
+
+
+    protected  <T> T getMetadata(String key, String className) {
+        if (this.metadata.containsKey(key) && this.metadata.get(key) != null)
+            try {
+                return (T) this.metadata.get(key);
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException(key + " must be of type " + className);
+            }
+        else
+            throw new IllegalArgumentException(key + " must be not null and of type " + className);
     }
 
     @Override

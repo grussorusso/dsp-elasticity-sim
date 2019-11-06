@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete;
 
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
@@ -12,11 +13,8 @@ import java.util.Random;
 
 public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyComposition {
 
-    //TODO configuration
-    private static final String EPSILON = "epsilon";
-    private static final String RANDOM_SEED = "eg_rng_seed";
-
     private double epsilon; // TODO should change over time
+    private double epsilonDecay;
     private Random rng;
 
     public EpsilonGreedyActionSelectionPolicy(ActionSelectionPolicyCallback aSCallback) {
@@ -44,23 +42,13 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
         ));
 
         // init epsilon
-        if (metadata != null && metadata.containsKey(EPSILON))
-            if (metadata.get(EPSILON) instanceof Double)
-                this.epsilon = (double) metadata.get(EPSILON);
-            else
-                throw new IllegalArgumentException("epsilon value must be double");
-        else
-            // TODO parametrize default epsilon
-            this.epsilon = 0.05;
+        this.epsilon = this.getMetadata(ConfigurationKeys.ASP_EG_EPSILON_KEY, Double.class.getName());
+
+        // init epsilon decay
+        this.epsilonDecay = this.getMetadata(ConfigurationKeys.ASP_EG_EPSILON_DECAY_KEY, Double.class.getName());
 
         // init random number generator
-        if (metadata != null && metadata.containsKey(RANDOM_SEED))
-            if (metadata.get(RANDOM_SEED) instanceof Integer)
-                this.rng = new Random((int) metadata.get(RANDOM_SEED));
-            else
-                throw new IllegalArgumentException("random seed must be integer");
-        else
-            this.rng = new Random();
+        this.rng = new Random(this.getMetadata(ConfigurationKeys.ASP_EG_RANDOM_SEED_KEY, Long.class.getName()));
     }
 
     @Override

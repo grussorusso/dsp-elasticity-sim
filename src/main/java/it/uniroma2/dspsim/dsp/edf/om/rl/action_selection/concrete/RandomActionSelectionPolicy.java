@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete;
 
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
@@ -11,8 +12,6 @@ import java.util.HashMap;
 import java.util.Random;
 
 public class RandomActionSelectionPolicy extends ActionSelectionPolicy {
-    //TODO configuration
-    private static final String RANDOM_SEED = "ras_rng_seed";
 
     private Random rng;
 
@@ -25,13 +24,7 @@ public class RandomActionSelectionPolicy extends ActionSelectionPolicy {
     public RandomActionSelectionPolicy(HashMap<String, Object> metadata, ActionSelectionPolicyCallback aSCallback) {
         super(metadata, aSCallback);
 
-        if (metadata != null && metadata.containsKey(RANDOM_SEED))
-            if (metadata.get(RANDOM_SEED) instanceof Integer)
-                this.rng = new Random((int) metadata.get(RANDOM_SEED));
-            else
-                throw new IllegalArgumentException("random seed must be integer");
-        else
-            this.rng = new Random();
+        this.rng = new Random(this.getMetadata(ConfigurationKeys.ASP_R_RANDOM_SEED_KEY, Long.class.getName()));
     }
 
     @Override

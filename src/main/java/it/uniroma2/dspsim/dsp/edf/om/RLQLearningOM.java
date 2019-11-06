@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
@@ -18,15 +19,23 @@ public class RLQLearningOM extends ReinforcementLearningOM {
     private QTable qTable;
 
     private double alpha;
+    private double alphaDecay;
 
     private ActionSelectionPolicy greedyActionSelection;
 
     public RLQLearningOM(Operator operator) {
         super(operator);
+    }
+
+    @Override
+    public void configure() {
+        super.configure();
 
         this.qTable = new GuavaBasedQTable(0.0);
 
-        this.alpha = 0.2; // TODO should change over time
+        // TODO should change over time
+        this.alpha = this.getMetadata(ConfigurationKeys.QL_OM_ALPHA_KEY, Double.class.getName());
+        this.alphaDecay = this.getMetadata(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, Double.class.getName());
 
         this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.GREEDY,
