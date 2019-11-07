@@ -5,6 +5,8 @@ import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -23,8 +25,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 public class DeepQLearningOM extends ReinforcementLearningOM {
@@ -54,10 +58,8 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         Nd4j.getRandom().setSeed(nd4jSeed);
 
         // states and actions
-        // TODO parametrize
-        this.numStatesFeatures = computeNumStatesFeatures(operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure().getNodeTypes().length);
-        this.numActions = 7;
+        this.numStatesFeatures = this.getTotalStates();
+        this.numActions = this.getTotalActions();
 
         // build network
         this.networkConf = new NeuralNetConfiguration.Builder()
@@ -82,10 +84,13 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         this.network = new MultiLayerNetwork(this.networkConf);
         this.network.init();
 
-        /*UIServer uiServer = UIServer.getInstance();
+        /*
+        // http://localhost:9000/train
+        UIServer uiServer = UIServer.getInstance();
         StatsStorage statsStorage = new InMemoryStatsStorage();
         uiServer.attach(statsStorage);
-        this.network.setListeners(new StatsListener(statsStorage));*/
+        this.network.setListeners(new StatsListener(statsStorage));
+        */
     }
 
     @Override
@@ -101,14 +106,33 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         oldQ.put(0, action.getIndex(), reward + gamma * (double) newQ.minNumber());
 
         // get old state input array
-        INDArray trainingInput = stateToArray(oldState);
+        //INDArray trainingInput = stateToArray(oldState);
+        INDArray trainingInput = stateKToOneHotVector(oldState);
 
         // training step
         this.network.fit(trainingInput, oldQ);
     }
 
+    @Override
+    protected State computeNewState(OMMonitoringInfo monitoringInfo) {
+        State newState = super.computeNewState(monitoringInfo);
+
+        StateIterator stateIterator = new StateIterator(this.operator,
+                ComputingInfrastructure.getInfrastructure(), this.inputRateLevels);
+
+        while (stateIterator.hasNext()) {
+            State indexedNewState = stateIterator.next();
+            if (newState.equals(indexedNewState)) {
+                return indexedNewState;
+            }
+        }
+
+        throw new RuntimeException("No possible state generated");
+    }
+
     private INDArray getQ(State state) {
-        INDArray input = stateToArray(state);
+        //INDArray input = stateToArray(state);
+        INDArray input = stateKToOneHotVector(state);
         return this.network.output(input);
     }
 
@@ -121,51 +145,35 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         return array;
     }
 
-    private INDArray stateKToOneHotVector(int[] k) {
-        INDArray array = Nd4j.create(this.numStatesFeatures);
+    private INDArray stateKToOneHotVector(State state) {
+        INDArray oneHotVector = Nd4j.create(this.numStatesFeatures);
         // generate one hot vector starting from (1, 0, 0, ... , 0)
-        // to represent (1, 0, 0) state
+        // to represent (1, 0, ... , 0) state
         // and proceed with (0, 1, 0, ... , 0)
         // to represent (2, 0, 0) state and so on until
-        // (0, 0, 0, ... , 1) to represent (0, 0, maxParallelism) state
-        // TODO
-        return array;
+        // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
+        oneHotVector.put(0, state.getIndex(), 1);
+        return oneHotVector;
     }
 
-    private int computeNumStatesFeatures(int maxParallelism, int nodeTypeNumber) {
-        int[] maxNArray = new int[nodeTypeNumber];
-        for (int i = 0; i < nodeTypeNumber; i++) {
-            maxNArray[i] = maxParallelism;
-        }
-
-        List<int[]> permutations = new ArrayList<>();
-        computePermutations(new int[nodeTypeNumber], maxNArray, maxNArray.length - 1, maxParallelism, permutations);
-        for (int i = 0; i < permutations.size(); i++) {
-            System.out.println(Arrays.toString(permutations.get(i)));
-        }
-        //return permutations.size();
-        return 4;
+    private int getTotalStates() {
+        StateIterator stateIterator = new StateIterator(this.operator,
+                ComputingInfrastructure.getInfrastructure(), this.inputRateLevels);
+        return this.getTotalObjectsInIterator(stateIterator);
     }
 
-    private void computePermutations(int[] n, int[] maxN, int index, int maxSum, List<int[]> permutations) {
-        if (index == -1) {
-            int resSum = arraySum(n);
-            if (resSum > 0 && resSum <= maxSum) {
-                //System.out.println(Arrays.toString(n));
-                permutations.add(n);
-            }
-            return;
-        }
-        for (int i = 0; i <= maxN[index]; i++) {
-            n[index] = i;
-            computePermutations(n.clone(), maxN, index - 1, maxSum, permutations);
-        }
+    private int getTotalActions() {
+        ActionIterator actionIterator = new ActionIterator();
+        return this.getTotalObjectsInIterator(actionIterator);
     }
 
-    private int arraySum(int[] n) {
-        int sum = 0;
-        for (int value : n) sum += value;
-        return sum;
+    private int getTotalObjectsInIterator(Iterator iterator) {
+        int count = 0;
+        while (iterator.hasNext()) {
+            iterator.next();
+            count++;
+        }
+        return count;
     }
 
     /**

@@ -4,10 +4,17 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class State extends AbstractState {
+    private int index;
     private int k[];
     private int lambda;
 
-    public State (int[] k, int lambda) {
+    public State(int index, int[] k, int lambda) {
+        this.index = index;
+        this.k = k;
+        this.lambda = lambda;
+    }
+
+    public State(int[] k, int lambda) {
         this.k = k;
         this.lambda = lambda;
     }
@@ -43,5 +50,9 @@ public class State extends AbstractState {
 
     public int getLambda() {
         return lambda;
+    }
+
+    public int getIndex() {
+        return index;
     }
 }

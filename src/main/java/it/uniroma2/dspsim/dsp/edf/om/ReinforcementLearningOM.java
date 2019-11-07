@@ -21,7 +21,7 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
     private State lastState;
 
     private int maxInputRate;
-    private int inputRateLevels;
+    protected int inputRateLevels;
 
     private double wReconf;
     private double wSLO;
@@ -97,7 +97,7 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
         return cost;
     }
 
-    private State computeNewState(OMMonitoringInfo monitoringInfo) {
+    protected State computeNewState(OMMonitoringInfo monitoringInfo) {
         // read actual deployment
         final int[] deployment = new int[ComputingInfrastructure.getInfrastructure().getNodeTypes().length];
         for (NodeType nt : operator.getInstances()) {
