@@ -49,10 +49,6 @@ public class StateIterator implements Iterator<State> {
             this.lambda = 0;
 
             goNextK();
-
-            /*if (arraySum(this.k) > maxParallelism) {
-
-            }*/
         }
 
         return new State(this.stateIndex, this.k, lambda);

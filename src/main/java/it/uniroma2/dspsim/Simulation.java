@@ -119,7 +119,7 @@ public class Simulation {
 
 
 		try {
-			final String inputFile = "/home/gabriele/profile.dat";
+			final String inputFile = "/Users/simone/Documents/Tesi/profile.dat";
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
 			Application app = ApplicationBuilder.defaultApplication();

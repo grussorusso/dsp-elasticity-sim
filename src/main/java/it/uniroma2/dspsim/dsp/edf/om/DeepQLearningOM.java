@@ -57,8 +57,11 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         long nd4jSeed = configuration.getLong(ConfigurationKeys.DQL_OM_ND4j_RANDOM_SEED_KET, 1234L);
         Nd4j.getRandom().setSeed(nd4jSeed);
 
-        // states and actions
-        this.numStatesFeatures = this.getTotalStates();
+        /*states :
+            this.getTotalStates() / (this.inputRateLevels + 1) = one hot vector input nodes (k[])
+            + 1 = lambda input level normalized
+        */
+        this.numStatesFeatures = (this.getTotalStates() / (this.inputRateLevels + 1)) + 1;
         this.numActions = this.getTotalActions();
 
         // build network
@@ -106,8 +109,7 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         oldQ.put(0, action.getIndex(), reward + gamma * (double) newQ.minNumber());
 
         // get old state input array
-        //INDArray trainingInput = stateToArray(oldState);
-        INDArray trainingInput = stateKToOneHotVector(oldState);
+        INDArray trainingInput = buildInput(oldState);
 
         // training step
         this.network.fit(trainingInput, oldQ);
@@ -131,29 +133,31 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
     }
 
     private INDArray getQ(State state) {
-        //INDArray input = stateToArray(state);
-        INDArray input = stateKToOneHotVector(state);
+        INDArray input = buildInput(state);
         return this.network.output(input);
     }
 
-    private INDArray stateToArray(State s) {
-        INDArray array = Nd4j.create(this.numStatesFeatures);
-        for (int i = 0; i < s.getK().length; i++) {
-            array.put(0, i, s.getK()[i]);
-        }
-        array.put(0, this.numStatesFeatures - 1, s.getLambda());
-        return array;
+    private INDArray buildInput(State state) {
+        INDArray input = stateKToOneHotVector(state);
+        // append lambda level normalized value to input array
+        input = Nd4j.append(input, 1, lambdaLevelNormalized(state.getLambda(), this.inputRateLevels), 1);
+        return input;
     }
 
     private INDArray stateKToOneHotVector(State state) {
-        INDArray oneHotVector = Nd4j.create(this.numStatesFeatures);
+        // get only k[] nodes
+        INDArray oneHotVector = Nd4j.create(this.numStatesFeatures - 1);
         // generate one hot vector starting from (1, 0, 0, ... , 0)
         // to represent (1, 0, ... , 0) state
         // and proceed with (0, 1, 0, ... , 0)
         // to represent (2, 0, 0) state and so on until
         // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
-        oneHotVector.put(0, state.getIndex(), 1);
+        oneHotVector.put(0, Math.floorDiv(state.getIndex(), this.inputRateLevels + 1), 1);
         return oneHotVector;
+    }
+
+    private double lambdaLevelNormalized(int value, int maxValue) {
+        return (double) value/ (double) maxValue;
     }
 
     private int getTotalStates() {
@@ -173,6 +177,7 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
             iterator.next();
             count++;
         }
+        System.out.println(count);
         return count;
     }
 
