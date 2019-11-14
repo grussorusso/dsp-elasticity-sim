@@ -8,9 +8,7 @@ import it.uniroma2.dspsim.dsp.edf.ApplicationManager;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.stats.CountMetric;
-import it.uniroma2.dspsim.stats.RealValuedCountMetric;
-import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,9 +27,15 @@ public class Simulation {
 	private final double LATENCY_SLO;
 
 	/* Statistics */
-	private static final String STAT_LATENCY_VIOLATIONS = "LatencyViolations";
+	private static final String STAT_STEPS_COUNTER = "Steps Counter";
+	private static final String STAT_LATENCY_VIOLATIONS = "Latency Violations";
+	private static final String STAT_VIOLATIONS_PERCENTAGE = "Latency Violations Percentage";
 	private static final String STAT_RECONFIGURATIONS = "Reconfigurations";
-	private static final String STAT_RESOURCES_COST = "ResourcesCost";
+	private static final String STAT_RECONFIGURATIONS_PERCENTAGE = "Reconfigurations Percentage";
+	private static final String STAT_RESOURCES_COST_USED_SUM = "Resources Cost Used Sum";
+	private static final String STAT_RESOURCES_COST_MAX_SUM = "Resources Cost Max Sum";
+	private static final String STAT_RESOURCES_COST_PERCENTAGE = "Resources Cost Percentage";
+	private static final String STAT_RESOURCES_COST_MEAN = "Resources Cost Mean";
 
 	private InputRateFileReader inputRateFileReader;
 	private ApplicationManager applicationManager;
@@ -53,9 +57,31 @@ public class Simulation {
 	}
 
 	private void registerMetrics () {
+		//SIMPLE METRICS
+		// steps counter metric
+		statistics.registerMetric(new CountMetric(STAT_STEPS_COUNTER));
+		// SLO violations counter
 		statistics.registerMetric(new CountMetric(STAT_LATENCY_VIOLATIONS));
+		// reconfigurations counter
 		statistics.registerMetric(new CountMetric(STAT_RECONFIGURATIONS));
-		statistics.registerMetric(new RealValuedCountMetric(STAT_RESOURCES_COST));
+		// resources cost used sum
+		statistics.registerMetric(new RealValuedCountMetric(STAT_RESOURCES_COST_USED_SUM));
+		// max possible resources sum
+		statistics.registerMetric(new RealValuedCountMetric(STAT_RESOURCES_COST_MAX_SUM));
+
+		// COMPOSED METRICS
+		// SLO violations percentage
+		statistics.registerMetric(new PercentageMetric(STAT_VIOLATIONS_PERCENTAGE,
+				statistics.getMetric(STAT_LATENCY_VIOLATIONS), statistics.getMetric(STAT_STEPS_COUNTER)));
+		// reconfigurations percentage
+		statistics.registerMetric(new PercentageMetric(STAT_RECONFIGURATIONS_PERCENTAGE,
+				statistics.getMetric(STAT_RECONFIGURATIONS), statistics.getMetric(STAT_STEPS_COUNTER)));
+		// resources cost percentage
+		statistics.registerMetric(new PercentageMetric(STAT_RESOURCES_COST_PERCENTAGE,
+				statistics.getMetric(STAT_RESOURCES_COST_USED_SUM), statistics.getMetric(STAT_RESOURCES_COST_MAX_SUM)));
+		// resources cost mean
+		statistics.registerMetric(new MeanMetric(STAT_RESOURCES_COST_MEAN,
+				statistics.getMetric(STAT_RESOURCES_COST_USED_SUM), (CountMetric) statistics.getMetric(STAT_STEPS_COUNTER)));
 	}
 
 	public void run (long stopTime) throws IOException {
@@ -75,7 +101,10 @@ public class Simulation {
 				statistics.updateMetric(STAT_LATENCY_VIOLATIONS, 1);
 			}
 
-			statistics.updateMetric(STAT_RESOURCES_COST, app.computeDeploymentCost());
+			// update used resources cost metric
+			statistics.updateMetric(STAT_RESOURCES_COST_USED_SUM, app.computeDeploymentCost());
+			// update max resources cost metric
+			statistics.updateMetric(STAT_RESOURCES_COST_MAX_SUM, app.computeMaxDeploymentCost());
 
 			/* Reconfiguration */
 			monitoringInfo.setInputRate(inputRate);
@@ -84,6 +113,9 @@ public class Simulation {
 
 
 			//System.out.println(inputRate + "\t" + responseTime);
+
+			// update steps counter
+			statistics.updateMetric(STAT_STEPS_COUNTER, 1);
 
 			time++;
 		}
@@ -133,6 +165,7 @@ public class Simulation {
 
 			/* Dump statistics to standard output. */
 			Statistics.getInstance().dumpAll();
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

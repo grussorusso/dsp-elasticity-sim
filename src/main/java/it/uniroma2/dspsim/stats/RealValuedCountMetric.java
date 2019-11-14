@@ -19,6 +19,11 @@ public class RealValuedCountMetric extends Metric {
 	}
 
 	@Override
+	public Number getValue() {
+		return count;
+	}
+
+	@Override
 	public String dumpValue() {
 		return Double.toString(count);
 	}

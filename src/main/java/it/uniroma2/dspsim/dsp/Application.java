@@ -1,5 +1,8 @@
 package it.uniroma2.dspsim.dsp;
 
+import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.infrastructure.NodeType;
+
 import java.util.*;
 
 public class Application {
@@ -113,6 +116,14 @@ public class Application {
 		double totalCost = 0.0;
 		for (Operator op : getOperators())
 			totalCost += op.computeDeploymentCost();
+
+		return totalCost;
+	}
+
+	public double computeMaxDeploymentCost() {
+		double totalCost = 0.0;
+		for (Operator op : getOperators())
+			totalCost += op.computeMaxDeploymentCost();
 
 		return totalCost;
 	}

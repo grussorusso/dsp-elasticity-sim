@@ -9,7 +9,7 @@ public enum OperatorManagerType {
     DEEP_V_LEARNING;
 
     public static OperatorManagerType fromString(String str) throws IllegalArgumentException {
-        if (str.equalsIgnoreCase("donothing")) {
+        if (str.equalsIgnoreCase("do-nothing")) {
             return DO_NOTHING;
         } else if (str.equalsIgnoreCase("threshold")) {
             return THRESHOLD_BASED;

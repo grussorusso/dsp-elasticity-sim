@@ -14,6 +14,8 @@ public abstract class Metric {
 
 	abstract public String dumpValue();
 
+	abstract public Number getValue();
+
 	@Override
 	public String toString() {
 		return String.format("%s = %s", id, dumpValue());

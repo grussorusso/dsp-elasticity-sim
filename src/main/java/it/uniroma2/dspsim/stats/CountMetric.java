@@ -19,6 +19,11 @@ public class CountMetric extends Metric {
 	}
 
 	@Override
+	public Number getValue() {
+		return count;
+	}
+
+	@Override
 	public String dumpValue() {
 		return Long.toString(count);
 	}

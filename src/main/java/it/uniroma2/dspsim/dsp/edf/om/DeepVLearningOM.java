@@ -46,6 +46,8 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
 
     private double gamma;
     private double gammaDecay;
+    private int gammaDecaySteps;
+    private int gammaDecayStepsCounter;
 
     public DeepVLearningOM(Operator operator) {
         super(operator);
@@ -57,6 +59,10 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
         this.gamma = configuration.getDouble(ConfigurationKeys.DQL_OM_GAMMA_KEY, 0.9);
         // gamma decay
         this.gammaDecay = configuration.getDouble(ConfigurationKeys.DQL_OM_GAMMA_DECAY_KEY, 0.9);
+        // gamma decay steps
+        this.gammaDecaySteps = configuration.getInteger(ConfigurationKeys.DQL_OM_GAMMA_DECAY_STEPS_KEY, -1);
+        // gamma decay steps counter (init)
+        this.gammaDecayStepsCounter = 0;
         // nd4j random seed
         long nd4jSeed = configuration.getLong(ConfigurationKeys.DQL_OM_ND4j_RANDOM_SEED_KET, 1234L);
         Nd4j.getRandom().setSeed(nd4jSeed);
@@ -142,6 +148,9 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
 
         // training step
         this.network.fit(trainingInput, v);
+
+        // decrement gamma if necessary
+        decrementGamma();
     }
 
     private State getIndexedState(State state) {
@@ -239,6 +248,16 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
         }
         System.out.println(count);
         return count;
+    }
+
+    private void decrementGamma() {
+        if (this.gammaDecaySteps > 0) {
+            this.gammaDecayStepsCounter++;
+            if (this.gammaDecayStepsCounter >= this.gammaDecaySteps) {
+                this.gammaDecayStepsCounter = 0;
+                this.gamma = this.gammaDecay * this.gamma;
+            }
+        }
     }
 
     /**

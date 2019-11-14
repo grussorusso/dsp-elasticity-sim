@@ -16,6 +16,9 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
 
     private double epsilon;
     private double epsilonDecay;
+    private int epsilonDecaySteps;
+    private int epsilonDecayStepsCounter;
+
     private Random rng;
 
     public EpsilonGreedyActionSelectionPolicy(ActionSelectionPolicyCallback aspCallback) {
@@ -36,12 +39,17 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
                 aspCallback
         ));
 
-        // TODO epsilon should change over time
         // init epsilon
         this.epsilon = configuration.getDouble(ConfigurationKeys.ASP_EG_EPSILON_KEY, 0.05);
 
         // init epsilon decay
         this.epsilonDecay = configuration.getDouble(ConfigurationKeys.ASP_EG_EPSILON_DECAY_KEY, 0.9);
+
+        // init epsilon decay steps numbers
+        this.epsilonDecaySteps = configuration.getInteger(ConfigurationKeys.ASP_EG_EPSILON_DECAY_STEPS_KEY, -1);
+
+        // init epsilon decay steps counter
+        this.epsilonDecayStepsCounter = 0;
 
         // init random number generator
         this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_EG_RANDOM_SEED_KEY, 1234L));
@@ -49,11 +57,27 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
 
     @Override
     public Action selectAction(State s) {
+        Action chosenAction;
         if (this.rng.nextDouble() <= this.epsilon)
             // select random action
-            return this.policies.get(1).selectAction(s);
+            chosenAction = this.policies.get(1).selectAction(s);
         else
             // select greedy action
-            return this.policies.get(0).selectAction(s);
+            chosenAction = this.policies.get(0).selectAction(s);
+
+        // decrement epsilon if necessary
+        decrementEpsilon();
+
+        return chosenAction;
+    }
+
+    private void decrementEpsilon() {
+        if (this.epsilonDecaySteps > 0) {
+            this.epsilonDecayStepsCounter++;
+            if (this.epsilonDecayStepsCounter >= this.epsilonDecaySteps) {
+                this.epsilonDecayStepsCounter = 0;
+                this.epsilon = this.epsilonDecay * this.epsilon;
+            }
+        }
     }
 }

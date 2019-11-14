@@ -165,9 +165,11 @@ public class Operator {
 		return c;
 	}
 
-	public double computeNormalizedDeploymentCost() {
+	public double computeMaxDeploymentCost() {
+		return maxParallelism * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
+	}
 
-		double maxCost = maxParallelism * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
-		return computeDeploymentCost() / maxCost;
+	public double computeNormalizedDeploymentCost() {
+		return computeDeploymentCost() / computeMaxDeploymentCost();
 	}
 }

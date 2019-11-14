@@ -51,12 +51,14 @@ public abstract class ConfigurationKeys {
 	 */
 	public static final String QL_OM_ALPHA_KEY = "edf.ql.om.alpha";
 	public static final String QL_OM_ALPHA_DECAY_KEY = "edf.ql.om.alpha.decay";
+	public static final String QL_OM_ALPHA_DECAY_STEPS_KEY = "edf.ql.om.alpha.decay.steps";
 
 	/**
 	 * Deep-q-learning operator manager params.
 	 */
 	public static final String DQL_OM_GAMMA_KEY = "edf.dql.om.gamma";
 	public static final String DQL_OM_GAMMA_DECAY_KEY = "edf.dql.om.gamma.decay";
+	public static final String DQL_OM_GAMMA_DECAY_STEPS_KEY = "edf.dql.om.gamma.decay.steps";
 	public static final String DQL_OM_ND4j_RANDOM_SEED_KET = "edf.dql.om.nd4j.random.seed";
 
 	/**
@@ -78,6 +80,7 @@ public abstract class ConfigurationKeys {
 	public static final String ASP_EG_EPSILON_KEY = "asp.eg.epsilon";
 	/** epsilon decay param. */
 	public static final String ASP_EG_EPSILON_DECAY_KEY = "asp.eg.epsilon.decay";
+	public static final String ASP_EG_EPSILON_DECAY_STEPS_KEY = "asp.eg.om.epsilon.decay.steps";
 	/** epsilon random action selection seed. */
 	public static final String ASP_EG_RANDOM_SEED_KEY = "asp.eg.epsilon.random.seed";
 }
