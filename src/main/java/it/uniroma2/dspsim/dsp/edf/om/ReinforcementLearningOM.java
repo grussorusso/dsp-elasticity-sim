@@ -21,7 +21,7 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
     private State lastState;
 
     private int maxInputRate;
-    protected int inputRateLevels;
+    private int inputRateLevels;
 
     private double wReconf;
     private double wSLO;
@@ -66,7 +66,6 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
         }
 
         // pick new action
-        //lastChosenAction = pickNewAction(currentState);
         lastChosenAction = selectNewAction(currentState);
 
         // update state
@@ -147,4 +146,40 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
      * ABSTRACT METHODS
      */
     protected abstract void learningStep(State oldState, Action action, State currentState, double reward);
+
+    /**
+     * GETTER
+     */
+
+    public Action getLastChosenAction() {
+        return lastChosenAction;
+    }
+
+    public State getLastState() {
+        return lastState;
+    }
+
+    public int getMaxInputRate() {
+        return maxInputRate;
+    }
+
+    public int getInputRateLevels() {
+        return inputRateLevels;
+    }
+
+    public double getwReconf() {
+        return wReconf;
+    }
+
+    public double getwSLO() {
+        return wSLO;
+    }
+
+    public double getwResources() {
+        return wResources;
+    }
+
+    public ActionSelectionPolicy getActionSelectionPolicy() {
+        return actionSelectionPolicy;
+    }
 }

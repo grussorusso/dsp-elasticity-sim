@@ -8,33 +8,38 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 
-public class DeepQLearningOM extends ReinforcementLearningOM {
+/**
+ * Deep Q Learning variant.
+ * This OM uses V function as objective function.
+ * It computes s' (post-decision state) state from s (current state) and a (valid action) for each valid action a.
+ * Then computes V(s') through its neural network and add c(a) (action cost) to V(s') in order to obtain Q(s,a)
+ * of current state and action couple.
+ * if action.getDelta() != 0 c(a) = reconfiguration's weight else c(a) = 0
+ * To chose best action it selects min Q(s,a) for each a
+ * In learning step phase it subtracts c(a) from Q(s,a) to obtain V(s) as label to train the neural network
+ */
+public class DeepVLearningOM extends ReinforcementLearningOM {
 
     private int numStatesFeatures;
     private int numActions;
+
+    private int outputLayerNodesNumber;
 
     private MultiLayerConfiguration networkConf;
     private MultiLayerNetwork network;
@@ -42,8 +47,7 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
     private double gamma;
     private double gammaDecay;
 
-
-    public DeepQLearningOM(Operator operator) {
+    public DeepVLearningOM(Operator operator) {
         super(operator);
 
         // get configuration instance
@@ -64,6 +68,8 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         this.numStatesFeatures = (this.getTotalStates() / (this.getInputRateLevels() + 1)) + 1;
         this.numActions = this.getTotalActions();
 
+        this.outputLayerNodesNumber = 1;
+
         // build network
         this.networkConf = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
@@ -78,7 +84,7 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                 //.activation(Activation.SOFTMAX)
                                 .nIn(32)
-                                .nOut(numActions)
+                                .nOut(outputLayerNodesNumber)
                                 .build()
                 )
                 .backprop(true)
@@ -98,33 +104,56 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
 
     @Override
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
-        // get old state network output
-        INDArray oldQ = getQ(oldState);
-        // get current state network output
-        INDArray newQ = getQ(currentState);
+        // get post decision state from old state and action
+        State pdState = computePostDecisionState(oldState, action);
 
+        // get V(current state) as min{Q(current state, a) - c(a)} for each action
+        ActionIterator ait = new ActionIterator();
+        double bestV = Double.POSITIVE_INFINITY;
+        Action bestAction = new Action(0, 0, 0);
+        while (ait.hasNext()) {
+            final Action a = ait.next();
+            if (!this.actionValidation(currentState, a))
+                continue;
+            // Q(current state, a)
+            double q = this.evaluateQ(currentState, a);
+            // c(a)
+            //double c = this.computeActionCost(a);
+            double c = 0.0;
+
+            final double diff = q - c;
+
+            if (diff < bestV) {
+                bestV = diff;
+                bestAction = a;
+            }
+        }
+
+        // compute new post decision state from current state and best action from current state
+        State newPDState = computePostDecisionState(currentState, bestAction);
         // update old state output in actionIndex position with new estimation
         // we get min(newQ) because we want to minimize cost
         // reward = cost -> minimize Q equals minimize cost
-        oldQ.put(0, action.getIndex(), reward + gamma * (double) newQ.minNumber());
+        INDArray v = getV(pdState);
+        v.put(0, 0, reward + gamma * getV(newPDState).getDouble(0));
 
-        // get old state input array
-        INDArray trainingInput = buildInput(oldState);
+        // get post decision input array
+        INDArray trainingInput = buildInput(pdState);
 
         // training step
-        this.network.fit(trainingInput, oldQ);
+        this.network.fit(trainingInput, v);
     }
 
-    @Override
-    protected State computeNewState(OMMonitoringInfo monitoringInfo) {
-        State newState = super.computeNewState(monitoringInfo);
+    private State getIndexedState(State state) {
+        if (state.getIndex() != -1)
+            return state;
 
         StateIterator stateIterator = new StateIterator(this.operator,
                 ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
 
         while (stateIterator.hasNext()) {
             State indexedNewState = stateIterator.next();
-            if (newState.equals(indexedNewState)) {
+            if (state.equals(indexedNewState)) {
                 return indexedNewState;
             }
         }
@@ -132,13 +161,44 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         throw new RuntimeException("No possible state generated");
     }
 
-    private INDArray getQ(State state) {
+    private INDArray getV(State state) {
         INDArray input = buildInput(state);
         return this.network.output(input);
     }
 
+    private INDArray getQ(State state, Action action) {
+        State postDecisionState = computePostDecisionState(state, action);
+        INDArray v = getV(postDecisionState);
+        v.put(0, 0, v.getDouble(0) + computeActionCost(action));
+        return v;
+    }
+
+    private double computeActionCost(Action action) {
+        if (action.getDelta() != 0)
+            return this.getwReconf();
+        else
+            return 0;
+    }
+
+    private State computePostDecisionState(State state, Action action) {
+        if (action.getDelta() != 0) {
+            int[] pdK = new int[state.getK().length];
+            for (int i = 0; i < pdK.length; i++) {
+                if (action.getResTypeIndex() == i) {
+                    pdK[i] = state.getK()[i] + action.getDelta();
+                } else {
+                    pdK[i] = state.getK()[i];
+                }
+            }
+            return new State(state.getIndex(), pdK, state.getLambda());
+        } else {
+            return state;
+        }
+    }
+
     private INDArray buildInput(State state) {
-        INDArray input = stateKToOneHotVector(state);
+        State indexedState = getIndexedState(state);
+        INDArray input = stateKToOneHotVector(indexedState);
         // append lambda level normalized value to input array
         input = Nd4j.append(input, 1, lambdaLevelNormalized(state.getLambda(), this.getInputRateLevels()), 1);
         return input;
@@ -188,7 +248,7 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
     @Override
     public double evaluateQ(State s, Action a) {
         // return network Q-function prediction associated to action a in state s
-        INDArray networkOutput = getQ(s);
-        return networkOutput.getDouble(a.getIndex());
+        INDArray networkOutput = getQ(s, a);
+        return networkOutput.getDouble(0);
     }
 }

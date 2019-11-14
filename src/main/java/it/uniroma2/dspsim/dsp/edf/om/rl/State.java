@@ -4,7 +4,7 @@ import java.util.Arrays;
 import java.util.Objects;
 
 public class State extends AbstractState {
-    private int index;
+    private int index = -1;
     private int k[];
     private int lambda;
 
