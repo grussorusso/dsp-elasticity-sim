@@ -10,6 +10,10 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
+import it.uniroma2.dspsim.stats.CountMetric;
+import it.uniroma2.dspsim.stats.MeanMetric;
+import it.uniroma2.dspsim.stats.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.Statistics;
 
 public class RLQLearningOM extends ReinforcementLearningOM {
     private QTable qTable;
@@ -20,6 +24,9 @@ public class RLQLearningOM extends ReinforcementLearningOM {
     private int alphaDecayStepsCounter;
 
     private ActionSelectionPolicy greedyActionSelection;
+
+    private static final String STAT_BELLMAN_ERROR_MEAN = "Mean Bellman Error";
+    private static final String STAT_BELLMAN_ERROR_SUM = "Bellman Error Sum";
 
     public RLQLearningOM(Operator operator) {
         super(operator);
@@ -41,13 +48,38 @@ public class RLQLearningOM extends ReinforcementLearningOM {
     }
 
     @Override
+    protected void registerMetrics(Statistics statistics) {
+        super.registerMetrics(statistics);
+
+        // PER OPERATOR METRICS
+        // total reward
+        statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)));
+        // mean reward
+        statistics.registerMetric(new MeanMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_MEAN),
+                statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
+                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_LEARNING_STEP_COUNTER))));
+        // GLOBAL METRICS
+        // total reward
+        statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_BELLMAN_ERROR_SUM));
+        // mean reward
+        statistics.registerMetricIfNotExists(new MeanMetric(STAT_BELLMAN_ERROR_MEAN, true, 500,
+                statistics.getMetric(STAT_BELLMAN_ERROR_SUM),
+                (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER)));
+    }
+
+    @Override
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
         final double oldQ  = qTable.getQ(oldState, action);
         final double newQ = (1.0 - alpha) * oldQ +
                 alpha * (reward + qTable.getQ(currentState, greedyActionSelection.selectAction(currentState)));
 
         final double bellmanError = Math.abs(newQ - oldQ);
-        System.out.println(bellmanError); // TODO create a statistic
+
+        // update bellman error metrics
+        // per operator
+        Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM), bellmanError);
+        // global
+        Statistics.getInstance().updateMetric(STAT_BELLMAN_ERROR_SUM, bellmanError);
 
         qTable.setQ(oldState, action, newQ);
 

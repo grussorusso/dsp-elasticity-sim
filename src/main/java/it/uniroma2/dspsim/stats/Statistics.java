@@ -1,5 +1,8 @@
 package it.uniroma2.dspsim.stats;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 public class Statistics {
@@ -23,6 +26,12 @@ public class Statistics {
 			throw new MetricExistsException(m.id);
 
 		metrics.put(m.id, m);
+	}
+
+	public void registerMetricIfNotExists(Metric m) {
+		if (!metrics.containsKey(m.id)) {
+			metrics.put(m.id, m);
+		}
 	}
 
 	public void updateMetric (String id, Integer intValue, String... inner_ids) {
@@ -70,7 +79,45 @@ public class Statistics {
 			System.out.println(m.toString());
 	}
 
-	 public class MetricExistsException extends RuntimeException {
+	// TODO improve this method
+	public void dump(double step, Metric m, String filenameNoExtension, String fileExtension) {
+        try {
+            String path = filenameNoExtension + "." + fileExtension;
+            File file = new File(filenameNoExtension + "." + fileExtension);
+            if(!file.exists()) {
+                if (file.createNewFile()) {
+                    if (fileExtension.equals("csv")) {
+                        PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(path), true));
+                        printLineOnFile(printWriter, String.format("%s,%s", "Step", "Value"), true);
+                    }
+                }
+            }
+            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(path), true));
+            printLineOnFile(printWriter, String.format("%f,%s", step, m.dumpValue()), true);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+	private void printLineOnFile(PrintWriter printWriter, String line, boolean closePW) {
+        printWriter.println(line);
+        printWriter.flush();
+        if (closePW)
+            printWriter.close();
+    }
+
+	public void semiLogSampling(long step) {
+		for (Metric m : metrics.values()) {
+			if (m.semiLogSampling) {
+				double log = Math.log10(step);
+				if (step % m.semiLogStep == 0) {
+					dump(step, m, m.id + "_semilog", "csv");
+				}
+			}
+		}
+	}
+
+	public class MetricExistsException extends RuntimeException {
 		public MetricExistsException(String msg) {
 			super(msg);
 		}

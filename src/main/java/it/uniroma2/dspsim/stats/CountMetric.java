@@ -4,8 +4,12 @@ public class CountMetric extends Metric {
 
 	private long count = 0;
 
+	public CountMetric(String id, boolean semiLogSampling, int semiLogStep) {
+		super(id, semiLogSampling, semiLogStep);
+	}
+
 	public CountMetric (String id) {
-		super(id);
+		this(id, false, 0);
 	}
 
 	@Override

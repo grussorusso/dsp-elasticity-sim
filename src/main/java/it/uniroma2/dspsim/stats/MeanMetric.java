@@ -5,14 +5,18 @@ public class MeanMetric extends Metric{
     private Metric sum;
     private Metric count;
 
-    public MeanMetric(String id, Metric sum, CountMetric count) {
-        super(id);
+    public MeanMetric(String id, boolean semiLogSampling, double semiLogStep, Metric sum, Metric count) {
+        super(id, semiLogSampling, semiLogStep);
         if (sum instanceof CountMetric || sum instanceof RealValuedCountMetric) {
             this.sum = sum;
             this.count = count;
         } else {
             throw new IllegalArgumentException("Metric sum must be CountMetric or RealValuedCountMetric");
         }
+    }
+
+    public MeanMetric(String id, Metric sum, CountMetric count) {
+        this(id, false, 0, sum, count);
     }
 
     @Override

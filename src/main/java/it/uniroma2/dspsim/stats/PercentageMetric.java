@@ -5,8 +5,8 @@ public class PercentageMetric extends Metric {
     private Metric sum;
     private Metric total;
 
-    public PercentageMetric(String id, Metric sum, Metric total) {
-        super(id);
+    public PercentageMetric(String id, boolean semiLogSampling, int semiLogStep,Metric sum, Metric total) {
+        super(id, semiLogSampling, semiLogStep);
         if ((sum instanceof CountMetric && total instanceof CountMetric) ||
                 (sum instanceof RealValuedCountMetric && total instanceof RealValuedCountMetric)) {
             this.sum = sum;
@@ -14,6 +14,10 @@ public class PercentageMetric extends Metric {
         } else {
             throw new IllegalArgumentException("Metric sum and Metric total must be both CountMetric or RealValuedMetric");
         }
+    }
+
+    public PercentageMetric(String id, Metric sum, Metric total) {
+        this(id, false, 0, sum, total);
     }
 
     @Override

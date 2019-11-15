@@ -12,6 +12,10 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelection
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.stats.CountMetric;
+import it.uniroma2.dspsim.stats.MeanMetric;
+import it.uniroma2.dspsim.stats.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.Statistics;
 
 import java.util.HashMap;
 
@@ -28,6 +32,10 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
     private double wResources;
 
     private ActionSelectionPolicy actionSelectionPolicy;
+
+    private static final String STAT_REWARD_MEAN = "Mean Reward";
+    private static final String STAT_REWARD_SUM = "Reward Sum";
+    protected static final String STAT_LEARNING_STEP_COUNTER = "Learning Step Counter";
 
     protected ReinforcementLearningOM(Operator operator) {
         super(operator);
@@ -50,6 +58,36 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
 
         this.actionSelectionPolicy = ActionSelectionPolicyFactory
                 .getPolicy(aspType,this);
+
+        // register statistics
+        this.registerMetrics(Statistics.getInstance());
+    }
+
+    protected void registerMetrics(Statistics statistics) {
+        // PER OPERATOR METRICS
+        // learning step counter
+        statistics.registerMetric(new CountMetric(getOperatorMetricName(STAT_LEARNING_STEP_COUNTER)));
+        // total reward
+        statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_REWARD_SUM)));
+        // mean reward
+        statistics.registerMetric(new MeanMetric(getOperatorMetricName(STAT_REWARD_MEAN),
+                statistics.getMetric(getOperatorMetricName(STAT_REWARD_SUM)),
+                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_LEARNING_STEP_COUNTER))));
+
+        //GLOBAL METRICS
+        // learning step counter
+        statistics.registerMetricIfNotExists(new CountMetric(STAT_LEARNING_STEP_COUNTER));
+        // total reward
+        statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_REWARD_SUM));
+        // mean reward
+        statistics.registerMetricIfNotExists(new MeanMetric(STAT_REWARD_MEAN, true, 500,
+                statistics.getMetric(STAT_REWARD_SUM),
+                (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER)));
+
+    }
+
+    protected String getOperatorMetricName(String metricName) {
+        return metricName + "_" + operator.getName();
     }
 
     @Override
@@ -63,6 +101,11 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
             double reward = computeCost(lastChosenAction, currentState, monitoringInfo.getInputRate());
             // learning step
             learningStep(lastState, lastChosenAction, currentState, reward);
+            // update mean reward statistic
+            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_LEARNING_STEP_COUNTER), 1);
+            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_SUM), reward);
+            Statistics.getInstance().updateMetric(STAT_LEARNING_STEP_COUNTER, 1);
+            Statistics.getInstance().updateMetric(STAT_REWARD_SUM, reward);
         }
 
         // pick new action

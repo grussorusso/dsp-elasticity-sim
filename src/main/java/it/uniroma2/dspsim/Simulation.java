@@ -40,8 +40,6 @@ public class Simulation {
 	private InputRateFileReader inputRateFileReader;
 	private ApplicationManager applicationManager;
 
-	private Statistics statistics = Statistics.getInstance();
-
 	private Logger logger = LoggerFactory.getLogger(Simulation.class);
 
 	public Simulation (InputRateFileReader inputRateFileReader, ApplicationManager applicationManager) {
@@ -57,6 +55,8 @@ public class Simulation {
 	}
 
 	private void registerMetrics () {
+		Statistics statistics = Statistics.getInstance();
+
 		//SIMPLE METRICS
 		// steps counter metric
 		statistics.registerMetric(new CountMetric(STAT_STEPS_COUNTER));
@@ -98,13 +98,13 @@ public class Simulation {
 
 			double responseTime = app.endToEndLatency(inputRate);
 			if (responseTime > LATENCY_SLO) {
-				statistics.updateMetric(STAT_LATENCY_VIOLATIONS, 1);
+				Statistics.getInstance().updateMetric(STAT_LATENCY_VIOLATIONS, 1);
 			}
 
 			// update used resources cost metric
-			statistics.updateMetric(STAT_RESOURCES_COST_USED_SUM, app.computeDeploymentCost());
+			Statistics.getInstance().updateMetric(STAT_RESOURCES_COST_USED_SUM, app.computeDeploymentCost());
 			// update max resources cost metric
-			statistics.updateMetric(STAT_RESOURCES_COST_MAX_SUM, app.computeMaxDeploymentCost());
+			Statistics.getInstance().updateMetric(STAT_RESOURCES_COST_MAX_SUM, app.computeMaxDeploymentCost());
 
 			/* Reconfiguration */
 			monitoringInfo.setInputRate(inputRate);
@@ -115,7 +115,10 @@ public class Simulation {
 			//System.out.println(inputRate + "\t" + responseTime);
 
 			// update steps counter
-			statistics.updateMetric(STAT_STEPS_COUNTER, 1);
+			Statistics.getInstance().updateMetric(STAT_STEPS_COUNTER, 1);
+
+			// semi logarithmic metrics sampling
+			Statistics.getInstance().semiLogSampling(time);
 
 			time++;
 		}
@@ -135,7 +138,7 @@ public class Simulation {
 		}
 
 		if (appReconfigured)
-			statistics.updateMetric(STAT_RECONFIGURATIONS, 1);
+			Statistics.getInstance().updateMetric(STAT_RECONFIGURATIONS, 1);
 
 		return appReconfigured;
 	}
