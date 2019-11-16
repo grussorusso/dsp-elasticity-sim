@@ -1,4 +1,4 @@
-package it.uniroma2.dspsim.stats;
+package it.uniroma2.dspsim.stats.metrics;
 
 public class PercentageMetric extends Metric {
 
@@ -43,5 +43,17 @@ public class PercentageMetric extends Metric {
     @Override
     public Number getValue() {
         return this.sum.getValue().doubleValue() / this.total.getValue().doubleValue();
+    }
+
+    /**
+     * GETTER
+     */
+
+    public Metric getSum() {
+        return sum;
+    }
+
+    public Metric getTotal() {
+        return total;
     }
 }

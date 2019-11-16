@@ -1,8 +1,8 @@
 package it.uniroma2.dspsim.stats;
 
+import it.uniroma2.dspsim.stats.metrics.Metric;
+
 import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashMap;
 
 public class Statistics {
@@ -22,15 +22,15 @@ public class Statistics {
 	private HashMap<String, Metric> metrics = new HashMap<>();
 
 	public void registerMetric (Metric m) throws MetricExistsException {
-		if (metrics.containsKey(m.id))
-			throw new MetricExistsException(m.id);
+		if (metrics.containsKey(m.getId()))
+			throw new MetricExistsException(m.getId());
 
-		metrics.put(m.id, m);
+		metrics.put(m.getId(), m);
 	}
 
 	public void registerMetricIfNotExists(Metric m) {
-		if (!metrics.containsKey(m.id)) {
-			metrics.put(m.id, m);
+		if (!metrics.containsKey(m.getId())) {
+			metrics.put(m.getId(), m);
 		}
 	}
 
@@ -46,6 +46,8 @@ public class Statistics {
 	/**
 	 * Update metric calling metric.update(value) of metric with id = inner_ids.length - 1
 	 * With this method is possible to update metric in a metric's three
+	 * If inner_ids is not passed to method it will be ignored,
+	 * so metric with id 'id' will be updated with 'value'.
 	 * WARNING : you have to know all metrics id path
 	 * @param id : initial metric id
 	 * @param value : updating value
@@ -108,10 +110,10 @@ public class Statistics {
 
 	public void semiLogSampling(long step) {
 		for (Metric m : metrics.values()) {
-			if (m.semiLogSampling) {
+			if (m.isSemiLogSampling()) {
 				double log = Math.log10(step);
-				if (step % m.semiLogStep == 0) {
-					dump(step, m, m.id + "_semilog", "csv");
+				if (step % m.getSemiLogStep() == 0) {
+					dump(step, m, m.getId() + "_semilog", "csv");
 				}
 			}
 		}

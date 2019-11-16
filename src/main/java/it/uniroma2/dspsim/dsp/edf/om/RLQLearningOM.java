@@ -10,9 +10,9 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
-import it.uniroma2.dspsim.stats.CountMetric;
-import it.uniroma2.dspsim.stats.MeanMetric;
-import it.uniroma2.dspsim.stats.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.metrics.CountMetric;
+import it.uniroma2.dspsim.stats.metrics.MeanMetric;
+import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
 
 public class RLQLearningOM extends ReinforcementLearningOM {
@@ -62,7 +62,7 @@ public class RLQLearningOM extends ReinforcementLearningOM {
         // total reward
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_BELLMAN_ERROR_SUM));
         // mean reward
-        statistics.registerMetricIfNotExists(new MeanMetric(STAT_BELLMAN_ERROR_MEAN, true, 500,
+        statistics.registerMetricIfNotExists(new MeanMetric(STAT_BELLMAN_ERROR_MEAN, true, 60,
                 statistics.getMetric(STAT_BELLMAN_ERROR_SUM),
                 (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER)));
     }

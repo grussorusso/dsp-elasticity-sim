@@ -1,4 +1,4 @@
-package it.uniroma2.dspsim.stats;
+package it.uniroma2.dspsim.stats.metrics;
 
 public class RealValuedCountMetric extends Metric {
 

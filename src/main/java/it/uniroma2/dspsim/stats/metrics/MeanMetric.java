@@ -1,6 +1,6 @@
-package it.uniroma2.dspsim.stats;
+package it.uniroma2.dspsim.stats.metrics;
 
-public class MeanMetric extends Metric{
+public class MeanMetric extends Metric {
 
     private Metric sum;
     private Metric count;
@@ -45,5 +45,17 @@ public class MeanMetric extends Metric{
             return (double) this.sum.getValue() / this.count.getValue().doubleValue();
         else
             return (long) this.sum.getValue() / (long) this.count.getValue();
+    }
+
+    /**
+     * GETTER
+     */
+
+    public Metric getSum() {
+        return sum;
+    }
+
+    public Metric getCount() {
+        return count;
     }
 }

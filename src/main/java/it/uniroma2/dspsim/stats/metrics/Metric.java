@@ -1,4 +1,4 @@
-package it.uniroma2.dspsim.stats;
+package it.uniroma2.dspsim.stats.metrics;
 
 public abstract class Metric {
 
@@ -25,5 +25,21 @@ public abstract class Metric {
 	@Override
 	public String toString() {
 		return String.format("%s = %s", id, dumpValue());
+	}
+
+	/**
+	 * GETTER
+	 */
+
+	public String getId() {
+		return id;
+	}
+
+	public boolean isSemiLogSampling() {
+		return semiLogSampling;
+	}
+
+	public double getSemiLogStep() {
+		return semiLogStep;
 	}
 }

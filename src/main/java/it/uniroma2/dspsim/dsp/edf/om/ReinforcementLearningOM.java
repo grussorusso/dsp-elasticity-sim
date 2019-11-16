@@ -12,12 +12,10 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelection
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
-import it.uniroma2.dspsim.stats.CountMetric;
-import it.uniroma2.dspsim.stats.MeanMetric;
-import it.uniroma2.dspsim.stats.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.metrics.CountMetric;
+import it.uniroma2.dspsim.stats.metrics.MeanMetric;
+import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
-
-import java.util.HashMap;
 
 public abstract class ReinforcementLearningOM extends OperatorManager implements ActionSelectionPolicyCallback {
 
@@ -80,7 +78,7 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
         // total reward
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_REWARD_SUM));
         // mean reward
-        statistics.registerMetricIfNotExists(new MeanMetric(STAT_REWARD_MEAN, true, 500,
+        statistics.registerMetricIfNotExists(new MeanMetric(STAT_REWARD_MEAN, true, 60,
                 statistics.getMetric(STAT_REWARD_SUM),
                 (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER)));
 

@@ -9,6 +9,10 @@ import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.*;
+import it.uniroma2.dspsim.stats.metrics.CountMetric;
+import it.uniroma2.dspsim.stats.metrics.MeanMetric;
+import it.uniroma2.dspsim.stats.metrics.PercentageMetric;
+import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,10 +158,10 @@ public class Simulation {
 
 
 		try {
-			final String inputFile = "/home/gabriele/profile.dat";
+			final String inputFile = "/Users/simone/Documents/Tesi/profile.dat";
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
-			Application app = ApplicationBuilder.defaultApplication();
+			Application app = ApplicationBuilder.buildForkJoinApplication();
 			ApplicationManager am = new ApplicationManager(app);
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);

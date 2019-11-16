@@ -1,11 +1,8 @@
 package stats;
 
-import it.uniroma2.dspsim.dsp.Application;
-import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.stats.CountMetric;
-import it.uniroma2.dspsim.stats.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.metrics.CountMetric;
+import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
-import org.junit.Before;
 import org.junit.Test;
 
 public class TestStatistics {
