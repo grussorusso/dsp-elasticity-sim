@@ -14,6 +14,8 @@ import it.uniroma2.dspsim.stats.metrics.CountMetric;
 import it.uniroma2.dspsim.stats.metrics.MeanMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.stats.samplers.StepSampler;
+import it.uniroma2.dspsim.stats.samplers.TimeLogSampler;
 
 public class RLQLearningOM extends ReinforcementLearningOM {
     private QTable qTable;
@@ -27,6 +29,9 @@ public class RLQLearningOM extends ReinforcementLearningOM {
 
     private static final String STAT_BELLMAN_ERROR_MEAN = "Mean Bellman Error";
     private static final String STAT_BELLMAN_ERROR_SUM = "Bellman Error Sum";
+
+    private static final String SEMI_LOG_SAMPLER_ID = "semi-log-sampler";
+    private static final String STEP_SAMPLER_ID = "step-sampler";
 
     public RLQLearningOM(Operator operator) {
         super(operator);
@@ -52,19 +57,26 @@ public class RLQLearningOM extends ReinforcementLearningOM {
         super.registerMetrics(statistics);
 
         // PER OPERATOR METRICS
-        // total reward
+        // total bellman error
         statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)));
-        // mean reward
+        // mean bellman error
         statistics.registerMetric(new MeanMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_MEAN),
                 statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
                 (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_LEARNING_STEP_COUNTER))));
         // GLOBAL METRICS
-        // total reward
+        // total bellman error
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_BELLMAN_ERROR_SUM));
-        // mean reward
-        statistics.registerMetricIfNotExists(new MeanMetric(STAT_BELLMAN_ERROR_MEAN, true, 60,
+        // mean bellman error
+        MeanMetric meanBellmanErrorMetric = new MeanMetric(STAT_BELLMAN_ERROR_MEAN,
                 statistics.getMetric(STAT_BELLMAN_ERROR_SUM),
-                (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER)));
+                (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER));
+        // add semi-logarithmic sampling to mean bellman error metric
+        TimeLogSampler semiLogSampler = new TimeLogSampler(SEMI_LOG_SAMPLER_ID, 60, 10);
+        meanBellmanErrorMetric.addSampler(semiLogSampler);
+        // add step sampling to mean bellman error metric
+        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 5000);
+        meanBellmanErrorMetric.addSampler(stepSampler);
+        statistics.registerMetricIfNotExists(meanBellmanErrorMetric);
     }
 
     @Override

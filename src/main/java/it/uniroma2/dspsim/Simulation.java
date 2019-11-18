@@ -121,8 +121,8 @@ public class Simulation {
 			// update steps counter
 			Statistics.getInstance().updateMetric(STAT_STEPS_COUNTER, 1);
 
-			// semi logarithmic metrics sampling
-			Statistics.getInstance().semiLogSampling(time);
+			// metrics sampling
+			Statistics.getInstance().sampleAll(time);
 
 			time++;
 		}
@@ -158,7 +158,7 @@ public class Simulation {
 
 
 		try {
-			final String inputFile = "/home/gabriele/profile.dat";
+			final String inputFile = "/Users/simone/Documents/Tesi/profile.dat";
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
 			Application app = ApplicationBuilder.defaultApplication();

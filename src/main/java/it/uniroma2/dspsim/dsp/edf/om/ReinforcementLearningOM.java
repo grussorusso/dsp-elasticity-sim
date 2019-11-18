@@ -16,6 +16,8 @@ import it.uniroma2.dspsim.stats.metrics.CountMetric;
 import it.uniroma2.dspsim.stats.metrics.MeanMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.stats.samplers.StepSampler;
+import it.uniroma2.dspsim.stats.samplers.TimeLogSampler;
 
 public abstract class ReinforcementLearningOM extends OperatorManager implements ActionSelectionPolicyCallback {
 
@@ -34,6 +36,9 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
     private static final String STAT_REWARD_MEAN = "Mean Reward";
     private static final String STAT_REWARD_SUM = "Reward Sum";
     protected static final String STAT_LEARNING_STEP_COUNTER = "Learning Step Counter";
+
+    private static final String SEMI_LOG_SAMPLER_ID = "semi-log-sampler";
+    private static final String STEP_SAMPLER_ID = "step-sampler";
 
     protected ReinforcementLearningOM(Operator operator) {
         super(operator);
@@ -78,10 +83,15 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
         // total reward
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_REWARD_SUM));
         // mean reward
-        statistics.registerMetricIfNotExists(new MeanMetric(STAT_REWARD_MEAN, true, 60,
-                statistics.getMetric(STAT_REWARD_SUM),
-                (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER)));
-
+        MeanMetric meanRewardMetric = new MeanMetric(STAT_REWARD_MEAN, statistics.getMetric(STAT_REWARD_SUM),
+                (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER));
+        // add semi-logarithmic sampling to mean reward metric
+        TimeLogSampler semiLogSampler = new TimeLogSampler(SEMI_LOG_SAMPLER_ID, 60, 10);
+        meanRewardMetric.addSampler(semiLogSampler);
+        // add step sampling to mean reward metric
+        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 5000);
+        meanRewardMetric.addSampler(stepSampler);
+        statistics.registerMetricIfNotExists(meanRewardMetric);
     }
 
     protected String getOperatorMetricName(String metricName) {

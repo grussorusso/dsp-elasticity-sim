@@ -81,41 +81,11 @@ public class Statistics {
 			System.out.println(m.toString());
 	}
 
-	// TODO improve this method
-	public void dump(double step, Metric m, String filenameNoExtension, String fileExtension) {
-        try {
-            String path = filenameNoExtension + "." + fileExtension;
-            File file = new File(filenameNoExtension + "." + fileExtension);
-            if(!file.exists()) {
-                if (file.createNewFile()) {
-                    if (fileExtension.equals("csv")) {
-                        PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(path), true));
-                        printLineOnFile(printWriter, String.format("%s,%s", "Step", "Value"), true);
-                    }
-                }
-            }
-            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(path), true));
-            printLineOnFile(printWriter, String.format("%f,%s", step, m.dumpValue()), true);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-	private void printLineOnFile(PrintWriter printWriter, String line, boolean closePW) {
-        printWriter.println(line);
-        printWriter.flush();
-        if (closePW)
-            printWriter.close();
-    }
-
-	public void semiLogSampling(long step) {
+    // get sample of all metrics in hash map that
+	// have been configured to be sampled during simulation
+	public void sampleAll(long simulationTime) {
 		for (Metric m : metrics.values()) {
-			if (m.isSemiLogSampling()) {
-				double log = Math.log10(step);
-				if (step % m.getSemiLogStep() == 0) {
-					dump(step, m, m.getId() + "_semilog", "csv");
-				}
-			}
+			m.sample(simulationTime);
 		}
 	}
 
