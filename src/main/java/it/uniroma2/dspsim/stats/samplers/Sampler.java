@@ -1,46 +1,36 @@
 package it.uniroma2.dspsim.stats.samplers;
 
 import it.uniroma2.dspsim.stats.metrics.Metric;
+import it.uniroma2.dspsim.stats.output.CSVMetricOutputWriter;
+import it.uniroma2.dspsim.stats.output.ConsoleMetricOutputWriter;
+import it.uniroma2.dspsim.stats.output.MetricOutputWriter;
 import it.uniroma2.dspsim.utils.KeyValueStorage;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.util.List;
 
 public abstract class Sampler {
     private String id;
 
     private KeyValueStorage<String, MetricSampleInfo> metricSampleInfo;
 
+    private KeyValueStorage<String, MetricOutputWriter> writers;
+
     public Sampler(String id) {
         this.id = id;
         this.metricSampleInfo = new KeyValueStorage<>();
+
+        //TODO configure it
+        this.writers = new KeyValueStorage<>();
+        this.writers.addKeyValue("console", new ConsoleMetricOutputWriter());
+        this.writers.addKeyValue("csv", new CSVMetricOutputWriter(new String[]{"Day", "Value"}));
     }
 
-    // TODO improve this method
     protected void dump(double step, Metric m) {
-        try {
-            String filename = this.metricSampleInfo.getValue(m.getId()).getFilename();
-            File file = new File(filename);
-            if(!file.exists()) {
-                if (file.createNewFile()) {
-                    PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
-                    printLineOnFile(printWriter, String.format("%s,%s", "Days", "Value"), true);
-                }
+        for (Object writer : this.writers.getAll()) {
+            if (writer instanceof MetricOutputWriter) {
+                ((MetricOutputWriter) writer).write(m, this.metricSampleInfo.getValue(m.getId()), step, m.dumpValue());
             }
-            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
-            printLineOnFile(printWriter, String.format("%f,%s", step, m.dumpValue()), true);
-        } catch (IOException e) {
-            e.printStackTrace();
         }
-    }
-
-    private void printLineOnFile(PrintWriter printWriter, String line, boolean closePW) {
-        printWriter.println(line);
-        printWriter.flush();
-        if (closePW)
-            printWriter.close();
     }
 
     public abstract void addMetricSampleInfo(Metric metric);

@@ -3,9 +3,9 @@ package it.uniroma2.dspsim.stats.metrics;
 public class MeanMetric extends Metric {
 
     private Metric sum;
-    private Metric count;
+    private CountMetric count;
 
-    public MeanMetric(String id, Metric sum, Metric count) {
+    public MeanMetric(String id, Metric sum, CountMetric count) {
         super(id);
         if (sum instanceof CountMetric || sum instanceof RealValuedCountMetric) {
             this.sum = sum;
@@ -51,7 +51,7 @@ public class MeanMetric extends Metric {
         return sum;
     }
 
-    public Metric getCount() {
+    public CountMetric getCount() {
         return count;
     }
 }
