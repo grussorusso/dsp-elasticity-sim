@@ -7,6 +7,7 @@ import it.uniroma2.dspsim.infrastructure.NodeType;
 import scala.reflect.macros.Infrastructure;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 public class GeneralResourcesState extends State {
 
@@ -26,9 +27,14 @@ public class GeneralResourcesState extends State {
         this.maxCPUSpeedupInUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[maxNodeInUse(k)].getCpuSpeedup();
         this.minCPUSpeedupInUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[minNodeInUse(k)].getCpuSpeedup();
 
-        this.normalizedCPUSpeedup = computeSpeedupInUse(k) / computeMaxSpeedup(operator);
+        this.normalizedCPUSpeedup = computeCPUSpeedupInUse(k) / computeMaxCPUSpeedup(operator);
     }
 
+    /**
+     * Computes biggest node in use by operator at the moment
+     * @param k usage vector
+     * @return int
+     */
     private int maxNodeInUse(int[] k) {
         int index = 0;
         for (int i = 0; i < k.length; i++) {
@@ -38,6 +44,11 @@ public class GeneralResourcesState extends State {
         return index;
     }
 
+    /**
+     * Computes smallest node in use by operator at the moment
+     * @param k usage vector
+     * @return int
+     */
     private int minNodeInUse(int[] k) {
         int index;
         for (index = 0; index < k.length; index++) {
@@ -47,7 +58,12 @@ public class GeneralResourcesState extends State {
         return k.length - 1;
     }
 
-    private double computeSpeedupInUse(int[] k) {
+    /**
+     * Computes CPU speedup sum in use at the moment
+     * @param k usage vector
+     * @return double
+     */
+    private double computeCPUSpeedupInUse(int[] k) {
         double speedup = 0.0;
         for (int i = 0; i < k.length; i++) {
             speedup += ComputingInfrastructure.getInfrastructure().getNodeTypes()[i].getCpuSpeedup() * k[i];
@@ -55,7 +71,12 @@ public class GeneralResourcesState extends State {
         return speedup;
     }
 
-    private double computeMaxSpeedup(Operator o) {
+    /**
+     * Compute max CPU speedup that can be used by operator multiplying max CPU's speedup by max operator's parallelism
+     * @param o Operator
+     * @return double
+     */
+    private double computeMaxCPUSpeedup(Operator o) {
         double max = 0.0;
 
         for (NodeType nodeType : ComputingInfrastructure.getInfrastructure().getNodeTypes()) {
@@ -64,5 +85,22 @@ public class GeneralResourcesState extends State {
         }
 
         return max * o.getMaxParallelism();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof GeneralResourcesState)) return false;
+        if (!super.equals(o)) return false;
+        GeneralResourcesState that = (GeneralResourcesState) o;
+        return lambdaLevel == that.lambdaLevel &&
+                Double.compare(that.normalizedCPUSpeedup, normalizedCPUSpeedup) == 0 &&
+                Double.compare(that.maxCPUSpeedupInUse, maxCPUSpeedupInUse) == 0 &&
+                Double.compare(that.minCPUSpeedupInUse, minCPUSpeedupInUse) == 0;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), lambdaLevel, normalizedCPUSpeedup, maxCPUSpeedupInUse, minCPUSpeedupInUse);
     }
 }

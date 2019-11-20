@@ -1,11 +1,12 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Table;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.om.rl.AbstractAction;
 import it.uniroma2.dspsim.dsp.edf.om.rl.AbstractState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
-import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 
@@ -15,6 +16,37 @@ import java.util.Iterator;
 import java.util.Random;
 
 public class QLearningOM extends OperatorManager {
+
+	public interface QTable {
+
+		double getQ (AbstractState s, AbstractAction a);
+		void setQ (AbstractState s, AbstractAction a, double value);
+
+	}
+
+	public class GuavaBasedQTable implements QTable {
+
+		private Table<AbstractState, AbstractAction, Double> table = HashBasedTable.create();
+		private double initializationValue;
+
+		public GuavaBasedQTable(double initializationValue) {
+			this.initializationValue = initializationValue;
+		}
+
+		@Override
+		public double getQ(AbstractState s, AbstractAction a) {
+			Double q = table.get(s,a);
+			if (q == null)
+				return initializationValue; // TODO put() before returning?
+
+			return q;
+		}
+
+		@Override
+		public void setQ(AbstractState s, AbstractAction a, double value) {
+			table.put(s,a,value);
+		}
+	}
 
 	public class State extends AbstractState {
 		private int k[];

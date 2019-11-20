@@ -4,7 +4,9 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
@@ -127,6 +129,8 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
 
     @Override
     protected State computeNewState(OMMonitoringInfo monitoringInfo) {
+        // TODO
+        /*
         State newState = super.computeNewState(monitoringInfo);
 
         StateIterator stateIterator = new StateIterator(this.operator,
@@ -140,6 +144,8 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         }
 
         throw new RuntimeException("No possible state generated");
+        */
+        return super.computeNewState(monitoringInfo);
     }
 
     private INDArray getQ(State state) {
@@ -150,7 +156,9 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
     private INDArray buildInput(State state) {
         INDArray input = stateKToOneHotVector(state);
         // append lambda level normalized value to input array
-        input = Nd4j.append(input, 1, lambdaLevelNormalized(state.getLambda(), this.getInputRateLevels()), 1);
+        // TODO
+        // input = Nd4j.append(input, 1, lambdaLevelNormalized(state.getLambda(), this.getInputRateLevels()), 1);
+        input = Nd4j.append(input, 1, lambdaLevelNormalized(10, this.getInputRateLevels()), 1);
         return input;
     }
 
@@ -162,7 +170,9 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         // and proceed with (0, 1, 0, ... , 0)
         // to represent (2, 0, 0) state and so on until
         // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
-        oneHotVector.put(0, Math.floorDiv(state.getIndex(), this.getInputRateLevels() + 1), 1);
+        // TODO
+        // oneHotVector.put(0, Math.floorDiv(state.getIndex(), this.getInputRateLevels() + 1), 1);
+        oneHotVector.put(0, Math.floorDiv(0, this.getInputRateLevels() + 1), 1);
         return oneHotVector;
     }
 

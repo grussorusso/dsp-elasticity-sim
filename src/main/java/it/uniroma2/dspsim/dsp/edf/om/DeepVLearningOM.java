@@ -4,7 +4,9 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
@@ -154,6 +156,8 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
     }
 
     private State getIndexedState(State state) {
+        // TODO
+        /*
         if (state.getIndex() != -1)
             return state;
 
@@ -168,6 +172,8 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
         }
 
         throw new RuntimeException("No possible state generated");
+        */
+        return state;
     }
 
     private INDArray getV(State state) {
@@ -191,15 +197,17 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
 
     private State computePostDecisionState(State state, Action action) {
         if (action.getDelta() != 0) {
-            int[] pdK = new int[state.getK().length];
+            int[] pdK = new int[state.getActualDeployment().length];
             for (int i = 0; i < pdK.length; i++) {
                 if (action.getResTypeIndex() == i) {
-                    pdK[i] = state.getK()[i] + action.getDelta();
+                    pdK[i] = state.getActualDeployment()[i] + action.getDelta();
                 } else {
-                    pdK[i] = state.getK()[i];
+                    pdK[i] = state.getActualDeployment()[i];
                 }
             }
-            return new State(state.getIndex(), pdK, state.getLambda());
+            // TODO
+            //return new State(state.getIndex(), pdK, state.getLambda());
+            return StateFactory.createState(StateType.K_LAMBDA, pdK, 10, operator);
         } else {
             return state;
         }
@@ -209,7 +217,9 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
         State indexedState = getIndexedState(state);
         INDArray input = stateKToOneHotVector(indexedState);
         // append lambda level normalized value to input array
-        input = Nd4j.append(input, 1, lambdaLevelNormalized(state.getLambda(), this.getInputRateLevels()), 1);
+        // TODO
+        // input = Nd4j.append(input, 1, lambdaLevelNormalized(state.getLambda(), this.getInputRateLevels()), 1);
+        input = Nd4j.append(input, 1, lambdaLevelNormalized(10, this.getInputRateLevels()), 1);
         return input;
     }
 
@@ -221,7 +231,9 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
         // and proceed with (0, 1, 0, ... , 0)
         // to represent (2, 0, 0) state and so on until
         // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
-        oneHotVector.put(0, Math.floorDiv(state.getIndex(), this.getInputRateLevels() + 1), 1);
+        // TODO
+        //oneHotVector.put(0, Math.floorDiv(state.getIndex(), this.getInputRateLevels() + 1), 1);
+        oneHotVector.put(0, Math.floorDiv(0, this.getInputRateLevels() + 1), 1);
         return oneHotVector;
     }
 

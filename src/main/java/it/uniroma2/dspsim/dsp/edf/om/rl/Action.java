@@ -1,7 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl;
 
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 import java.util.Objects;
 
@@ -20,7 +20,7 @@ public class Action extends AbstractAction {
         if (delta == 0)
             return true;
         if (delta < 0) {
-            if (s.getK()[resTypeIndex] + delta < 0)
+            if (s.getActualDeployment()[resTypeIndex] + delta < 0)
                 return false;
         }
 

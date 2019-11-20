@@ -5,11 +5,13 @@ import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
@@ -156,7 +158,8 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
         // get input rate level
         final int inputRateLevel = discretizeInputRate(maxInputRate, inputRateLevels, monitoringInfo.getInputRate());
         // build new state
-        return new State(deployment, inputRateLevel);
+        // TODO configure state type
+        return StateFactory.createState(StateType.K_LAMBDA, deployment, inputRateLevel, operator);
     }
 
     private int discretizeInputRate(double max, int levels, double inputRate)

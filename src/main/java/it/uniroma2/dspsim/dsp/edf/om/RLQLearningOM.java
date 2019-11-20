@@ -6,10 +6,10 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
-import it.uniroma2.dspsim.dsp.edf.om.rl.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
 import it.uniroma2.dspsim.stats.metrics.MeanMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
@@ -63,6 +63,7 @@ public class RLQLearningOM extends ReinforcementLearningOM {
         statistics.registerMetric(new MeanMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_MEAN),
                 statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
                 (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_LEARNING_STEP_COUNTER))));
+
         // GLOBAL METRICS
         // total bellman error
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_BELLMAN_ERROR_SUM));
@@ -87,15 +88,15 @@ public class RLQLearningOM extends ReinforcementLearningOM {
 
         final double bellmanError = Math.abs(newQ - oldQ);
 
+        qTable.setQ(oldState, action, newQ);
+
+        decrementAlpha();
+
         // update bellman error metrics
         // per operator
         Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM), bellmanError);
         // global
         Statistics.getInstance().updateMetric(STAT_BELLMAN_ERROR_SUM, bellmanError);
-
-        qTable.setQ(oldState, action, newQ);
-
-        decrementAlpha();
     }
 
     private void decrementAlpha() {
