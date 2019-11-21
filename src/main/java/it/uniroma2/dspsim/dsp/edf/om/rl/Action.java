@@ -16,17 +16,6 @@ public class Action extends AbstractAction {
         this.resTypeIndex = resTypeIndex;
     }
 
-    public boolean isValidInState (State s, Operator o) {
-        if (delta == 0)
-            return true;
-        if (delta < 0) {
-            if (s.getActualDeployment()[resTypeIndex] + delta < 0)
-                return false;
-        }
-
-        return s.overallParallelism() + delta >= 1 && s.overallParallelism() + delta <= o.getMaxParallelism();
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

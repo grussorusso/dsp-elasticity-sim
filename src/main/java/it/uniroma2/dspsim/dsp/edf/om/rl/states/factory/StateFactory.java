@@ -12,14 +12,14 @@ public class StateFactory {
     // avoid initialization
     private StateFactory() {}
 
-    public static State createState(StateType stateType, int[] k, int lambda, Operator operator) {
+    public static State createState(StateType stateType, int index, int[] k, int lambda, int maxLambda, Operator operator) {
         switch (stateType) {
             case REDUCED:
-                return new ReducedState(k, lambda, operator);
+                return new ReducedState(index, k, lambda, maxLambda, operator);
             case K_LAMBDA:
-                return new KLambdaState(k, lambda, operator);
+                return new KLambdaState(index, k, lambda, maxLambda, operator);
             case GENERAL_RESOURCES:
-                return new GeneralResourcesState(k, lambda, operator);
+                return new GeneralResourcesState(index, k, lambda, maxLambda, operator);
             default:
                 throw new IllegalArgumentException(
                         String.format("Type %s not known", stateType.toString())

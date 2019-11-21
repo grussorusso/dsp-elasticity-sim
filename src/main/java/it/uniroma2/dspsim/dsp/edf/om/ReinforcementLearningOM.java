@@ -35,6 +35,8 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
 
     private ActionSelectionPolicy actionSelectionPolicy;
 
+    private StateType stateRepresentation;
+
     private static final String STAT_REWARD_MEAN = "Mean Reward";
     private static final String STAT_REWARD_SUM = "Reward Sum";
     protected static final String STAT_LEARNING_STEP_COUNTER = "Learning Step Counter";
@@ -63,6 +65,10 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
 
         this.actionSelectionPolicy = ActionSelectionPolicyFactory
                 .getPolicy(aspType,this);
+
+        // get state representation
+        // TODO from configurations
+        this.stateRepresentation = StateType.GENERAL_RESOURCES;
 
         // register statistics
         this.registerMetrics(Statistics.getInstance());
@@ -158,8 +164,7 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
         // get input rate level
         final int inputRateLevel = discretizeInputRate(maxInputRate, inputRateLevels, monitoringInfo.getInputRate());
         // build new state
-        // TODO configure state type
-        return StateFactory.createState(StateType.K_LAMBDA, deployment, inputRateLevel, operator);
+        return StateFactory.createState(stateRepresentation, -1, deployment, inputRateLevel, this.inputRateLevels, operator);
     }
 
     private int discretizeInputRate(double max, int levels, double inputRate)
@@ -193,7 +198,7 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
 
     @Override
     public boolean actionValidation(State s, Action a) {
-        return a.isValidInState(s, this.operator);
+        return s.validateAction(a);
     }
 
     /**
@@ -235,5 +240,9 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
 
     public ActionSelectionPolicy getActionSelectionPolicy() {
         return actionSelectionPolicy;
+    }
+
+    public StateType getStateRepresentation() {
+        return stateRepresentation;
     }
 }

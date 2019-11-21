@@ -196,6 +196,8 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
     }
 
     private State computePostDecisionState(State state, Action action) {
+        // TODO
+        /*
         if (action.getDelta() != 0) {
             int[] pdK = new int[state.getActualDeployment().length];
             for (int i = 0; i < pdK.length; i++) {
@@ -211,6 +213,8 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
         } else {
             return state;
         }
+        */
+        return state;
     }
 
     private INDArray buildInput(State state) {
@@ -242,7 +246,7 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
     }
 
     private int getTotalStates() {
-        StateIterator stateIterator = new StateIterator(this.operator,
+        StateIterator stateIterator = new StateIterator(this.getStateRepresentation(), this.operator,
                 ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
         return this.getTotalObjectsInIterator(stateIterator);
     }

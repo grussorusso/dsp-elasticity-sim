@@ -5,12 +5,10 @@ import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -18,24 +16,17 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
-import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.List;
 
 public class DeepQLearningOM extends ReinforcementLearningOM {
 
-    private int numStatesFeatures;
+    private int stateFeatures;
     private int numActions;
 
     private MultiLayerConfiguration networkConf;
@@ -70,7 +61,8 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
             this.getTotalStates() / (this.inputRateLevels + 1) = one hot vector input nodes (k[])
             + 1 = lambda input level normalized
         */
-        this.numStatesFeatures = (this.getTotalStates() / (this.getInputRateLevels() + 1)) + 1;
+        this.stateFeatures = new StateIterator(this.getStateRepresentation(), this.operator,
+                ComputingInfrastructure.getInfrastructure(), this.getMaxInputRate()).next().getArrayRepresentationLength();
         this.numActions = this.getTotalActions();
 
         // build network
@@ -80,7 +72,7 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
                 .updater(new Sgd(0.05))
                 .list(
                         new DenseLayer.Builder()
-                                .nIn(numStatesFeatures)
+                                .nIn(stateFeatures)
                                 .nOut(32)
                                 .activation(new ActivationReLU())
                                 .build(),
@@ -129,12 +121,10 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
 
     @Override
     protected State computeNewState(OMMonitoringInfo monitoringInfo) {
-        // TODO
-        /*
         State newState = super.computeNewState(monitoringInfo);
 
-        StateIterator stateIterator = new StateIterator(this.operator,
-                ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
+        StateIterator stateIterator = new StateIterator(this.getStateRepresentation(),
+                this.operator, ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
 
         while (stateIterator.hasNext()) {
             State indexedNewState = stateIterator.next();
@@ -144,8 +134,6 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
         }
 
         throw new RuntimeException("No possible state generated");
-        */
-        return super.computeNewState(monitoringInfo);
     }
 
     private INDArray getQ(State state) {
@@ -154,34 +142,11 @@ public class DeepQLearningOM extends ReinforcementLearningOM {
     }
 
     private INDArray buildInput(State state) {
-        INDArray input = stateKToOneHotVector(state);
-        // append lambda level normalized value to input array
-        // TODO
-        // input = Nd4j.append(input, 1, lambdaLevelNormalized(state.getLambda(), this.getInputRateLevels()), 1);
-        input = Nd4j.append(input, 1, lambdaLevelNormalized(10, this.getInputRateLevels()), 1);
-        return input;
-    }
-
-    private INDArray stateKToOneHotVector(State state) {
-        // get only k[] nodes
-        INDArray oneHotVector = Nd4j.create(this.numStatesFeatures - 1);
-        // generate one hot vector starting from (1, 0, 0, ... , 0)
-        // to represent (1, 0, ... , 0) state
-        // and proceed with (0, 1, 0, ... , 0)
-        // to represent (2, 0, 0) state and so on until
-        // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
-        // TODO
-        // oneHotVector.put(0, Math.floorDiv(state.getIndex(), this.getInputRateLevels() + 1), 1);
-        oneHotVector.put(0, Math.floorDiv(0, this.getInputRateLevels() + 1), 1);
-        return oneHotVector;
-    }
-
-    private double lambdaLevelNormalized(int value, int maxValue) {
-        return (double) value/ (double) maxValue;
+        return state.arrayRepresentation(this.stateFeatures);
     }
 
     private int getTotalStates() {
-        StateIterator stateIterator = new StateIterator(this.operator,
+        StateIterator stateIterator = new StateIterator(this.getStateRepresentation(), this.operator,
                 ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
         return this.getTotalObjectsInIterator(stateIterator);
     }

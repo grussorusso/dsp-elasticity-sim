@@ -1,9 +1,12 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.utils;
 
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 public class StateIterator implements Iterator<State> {
@@ -15,16 +18,22 @@ public class StateIterator implements Iterator<State> {
     private int lastKIndex;
     private int resourcesNumber;
     private int stateIndex;
+    private Operator operator;
 
-    public StateIterator(Operator operator, ComputingInfrastructure infrastructure, int maxLambda) {
+    private StateType stateType;
+    private State lastState;
+
+    public StateIterator(StateType stateType, Operator operator, ComputingInfrastructure infrastructure, int maxLambda) {
         this.resourcesNumber = infrastructure.getNodeTypes().length;
         this.k = new int[this.resourcesNumber];
-        this.k[0] = 1; // avoid (0,0, ... , 1)
+        this.k[0] = 1; // avoid (0,0, ... , 0)
         this.lambda = -1;
         this.stateIndex = -1;
         this.maxLambda = maxLambda;
         this.maxParallelism = operator.getMaxParallelism();
         this.lastKIndex = 0;
+        this.operator = operator;
+        this.stateType = stateType;
     }
 
     /**
@@ -44,6 +53,19 @@ public class StateIterator implements Iterator<State> {
             return null;
 
         this.stateIndex++;
+        // go next state
+        State nextState = this.nextState();
+
+        // it's the first state, return it
+        if (lastState != null)
+            while (this.lastState.equals(nextState))
+                nextState = this.nextState();
+
+        this.lastState = nextState;
+        return lastState;
+    }
+
+    private State nextState() {
         this.lambda++;
         if (this.lambda > this.maxLambda) {
             this.lambda = 0;
@@ -51,7 +73,7 @@ public class StateIterator implements Iterator<State> {
             goNextK();
         }
 
-        return new State(this.stateIndex, this.k, lambda);
+        return StateFactory.createState(this.stateType, this.stateIndex, this.k, this.lambda, this.maxLambda, this.operator);
     }
 
     private void goNextK() {
@@ -66,7 +88,7 @@ public class StateIterator implements Iterator<State> {
                 if ((this.k[i] + 1) <= this.maxParallelism) {
                     this.k[i]++;
                     // check that sum of new k is less than max parallelism
-                    if (arraySum(this.k) <= this.maxParallelism)
+                    if (Arrays.stream(k).sum() <= this.maxParallelism)
                         break;
                 }
                 // otherwise
@@ -77,11 +99,5 @@ public class StateIterator implements Iterator<State> {
 
     private int[] resetK() {
         return new int[this.resourcesNumber];
-    }
-
-    private int arraySum(int[] n) {
-        int sum = 0;
-        for (int value : n) sum += value;
-        return sum;
     }
 }

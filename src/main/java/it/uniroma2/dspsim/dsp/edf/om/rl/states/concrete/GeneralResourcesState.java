@@ -4,6 +4,9 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.utils.MathUtils;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import scala.reflect.macros.Infrastructure;
 
 import java.util.Arrays;
@@ -11,18 +14,14 @@ import java.util.Objects;
 
 public class GeneralResourcesState extends State {
 
-    private int lambdaLevel;
-
     private double normalizedCPUSpeedup;
 
     private double maxCPUSpeedupInUse;
 
     private double minCPUSpeedupInUse;
 
-    public GeneralResourcesState(int[] k, int lambda, Operator operator) {
-        super(k, lambda, operator);
-
-        this.lambdaLevel = lambda;
+    public GeneralResourcesState(int index, int[] k, int lambda, int maxLambda, Operator operator) {
+        super(index, k, lambda, maxLambda, operator);
 
         this.maxCPUSpeedupInUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[maxNodeInUse(k)].getCpuSpeedup();
         this.minCPUSpeedupInUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[minNodeInUse(k)].getCpuSpeedup();
@@ -88,19 +87,38 @@ public class GeneralResourcesState extends State {
     }
 
     @Override
+    public int getArrayRepresentationLength() {
+        return 4;
+    }
+
+    @Override
+    protected INDArray toArray(int features) {
+        INDArray array = Nd4j.create(features);
+        // normalized lambda
+        array.put(0, 0, this.getNormalizedLambda());
+        // normalized CPU speedup
+        array.put(0, 1, this.normalizedCPUSpeedup);
+        // normalized max CPU in use
+        array.put(0, 2, MathUtils.normalizeValue(this.maxCPUSpeedupInUse, computeMaxCPUSpeedup(this.operator)));
+        // normalized min CPU in use
+        array.put(0, 3, MathUtils.normalizeValue(this.minCPUSpeedupInUse, computeMaxCPUSpeedup(this.operator)));
+
+        return array;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof GeneralResourcesState)) return false;
         if (!super.equals(o)) return false;
         GeneralResourcesState that = (GeneralResourcesState) o;
-        return lambdaLevel == that.lambdaLevel &&
-                Double.compare(that.normalizedCPUSpeedup, normalizedCPUSpeedup) == 0 &&
+        return Double.compare(that.normalizedCPUSpeedup, normalizedCPUSpeedup) == 0 &&
                 Double.compare(that.maxCPUSpeedupInUse, maxCPUSpeedupInUse) == 0 &&
                 Double.compare(that.minCPUSpeedupInUse, minCPUSpeedupInUse) == 0;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), lambdaLevel, normalizedCPUSpeedup, maxCPUSpeedupInUse, minCPUSpeedupInUse);
+        return Objects.hash(super.hashCode(), normalizedCPUSpeedup, maxCPUSpeedupInUse, minCPUSpeedupInUse);
     }
 }
