@@ -158,7 +158,7 @@ public class Simulation {
 
 
 		try {
-			final String inputFile = "/Users/simone/Documents/Tesi/profile.dat";
+			final String inputFile = "/home/gabriele/profile.dat";
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
 			Application app = ApplicationBuilder.defaultApplication();
