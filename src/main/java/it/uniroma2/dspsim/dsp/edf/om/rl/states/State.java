@@ -2,6 +2,7 @@ package it.uniroma2.dspsim.dsp.edf.om.rl.states;
 
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.utils.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -45,6 +46,8 @@ public abstract class State {
         return this.overallParallelism() + delta >= 1 &&
                 this.overallParallelism() + delta <= this.operator.getMaxParallelism();
     }
+
+    public int[] getActualDeployment() { return actualDeployment; }
 
     public int getLambda() {
         return lambda;

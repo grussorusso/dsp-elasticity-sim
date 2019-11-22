@@ -5,7 +5,6 @@ import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
@@ -14,7 +13,6 @@ import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.DropoutLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -24,6 +22,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.util.Arrays;
 import java.util.Iterator;
 
 /**
@@ -36,78 +35,10 @@ import java.util.Iterator;
  * To chose best action it selects min Q(s,a) for each a
  * In learning step phase it subtracts c(a) from Q(s,a) to obtain V(s) as label to train the neural network
  */
-public class DeepVLearningOM extends ReinforcementLearningOM {
-
-    private int numStatesFeatures;
-    private int numActions;
-
-    private int outputLayerNodesNumber;
-
-    private MultiLayerConfiguration networkConf;
-    private MultiLayerNetwork network;
-
-    private double gamma;
-    private double gammaDecay;
-    private int gammaDecaySteps;
-    private int gammaDecayStepsCounter;
+public class DeepVLearningOM extends DeepLearningOM {
 
     public DeepVLearningOM(Operator operator) {
         super(operator);
-
-        // get configuration instance
-        Configuration configuration = Configuration.getInstance();
-
-        // gamma
-        this.gamma = configuration.getDouble(ConfigurationKeys.DQL_OM_GAMMA_KEY, 0.9);
-        // gamma decay
-        this.gammaDecay = configuration.getDouble(ConfigurationKeys.DQL_OM_GAMMA_DECAY_KEY, 0.9);
-        // gamma decay steps
-        this.gammaDecaySteps = configuration.getInteger(ConfigurationKeys.DQL_OM_GAMMA_DECAY_STEPS_KEY, -1);
-        // gamma decay steps counter (init)
-        this.gammaDecayStepsCounter = 0;
-        // nd4j random seed
-        long nd4jSeed = configuration.getLong(ConfigurationKeys.DQL_OM_ND4j_RANDOM_SEED_KET, 1234L);
-        Nd4j.getRandom().setSeed(nd4jSeed);
-
-        /*states :
-            this.getTotalStates() / (this.inputRateLevels + 1) = one hot vector input nodes (k[])
-            + 1 = lambda input level normalized
-        */
-        this.numStatesFeatures = (this.getTotalStates() / (this.getInputRateLevels() + 1)) + 1;
-        this.numActions = this.getTotalActions();
-
-        this.outputLayerNodesNumber = 1;
-
-        // build network
-        this.networkConf = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Sgd(0.05))
-                .list(
-                        new DenseLayer.Builder()
-                                .nIn(numStatesFeatures)
-                                .nOut(32)
-                                .activation(new ActivationReLU())
-                                .build(),
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                //.activation(Activation.SOFTMAX)
-                                .nIn(32)
-                                .nOut(outputLayerNodesNumber)
-                                .build()
-                )
-                .backprop(true)
-                .build();
-
-        this.network = new MultiLayerNetwork(this.networkConf);
-        this.network.init();
-
-        /*
-        // http://localhost:9000/train
-        UIServer uiServer = UIServer.getInstance();
-        StatsStorage statsStorage = new InMemoryStatsStorage();
-        uiServer.attach(statsStorage);
-        this.network.setListeners(new StatsListener(statsStorage));
-        */
     }
 
     @Override
@@ -126,8 +57,7 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
             // Q(current state, a)
             double q = this.evaluateQ(currentState, a);
             // c(a)
-            //double c = this.computeActionCost(a);
-            double c = 0.0;
+            double c = this.computeActionCost(a);
 
             final double diff = q - c;
 
@@ -155,27 +85,6 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
         decrementGamma();
     }
 
-    private State getIndexedState(State state) {
-        // TODO
-        /*
-        if (state.getIndex() != -1)
-            return state;
-
-        StateIterator stateIterator = new StateIterator(this.operator,
-                ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
-
-        while (stateIterator.hasNext()) {
-            State indexedNewState = stateIterator.next();
-            if (state.equals(indexedNewState)) {
-                return indexedNewState;
-            }
-        }
-
-        throw new RuntimeException("No possible state generated");
-        */
-        return state;
-    }
-
     private INDArray getV(State state) {
         INDArray input = buildInput(state);
         return this.network.output(input);
@@ -196,84 +105,55 @@ public class DeepVLearningOM extends ReinforcementLearningOM {
     }
 
     private State computePostDecisionState(State state, Action action) {
-        // TODO
-        /*
         if (action.getDelta() != 0) {
-            int[] pdK = new int[state.getActualDeployment().length];
-            for (int i = 0; i < pdK.length; i++) {
-                if (action.getResTypeIndex() == i) {
-                    pdK[i] = state.getActualDeployment()[i] + action.getDelta();
-                } else {
-                    pdK[i] = state.getActualDeployment()[i];
-                }
-            }
-            // TODO
-            //return new State(state.getIndex(), pdK, state.getLambda());
-            return StateFactory.createState(StateType.K_LAMBDA, pdK, 10, operator);
+            int[] pdk = Arrays.copyOf(state.getActualDeployment(), state.getActualDeployment().length);
+            int aIndex = action.getResTypeIndex();
+            pdk[aIndex] = pdk[aIndex] + action.getDelta();
+            return StateFactory.createState(this.getStateRepresentation(), -1, pdk,
+                    state.getLambda(), this.getInputRateLevels(), this.operator);
         } else {
             return state;
         }
-        */
-        return state;
     }
 
     private INDArray buildInput(State state) {
         State indexedState = getIndexedState(state);
-        INDArray input = stateKToOneHotVector(indexedState);
-        // append lambda level normalized value to input array
-        // TODO
-        // input = Nd4j.append(input, 1, lambdaLevelNormalized(state.getLambda(), this.getInputRateLevels()), 1);
-        input = Nd4j.append(input, 1, lambdaLevelNormalized(10, this.getInputRateLevels()), 1);
-        return input;
+        return indexedState.arrayRepresentation(this.stateFeatures);
     }
 
-    private INDArray stateKToOneHotVector(State state) {
-        // get only k[] nodes
-        INDArray oneHotVector = Nd4j.create(this.numStatesFeatures - 1);
-        // generate one hot vector starting from (1, 0, 0, ... , 0)
-        // to represent (1, 0, ... , 0) state
-        // and proceed with (0, 1, 0, ... , 0)
-        // to represent (2, 0, 0) state and so on until
-        // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
-        // TODO
-        //oneHotVector.put(0, Math.floorDiv(state.getIndex(), this.getInputRateLevels() + 1), 1);
-        oneHotVector.put(0, Math.floorDiv(0, this.getInputRateLevels() + 1), 1);
-        return oneHotVector;
+    /**
+     * DEEP LEARNING OM
+     */
+
+    @Override
+    protected int computeOutputLayerNodesNumber() { return 1; }
+
+    @Override
+    protected int computeInputLayerNodesNumber() {
+        return this.stateFeatures;
     }
 
-    private double lambdaLevelNormalized(int value, int maxValue) {
-        return (double) value/ (double) maxValue;
-    }
 
-    private int getTotalStates() {
-        StateIterator stateIterator = new StateIterator(this.getStateRepresentation(), this.operator,
-                ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
-        return this.getTotalObjectsInIterator(stateIterator);
-    }
-
-    private int getTotalActions() {
-        ActionIterator actionIterator = new ActionIterator();
-        return this.getTotalObjectsInIterator(actionIterator);
-    }
-
-    private int getTotalObjectsInIterator(Iterator iterator) {
-        int count = 0;
-        while (iterator.hasNext()) {
-            iterator.next();
-            count++;
-        }
-        System.out.println(count);
-        return count;
-    }
-
-    private void decrementGamma() {
-        if (this.gammaDecaySteps > 0) {
-            this.gammaDecayStepsCounter++;
-            if (this.gammaDecayStepsCounter >= this.gammaDecaySteps) {
-                this.gammaDecayStepsCounter = 0;
-                this.gamma = this.gammaDecay * this.gamma;
-            }
-        }
+    @Override
+    protected MultiLayerConfiguration buildNeuralNetwork() {
+        return new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.05))
+                .list(
+                        new DenseLayer.Builder()
+                                .nIn(this.inputLayerNodesNumber)
+                                .nOut(32)
+                                .activation(new ActivationReLU())
+                                .build(),
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                //.activation(Activation.SOFTMAX)
+                                .nIn(32)
+                                .nOut(this.outputLayerNodesNumber)
+                                .build()
+                )
+                .backprop(true)
+                .build();
     }
 
     /**

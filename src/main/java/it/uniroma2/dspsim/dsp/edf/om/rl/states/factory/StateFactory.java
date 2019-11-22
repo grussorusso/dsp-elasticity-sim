@@ -14,7 +14,7 @@ public class StateFactory {
 
     public static State createState(StateType stateType, int index, int[] k, int lambda, int maxLambda, Operator operator) {
         switch (stateType) {
-            case REDUCED:
+            case REDUCED_K_LAMBDA:
                 return new ReducedState(index, k, lambda, maxLambda, operator);
             case K_LAMBDA:
                 return new KLambdaState(index, k, lambda, maxLambda, operator);

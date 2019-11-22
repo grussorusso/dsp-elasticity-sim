@@ -66,7 +66,7 @@ public class ReducedState extends State {
         for (int i = 0; i < this.kMask.length; i++)
             num[i] = this.kMask[this.kMask.length - 1 - i];
         int index = MathUtils.toBase10(num, 2);
-        oneHotVector.put(0, index, 1);
+        oneHotVector.put(0, index - 1, 1);
         return oneHotVector;
     }
 

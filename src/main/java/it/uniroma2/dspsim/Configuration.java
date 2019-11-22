@@ -1,6 +1,8 @@
 package it.uniroma2.dspsim;
 
 
+import com.sun.org.apache.xpath.internal.operations.Bool;
+
 import java.io.*;
 import java.util.Properties;
 
@@ -104,4 +106,12 @@ public class Configuration {
 			e.printStackTrace();
 		}
 	}
+
+    public boolean getBoolean(String key, boolean defaultValue) {
+		if (properties.containsKey(key))
+			return Boolean.parseBoolean(properties.getProperty(key));
+
+		properties.setProperty(key, Boolean.toString(defaultValue));
+		return defaultValue;
+    }
 }

@@ -53,12 +53,13 @@ public abstract class ConfigurationKeys {
 	public static final String QL_OM_ALPHA_DECAY_STEPS_KEY = "edf.ql.om.alpha.decay.steps";
 
 	/**
-	 * Deep-q-learning operator manager params.
+	 * Deep-learning operator manager params.
 	 */
-	public static final String DQL_OM_GAMMA_KEY = "edf.dql.om.gamma";
-	public static final String DQL_OM_GAMMA_DECAY_KEY = "edf.dql.om.gamma.decay";
-	public static final String DQL_OM_GAMMA_DECAY_STEPS_KEY = "edf.dql.om.gamma.decay.steps";
-	public static final String DQL_OM_ND4j_RANDOM_SEED_KET = "edf.dql.om.nd4j.random.seed";
+	public static final String DL_OM_GAMMA_KEY = "edf.dl.om.gamma";
+	public static final String DL_OM_GAMMA_DECAY_KEY = "edf.dl.om.gamma.decay";
+	public static final String DL_OM_GAMMA_DECAY_STEPS_KEY = "edf.dl.om.gamma.decay.steps";
+	public static final String DL_OM_ND4j_RANDOM_SEED_KET = "edf.dl.om.nd4j.random.seed";
+	public static final String DL_OM_ENABLE_NETWORK_UI_KEY = "edf.dl.om.enable.network.ui";
 
 	/**
 	 * Type of ActionSelectionPolicy (ASP) to use

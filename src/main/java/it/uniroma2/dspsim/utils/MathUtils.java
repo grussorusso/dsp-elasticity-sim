@@ -22,8 +22,8 @@ public class MathUtils {
 
     public static int toBase10(int[] number, int fromBase) {
         int sum = 0;
-        for (int i = 0; i < number.length; i++) {
-            sum += number[i] * Math.pow(fromBase, i);
+        for (int i = number.length - 1; i >= 0; i--) {
+            sum += number[i] * Math.pow(fromBase, number.length - 1 - i);
         }
 
         return sum;
