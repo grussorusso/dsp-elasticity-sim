@@ -32,9 +32,6 @@ public abstract class ConfigurationKeys {
 	/**
 	 * Reinforcement learning operator manager params.
 	 */
-	/** Hidden configuration for internal usage.
-	 * It is used to get ASP metadata from metadata hashmap */
-	public static final String RL_OM_ASP_METADATA_KEY = "edf.rl.om.asp.metadata";
 	/** Reconfiguration cost weight. */
 	public static final String RL_OM_RECONFIG_WEIGHT_KEY = "edf.rl.om.reconfiguration.weight";
 	/** SLO violation weight. */
@@ -43,8 +40,10 @@ public abstract class ConfigurationKeys {
 	public static final String RL_OM_RESOURCES_WEIGHT_KEY = "edf.rl.om.resources.weight";
 	/** Max input rate considered to discretize lambda */
 	public static final String RL_OM_MAX_INPUT_RATE_KEY = "edf.rl.om.max.input.rate";
-	/** Lambda levels*/
+	/** Lambda levels */
 	public static final String RL_OM_INPUT_RATE_LEVELS_KEY = "edf.rl.om.input.rate.levels";
+	/** State representation */
+	public static final String RL_OM_STATE_REPRESENTATION_KEY = "edf.rl.om.state.representation";
 
 	/**
 	 * Q-learning operator manager params.

@@ -66,9 +66,9 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
         this.actionSelectionPolicy = ActionSelectionPolicyFactory
                 .getPolicy(aspType,this);
 
-        // get state representation
-        // TODO from configurations
-        this.stateRepresentation = StateType.GENERAL_RESOURCES;
+        // state representation
+        this.stateRepresentation = StateType.fromString(
+                configuration.getString(ConfigurationKeys.RL_OM_STATE_REPRESENTATION_KEY, "k_lambda"));
 
         // register statistics
         this.registerMetrics(Statistics.getInstance());
