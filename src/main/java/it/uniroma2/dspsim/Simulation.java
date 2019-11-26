@@ -154,14 +154,16 @@ public class Simulation {
 		conf.parseDefaultConfigurationFile();
 		// TODO parse cli args and other configuration files (if any)
 
-		ComputingInfrastructure.initDefaultInfrastructure(3);
+		ComputingInfrastructure
+				.initDefaultInfrastructure(conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
 
 
 		try {
-			final String inputFile = "/home/gabriele/profile.dat";
+			final String inputFile = conf
+					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
-			Application app = ApplicationBuilder.defaultApplication();
+			Application app = ApplicationBuilder.singleOperatorApplication();
 			ApplicationManager am = new ApplicationManager(app);
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);

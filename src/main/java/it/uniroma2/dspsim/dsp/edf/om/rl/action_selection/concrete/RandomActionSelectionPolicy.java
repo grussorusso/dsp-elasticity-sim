@@ -30,7 +30,7 @@ public class RandomActionSelectionPolicy extends ActionSelectionPolicy {
         ActionIterator ait = new ActionIterator();
         while (ait.hasNext()) {
             final Action a = ait.next();
-            if (!aspCallback.actionValidation(s, a))
+            if (!aspCallback.validateAction(s, a))
                 continue;
             actions.add(a);
         }

@@ -39,7 +39,22 @@ public class KLambdaState extends State {
     }
 
     @Override
-    protected INDArray toArray(int features) {
+    public INDArray arrayRepresentation(int features) throws IllegalArgumentException {
+        if (this.getIndex() < 0) {
+            StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.operator,
+                    ComputingInfrastructure.getInfrastructure(), this.getMaxLambda());
+            while (stateIterator.hasNext()) {
+                State state = stateIterator.next();
+                if (this.equals(state)) {
+                    this.index = state.getIndex();
+                    break;
+                }
+            }
+        }
+
+        if (this.index < 0)
+            throw new IllegalArgumentException("State must be indexed to extract it as array");
+
         INDArray input = kToOneHotVector(features - 1);
         // append lambda level normalized value to input array
         input = Nd4j.append(input, 1, this.getNormalizedLambda(), 1);

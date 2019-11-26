@@ -57,8 +57,8 @@ public class DeepQLearningOM extends DeepLearningOM {
     }
 
     private INDArray buildInput(State state) {
-        State indexedState = getIndexedState(state);
-        return indexedState.arrayRepresentation(this.stateFeatures);
+        //State indexedState = getIndexedState(state);
+        return state.arrayRepresentation(this.stateFeatures);
     }
 
     /**
@@ -102,7 +102,7 @@ public class DeepQLearningOM extends DeepLearningOM {
      */
 
     @Override
-    public double evaluateQ(State s, Action a) {
+    public double evaluateAction(State s, Action a) {
         // return network Q-function prediction associated to action a in state s
         INDArray networkOutput = getQ(s);
         return networkOutput.getDouble(a.getIndex());

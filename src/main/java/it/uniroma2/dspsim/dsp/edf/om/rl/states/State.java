@@ -11,7 +11,7 @@ import java.util.Objects;
 
 public abstract class State {
 
-    private int index;
+    protected int index;
     private int [] actualDeployment;
     private int lambda;
     private int maxLambda;
@@ -83,15 +83,7 @@ public abstract class State {
         return arrayRepresentation(getArrayRepresentationLength());
     }
 
-    public INDArray arrayRepresentation(int features) throws IllegalArgumentException {
-        // TODO maybe index must be leq of features?
-        if (this.index >= 0)
-            return this.toArray(features);
-        else
-            throw new IllegalArgumentException("State must be indexed to extract it as array");
-    }
-
-    protected abstract INDArray toArray(int features);
+    public abstract INDArray arrayRepresentation(int features) throws IllegalArgumentException;
 
     public abstract int getArrayRepresentationLength();
 }

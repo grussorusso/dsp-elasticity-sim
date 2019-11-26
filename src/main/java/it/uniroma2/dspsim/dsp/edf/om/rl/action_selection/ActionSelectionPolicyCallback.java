@@ -4,6 +4,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 public interface ActionSelectionPolicyCallback {
-    boolean actionValidation(State s, Action a);
-    double evaluateQ(State s, Action a);
+    boolean validateAction(State s, Action a);
+    double evaluateAction(State s, Action a);
 }

@@ -92,7 +92,7 @@ public class GeneralResourcesState extends State {
     }
 
     @Override
-    protected INDArray toArray(int features) {
+    public INDArray arrayRepresentation(int features) throws IllegalArgumentException {
         INDArray array = Nd4j.create(features);
         // normalized lambda
         array.put(0, 0, this.getNormalizedLambda());

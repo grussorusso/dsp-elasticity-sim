@@ -1,14 +1,28 @@
 package it.uniroma2.dspsim.dsp;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 
 public class ApplicationBuilder {
+
+	static public Application singleOperatorApplication() {
+		Application app = new Application();
+
+		final int maxParallelism = Configuration.getInstance()
+				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
+		Operator op = new Operator("filter",
+				new MG1OperatorQueueModel(1/100.0, 0.0), maxParallelism);
+		app.addOperator(op);
+		return app;
+	}
 
 	static public Application defaultApplication()
 	{
 		Application app = new Application();
 
-		final int maxParallelism = 3;
+		final int maxParallelism = Configuration.getInstance()
+				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);;
 		Operator op1 = new Operator("filter",
 				new MG1OperatorQueueModel(1/100.0, 0.0), maxParallelism);
 		app.addOperator(op1);
@@ -24,7 +38,8 @@ public class ApplicationBuilder {
 	{
 		Application app = new Application();
 
-		final int maxParallelism = 3;
+		final int maxParallelism = Configuration.getInstance()
+				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);;
 		Operator op1 = new Operator("splitter",
 				new MG1OperatorQueueModel(1/100.0, 0.0), maxParallelism);
 		app.addOperator(op1);

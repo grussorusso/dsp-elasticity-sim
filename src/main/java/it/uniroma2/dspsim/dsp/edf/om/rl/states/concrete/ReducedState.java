@@ -43,7 +43,7 @@ public class ReducedState extends State {
     }
 
     @Override
-    protected INDArray toArray(int features) {
+    public INDArray arrayRepresentation(int features) throws IllegalArgumentException {
         // k mask one hot vector array
         INDArray array = kToOneHotVector(features - 2);
         // normalized lambda

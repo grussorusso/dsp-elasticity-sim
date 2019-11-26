@@ -114,7 +114,7 @@ public class RLQLearningOM extends ReinforcementLearningOM {
      */
 
     @Override
-    public double evaluateQ(State s, Action a) {
+    public double evaluateAction(State s, Action a) {
         return qTable.getQ(s, a);
     }
 }

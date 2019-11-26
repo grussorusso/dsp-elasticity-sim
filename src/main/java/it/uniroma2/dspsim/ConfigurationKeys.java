@@ -13,6 +13,21 @@ package it.uniroma2.dspsim;
 public abstract class ConfigurationKeys {
 
 	/**
+	 * Data source.
+	 */
+	public static final String INPUT_FILE_PATH_KEY = "input.file.path";
+
+	/**
+	 * Node types number.
+	 */
+	public static final String NODE_TYPES_NUMBER_KEY = "node.types.number";
+
+	/**
+	 * Operator max parallelism.
+	 */
+	public static final String OPERATOR_MAX_PARALLELISM_KEY = "operator.max.parallelism";
+
+	/**
 	 * Constraints.
 	 */
 	/** Current SLO in terms of application latency (seconds). */

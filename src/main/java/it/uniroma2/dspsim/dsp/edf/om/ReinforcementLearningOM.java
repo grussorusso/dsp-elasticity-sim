@@ -197,7 +197,7 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
      */
 
     @Override
-    public boolean actionValidation(State s, Action a) {
+    public boolean validateAction(State s, Action a) {
         return s.validateAction(a);
     }
 

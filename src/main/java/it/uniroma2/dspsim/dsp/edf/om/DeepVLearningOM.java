@@ -1,29 +1,22 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
-import it.uniroma2.dspsim.Configuration;
-import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
-import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
-import java.util.Iterator;
 
 /**
  * Deep Q Learning variant.
@@ -48,21 +41,22 @@ public class DeepVLearningOM extends DeepLearningOM {
 
         // get V(current state) as min{Q(current state, a) - c(a)} for each action
         ActionIterator ait = new ActionIterator();
-        double bestV = Double.POSITIVE_INFINITY;
+        double bestQ = Double.POSITIVE_INFINITY;
         Action bestAction = new Action(0, 0, 0);
         while (ait.hasNext()) {
             final Action a = ait.next();
-            if (!this.actionValidation(currentState, a))
+            if (!this.validateAction(currentState, a))
                 continue;
             // Q(current state, a)
-            double q = this.evaluateQ(currentState, a);
+            double q = this.evaluateAction(currentState, a);
             // c(a)
-            double c = this.computeActionCost(a);
+            //double c = this.computeActionCost(a);
+            double c = 0;
 
             final double diff = q - c;
 
-            if (diff < bestV) {
-                bestV = diff;
+            if (diff < bestQ) {
+                bestQ = diff;
                 bestAction = a;
             }
         }
@@ -73,7 +67,7 @@ public class DeepVLearningOM extends DeepLearningOM {
         // we get min(newQ) because we want to minimize cost
         // reward = cost -> minimize Q equals minimize cost
         INDArray v = getV(pdState);
-        v.put(0, 0, reward + gamma * getV(newPDState).getDouble(0));
+        v.put(0, 0, reward + gamma * bestQ);
 
         // get post decision input array
         INDArray trainingInput = buildInput(pdState);
@@ -117,8 +111,8 @@ public class DeepVLearningOM extends DeepLearningOM {
     }
 
     private INDArray buildInput(State state) {
-        State indexedState = getIndexedState(state);
-        return indexedState.arrayRepresentation(this.stateFeatures);
+        //State indexedState = getIndexedState(state);
+        return state.arrayRepresentation(this.stateFeatures);
     }
 
     /**
@@ -137,7 +131,7 @@ public class DeepVLearningOM extends DeepLearningOM {
     @Override
     protected MultiLayerConfiguration buildNeuralNetwork() {
         return new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
+                .weightInit(WeightInit.ZERO)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new Sgd(0.05))
                 .list(
@@ -161,7 +155,7 @@ public class DeepVLearningOM extends DeepLearningOM {
      */
 
     @Override
-    public double evaluateQ(State s, Action a) {
+    public double evaluateAction(State s, Action a) {
         // return network Q-function prediction associated to action a in state s
         INDArray networkOutput = getQ(s, a);
         return networkOutput.getDouble(0);

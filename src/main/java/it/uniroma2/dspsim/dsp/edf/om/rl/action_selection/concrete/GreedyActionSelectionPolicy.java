@@ -6,8 +6,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCa
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 
-import java.util.HashMap;
-
 public class GreedyActionSelectionPolicy extends ActionSelectionPolicy {
 
     public GreedyActionSelectionPolicy(ActionSelectionPolicyCallback aspCallback) {
@@ -21,9 +19,9 @@ public class GreedyActionSelectionPolicy extends ActionSelectionPolicy {
         double bestQ = 0.0;
         while (ait.hasNext()) {
             final Action a = ait.next();
-            if (!this.aspCallback.actionValidation(s, a))
+            if (!this.aspCallback.validateAction(s, a))
                 continue;
-            final double q = this.aspCallback.evaluateQ(s, a);
+            final double q = this.aspCallback.evaluateAction(s, a);
 
             if (newAction == null || q < bestQ) {
                 bestQ = q;

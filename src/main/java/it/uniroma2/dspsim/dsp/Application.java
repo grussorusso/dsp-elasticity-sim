@@ -15,6 +15,7 @@ public class Application {
 
 	public void addOperator (Operator op) {
 		operators.add(op);
+		computeSourceSinkPaths();
 	}
 
 	public void addEdge (Operator op1, Operator op2) {
