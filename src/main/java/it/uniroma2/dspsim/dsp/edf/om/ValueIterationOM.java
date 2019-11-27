@@ -187,7 +187,6 @@ public class ValueIterationOM extends ReinforcementLearningOM implements ActionS
         }
 
         valueIteration(0, 2);
-        System.out.println("conclude");
     }
 
     /**

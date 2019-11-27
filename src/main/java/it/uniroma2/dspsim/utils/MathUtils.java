@@ -20,6 +20,19 @@ public class MathUtils {
         return normalizeValue((double) value, (double) max);
     }
 
+    public static int discretizeValue(double max, double value, int levels) {
+        final double quantum = max / levels;
+        final int level = (int) Math.floor(value/quantum);
+        return level < levels? level : levels-1;
+    }
+
+    public static double remapDiscretizedValue(double max, int level, int levels) {
+        final double quantum = max / levels;
+        final double floorMapping = level * quantum;
+        final double ceilMapping = floorMapping + quantum;
+        return (floorMapping + ceilMapping) / 2;
+    }
+
     public static int toBase10(int[] number, int fromBase) {
         int sum = 0;
         for (int i = number.length - 1; i >= 0; i--) {

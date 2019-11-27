@@ -28,7 +28,7 @@ public class TestStateIterator {
 
         OperatorQueueModel queueModel = new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance);
         Operator operator = new Operator(operatorName, queueModel, maxParallelism);
-        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator, ComputingInfrastructure.getInfrastructure(), maxLambda);
+        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(), ComputingInfrastructure.getInfrastructure(), maxLambda);
 
         int count = 0;
         while (stateIterator.hasNext()) {
