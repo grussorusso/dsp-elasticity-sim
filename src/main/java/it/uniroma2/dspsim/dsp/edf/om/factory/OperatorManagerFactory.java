@@ -28,6 +28,8 @@ public class OperatorManagerFactory {
                 return new DeepQLearningOM(operator);
             case DEEP_V_LEARNING:
                 return new DeepVLearningOM(operator);
+            case VALUE_ITERATION:
+                return new ValueIterationOM(operator);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not valid operator manager type: " + operatorManagerType.toString());

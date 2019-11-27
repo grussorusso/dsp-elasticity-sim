@@ -18,21 +18,19 @@ public class StateIterator implements Iterator<State> {
     private int lastKIndex;
     private int resourcesNumber;
     private int stateIndex;
-    private Operator operator;
 
     private StateType stateType;
     private State lastState;
 
-    public StateIterator(StateType stateType, Operator operator, ComputingInfrastructure infrastructure, int maxLambda) {
+    public StateIterator(StateType stateType, int maxParallelism, ComputingInfrastructure infrastructure, int maxLambda) {
         this.resourcesNumber = infrastructure.getNodeTypes().length;
         this.k = new int[this.resourcesNumber];
         this.k[0] = 1; // avoid (0,0, ... , 0)
         this.lambda = -1;
         this.stateIndex = -1;
         this.maxLambda = maxLambda;
-        this.maxParallelism = operator.getMaxParallelism();
+        this.maxParallelism = maxParallelism;
         this.lastKIndex = 0;
-        this.operator = operator;
         this.stateType = stateType;
     }
 
@@ -73,7 +71,7 @@ public class StateIterator implements Iterator<State> {
             goNextK();
         }
 
-        return StateFactory.createState(this.stateType, this.stateIndex, this.k, this.lambda, this.maxLambda, this.operator);
+        return StateFactory.createState(this.stateType, this.stateIndex, this.k, this.lambda, this.maxLambda, this.maxParallelism);
     }
 
     private void goNextK() {

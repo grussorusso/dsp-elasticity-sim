@@ -20,13 +20,13 @@ public class GeneralResourcesState extends State {
 
     private double minCPUSpeedupInUse;
 
-    public GeneralResourcesState(int index, int[] k, int lambda, int maxLambda, Operator operator) {
-        super(index, k, lambda, maxLambda, operator);
+    public GeneralResourcesState(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
+        super(index, k, lambda, maxLambda, maxParallelism);
 
         this.maxCPUSpeedupInUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[maxNodeInUse(k)].getCpuSpeedup();
         this.minCPUSpeedupInUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[minNodeInUse(k)].getCpuSpeedup();
 
-        this.normalizedCPUSpeedup = computeCPUSpeedupInUse(k) / computeMaxCPUSpeedup(operator);
+        this.normalizedCPUSpeedup = computeCPUSpeedupInUse(k) / computeMaxCPUSpeedup(this.maxParallelism);
     }
 
     /**
@@ -72,10 +72,10 @@ public class GeneralResourcesState extends State {
 
     /**
      * Compute max CPU speedup that can be used by operator multiplying max CPU's speedup by max operator's parallelism
-     * @param o Operator
+     * @param maxParallelism operator max parallelism
      * @return double
      */
-    private double computeMaxCPUSpeedup(Operator o) {
+    private double computeMaxCPUSpeedup(int maxParallelism) {
         double max = 0.0;
 
         for (NodeType nodeType : ComputingInfrastructure.getInfrastructure().getNodeTypes()) {
@@ -83,7 +83,7 @@ public class GeneralResourcesState extends State {
                 max = nodeType.getCpuSpeedup();
         }
 
-        return max * o.getMaxParallelism();
+        return max * maxParallelism;
     }
 
     @Override
@@ -99,9 +99,9 @@ public class GeneralResourcesState extends State {
         // normalized CPU speedup
         array.put(0, 1, this.normalizedCPUSpeedup);
         // normalized max CPU in use
-        array.put(0, 2, MathUtils.normalizeValue(this.maxCPUSpeedupInUse, computeMaxCPUSpeedup(this.operator)));
+        array.put(0, 2, MathUtils.normalizeValue(this.maxCPUSpeedupInUse, computeMaxCPUSpeedup(this.maxParallelism)));
         // normalized min CPU in use
-        array.put(0, 3, MathUtils.normalizeValue(this.minCPUSpeedupInUse, computeMaxCPUSpeedup(this.operator)));
+        array.put(0, 3, MathUtils.normalizeValue(this.minCPUSpeedupInUse, computeMaxCPUSpeedup(this.maxParallelism)));
 
         return array;
     }

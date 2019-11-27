@@ -16,8 +16,8 @@ public class KLambdaState extends State {
     // k usage
     private int[] k;
 
-    public KLambdaState(int index, int[] k, int lambda, int maxLambda, Operator operator) {
-        super(index, k, lambda, maxLambda, operator);
+    public KLambdaState(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
+        super(index, k, lambda, maxLambda, maxParallelism);
 
         this.k = k;
     }
@@ -28,7 +28,7 @@ public class KLambdaState extends State {
     }
 
     private int getTotalStates() {
-        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.operator,
+        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
                 ComputingInfrastructure.getInfrastructure(), this.getMaxLambda());
         int count = 0;
         while (stateIterator.hasNext()) {
@@ -41,7 +41,7 @@ public class KLambdaState extends State {
     @Override
     public INDArray arrayRepresentation(int features) throws IllegalArgumentException {
         if (this.getIndex() < 0) {
-            StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.operator,
+            StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
                     ComputingInfrastructure.getInfrastructure(), this.getMaxLambda());
             while (stateIterator.hasNext()) {
                 State state = stateIterator.next();

@@ -46,8 +46,9 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         // gamma decay steps counter (init)
         this.gammaDecayStepsCounter = 0;
 
-        this.stateFeatures = new StateIterator(this.getStateRepresentation(), this.operator,
-                ComputingInfrastructure.getInfrastructure(), this.getMaxInputRate()).next().getArrayRepresentationLength();
+        this.stateFeatures = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(),
+                this.getMaxInputRate()).next().getArrayRepresentationLength();
         this.numActions = this.getTotalActions();
 
         // input and output layer nodes number
@@ -90,7 +91,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
     protected State getIndexedState(State state) {
         StateIterator stateIterator = new StateIterator(this.getStateRepresentation(),
-                this.operator, ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
+                this.operator.getMaxParallelism(), ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
 
         while (stateIterator.hasNext()) {
             State indexedNewState = stateIterator.next();

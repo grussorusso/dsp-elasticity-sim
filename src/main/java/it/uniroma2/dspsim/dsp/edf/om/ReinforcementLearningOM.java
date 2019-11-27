@@ -164,7 +164,8 @@ public abstract class ReinforcementLearningOM extends OperatorManager implements
         // get input rate level
         final int inputRateLevel = discretizeInputRate(maxInputRate, inputRateLevels, monitoringInfo.getInputRate());
         // build new state
-        return StateFactory.createState(stateRepresentation, -1, deployment, inputRateLevel, this.inputRateLevels, operator);
+        return StateFactory.createState(stateRepresentation, -1, deployment, inputRateLevel,
+                this.inputRateLevels, this.operator.getMaxParallelism());
     }
 
     private int discretizeInputRate(double max, int levels, double inputRate)

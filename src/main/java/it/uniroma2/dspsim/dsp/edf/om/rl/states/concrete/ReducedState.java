@@ -20,12 +20,12 @@ public class ReducedState extends State {
     // binary k mask, e.g. (1, 2, 0) -> (1, 1, 0)
     private int[] kMask;
 
-    public ReducedState(int index, int[] k, int lambda, int maxLambda,Operator operator) {
-        super(index, k, lambda, maxLambda, operator);
+    public ReducedState(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
+        super(index, k, lambda, maxLambda, maxParallelism);
 
         this.kLevel = Arrays.stream(k).sum();
 
-        this.maxKLevel = operator.getMaxParallelism();
+        this.maxKLevel = maxParallelism;
 
         this.kMask = Arrays.stream(k).map(value -> value > 0 ? 1 : 0).toArray();
     }

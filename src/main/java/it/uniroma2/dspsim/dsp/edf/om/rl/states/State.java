@@ -15,14 +15,14 @@ public abstract class State {
     private int [] actualDeployment;
     private int lambda;
     private int maxLambda;
-    protected Operator operator;
+    protected int maxParallelism;
 
-    protected State(int index, int[] k, int lambda, int maxLambda, Operator operator) {
+    protected State(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
         this.index = index;
         this.actualDeployment = k;
         this.lambda = lambda;
         this.maxLambda = maxLambda;
-        this.operator = operator;
+        this.maxParallelism = maxParallelism;
     }
 
     public int overallParallelism() {
@@ -44,7 +44,7 @@ public abstract class State {
         }
 
         return this.overallParallelism() + delta >= 1 &&
-                this.overallParallelism() + delta <= this.operator.getMaxParallelism();
+                this.overallParallelism() + delta <= this.maxParallelism;
     }
 
     public int[] getActualDeployment() { return actualDeployment; }

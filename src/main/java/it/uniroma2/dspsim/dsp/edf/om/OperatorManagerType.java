@@ -6,7 +6,8 @@ public enum OperatorManagerType {
     Q_LEARNING,
     RL_Q_LEARNING,
     DEEP_Q_LEARNING,
-    DEEP_V_LEARNING;
+    DEEP_V_LEARNING,
+    VALUE_ITERATION;
 
     public static OperatorManagerType fromString(String str) throws IllegalArgumentException {
         if (str.equalsIgnoreCase("do-nothing")) {
@@ -21,6 +22,8 @@ public enum OperatorManagerType {
             return DEEP_Q_LEARNING;
         } else if (str.equalsIgnoreCase("deep-v-learning")) {
             return DEEP_V_LEARNING;
+        } else if (str.equalsIgnoreCase("vi")) {
+            return VALUE_ITERATION;
         } else {
             throw new IllegalArgumentException("Not valid operator manager type " + str);
         }
