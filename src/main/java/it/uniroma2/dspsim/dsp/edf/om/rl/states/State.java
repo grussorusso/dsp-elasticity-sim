@@ -65,22 +65,27 @@ public abstract class State {
         return MathUtils.normalizeValue(this.lambda, this.maxLambda);
     }
 
+    public INDArray arrayRepresentation() throws IllegalArgumentException {
+        return arrayRepresentation(getArrayRepresentationLength());
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof State)) return false;
         State state = (State) o;
         return getLambda() == state.getLambda() &&
-                getMaxLambda() == state.getMaxLambda();
+                getMaxLambda() == state.getMaxLambda() &&
+                Arrays.equals(getActualDeployment(), state.getActualDeployment());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getLambda(), getMaxLambda());
-    }
-
-    public INDArray arrayRepresentation() throws IllegalArgumentException {
-        return arrayRepresentation(getArrayRepresentationLength());
+        int result = 1;
+        result = 31 * result + lambda;
+        result = 31 * result + maxLambda;
+        result = 31 * result + MathUtils.toBase10(actualDeployment, maxParallelism + 1);
+        return result;
     }
 
     public abstract INDArray arrayRepresentation(int features) throws IllegalArgumentException;

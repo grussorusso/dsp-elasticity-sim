@@ -48,7 +48,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
         this.stateFeatures = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
                 ComputingInfrastructure.getInfrastructure(),
-                this.getMaxInputRate()).next().getArrayRepresentationLength();
+                this.getInputRateLevels()).next().getArrayRepresentationLength();
         this.numActions = this.getTotalActions();
 
         // input and output layer nodes number

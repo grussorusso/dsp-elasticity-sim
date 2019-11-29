@@ -70,6 +70,7 @@ public class ReducedState extends State {
         return oneHotVector;
     }
 
+    /*
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -83,8 +84,12 @@ public class ReducedState extends State {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(super.hashCode(), kLevel, maxKLevel);
-        result = 31 * result + Arrays.hashCode(kMask);
+        int kMaskBase10 = MathUtils.toBase10(kMask, 2);
+        int result = super.hashCode();
+        result = 31 * result + (kLevel * kMaskBase10);
+        result = 31 * result + maxKLevel;
+        result = 31 * result + kMaskBase10;
         return result;
     }
+    */
 }

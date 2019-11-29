@@ -1,5 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete;
 
+import com.google.common.base.Objects;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
@@ -10,7 +11,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 public class KLambdaState extends State {
     // k usage
@@ -76,21 +76,23 @@ public class KLambdaState extends State {
         return (double) value/ (double) maxValue;
     }
 
+    /*
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof KLambdaState)) return false;
         if (!super.equals(o)) return false;
         KLambdaState that = (KLambdaState) o;
-        return Arrays.equals(k, that.k);
+        return Arrays.equals(getK(), that.getK());
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + Arrays.hashCode(k);
+        result = 31 * result + MathUtils.toBase10(k, maxParallelism + 1);
         return result;
     }
+    */
 
     public int[] getK() {
         return k;

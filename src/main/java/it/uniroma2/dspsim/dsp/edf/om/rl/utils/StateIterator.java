@@ -22,13 +22,13 @@ public class StateIterator implements Iterator<State> {
     private StateType stateType;
     private State lastState;
 
-    public StateIterator(StateType stateType, int maxParallelism, ComputingInfrastructure infrastructure, int maxLambda) {
+    public StateIterator(StateType stateType, int maxParallelism, ComputingInfrastructure infrastructure, int lambdaLevels) {
         this.resourcesNumber = infrastructure.getNodeTypes().length;
         this.k = new int[this.resourcesNumber];
         this.k[0] = 1; // avoid (0,0, ... , 0)
         this.lambda = -1;
         this.stateIndex = -1;
-        this.maxLambda = maxLambda;
+        this.maxLambda = lambdaLevels - 1;
         this.maxParallelism = maxParallelism;
         this.lastKIndex = 0;
         this.stateType = stateType;

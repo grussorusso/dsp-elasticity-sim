@@ -106,6 +106,7 @@ public class GeneralResourcesState extends State {
         return array;
     }
 
+    /*
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -119,6 +120,11 @@ public class GeneralResourcesState extends State {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), normalizedCPUSpeedup, maxCPUSpeedupInUse, minCPUSpeedupInUse);
+        int result = super.hashCode();
+        result = 31 * result + Double.hashCode(normalizedCPUSpeedup);
+        result = 31 * result + Double.hashCode(maxCPUSpeedupInUse);
+        result = 31 * result + Double.hashCode(minCPUSpeedupInUse);
+        return result;
     }
+    */
 }
