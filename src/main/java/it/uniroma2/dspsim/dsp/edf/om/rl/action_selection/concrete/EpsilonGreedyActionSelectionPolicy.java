@@ -52,7 +52,9 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
         this.epsilonDecayStepsCounter = 0;
 
         // init random number generator
-        this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_EG_RANDOM_SEED_KEY, 1234L));
+        // TODO create unique seed for each operator manager
+        //this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_EG_RANDOM_SEED_KEY, 1234L));
+        this.rng = new Random();
     }
 
     @Override

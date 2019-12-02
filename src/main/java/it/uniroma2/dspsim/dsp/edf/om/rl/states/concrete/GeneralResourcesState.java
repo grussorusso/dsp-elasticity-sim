@@ -105,26 +105,4 @@ public class GeneralResourcesState extends State {
 
         return array;
     }
-
-    /*
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof GeneralResourcesState)) return false;
-        if (!super.equals(o)) return false;
-        GeneralResourcesState that = (GeneralResourcesState) o;
-        return Double.compare(that.normalizedCPUSpeedup, normalizedCPUSpeedup) == 0 &&
-                Double.compare(that.maxCPUSpeedupInUse, maxCPUSpeedupInUse) == 0 &&
-                Double.compare(that.minCPUSpeedupInUse, minCPUSpeedupInUse) == 0;
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Double.hashCode(normalizedCPUSpeedup);
-        result = 31 * result + Double.hashCode(maxCPUSpeedupInUse);
-        result = 31 * result + Double.hashCode(minCPUSpeedupInUse);
-        return result;
-    }
-    */
 }

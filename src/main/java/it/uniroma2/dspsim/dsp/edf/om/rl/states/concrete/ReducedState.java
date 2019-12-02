@@ -69,27 +69,4 @@ public class ReducedState extends State {
         oneHotVector.put(0, index - 1, 1);
         return oneHotVector;
     }
-
-    /*
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ReducedState)) return false;
-        if (!super.equals(o)) return false;
-        ReducedState that = (ReducedState) o;
-        return kLevel == that.kLevel &&
-                maxKLevel == that.maxKLevel &&
-                Arrays.equals(kMask, that.kMask);
-    }
-
-    @Override
-    public int hashCode() {
-        int kMaskBase10 = MathUtils.toBase10(kMask, 2);
-        int result = super.hashCode();
-        result = 31 * result + (kLevel * kMaskBase10);
-        result = 31 * result + maxKLevel;
-        result = 31 * result + kMaskBase10;
-        return result;
-    }
-    */
 }

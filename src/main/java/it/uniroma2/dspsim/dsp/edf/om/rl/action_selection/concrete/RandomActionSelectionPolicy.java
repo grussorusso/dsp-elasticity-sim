@@ -21,7 +21,9 @@ public class RandomActionSelectionPolicy extends ActionSelectionPolicy {
         // get configuration instance
         Configuration configuration = Configuration.getInstance();
 
-        this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_R_RANDOM_SEED_KEY, 1234L));
+        // TODO create unique seed for each operator manager
+        //this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_R_RANDOM_SEED_KEY, 1234L));
+        this.rng = new Random();
     }
 
     @Override

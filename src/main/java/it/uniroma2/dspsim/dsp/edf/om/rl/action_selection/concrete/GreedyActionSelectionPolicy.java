@@ -30,7 +30,7 @@ public class GreedyActionSelectionPolicy extends ActionSelectionPolicy {
         }
 
         //if (newAction != null)
-        //    System.out.println(newAction.getIndex());
+        //   System.out.println(newAction.getIndex());
         return newAction;
     }
 }

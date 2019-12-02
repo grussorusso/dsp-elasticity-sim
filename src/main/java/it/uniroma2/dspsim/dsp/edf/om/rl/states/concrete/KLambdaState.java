@@ -29,7 +29,7 @@ public class KLambdaState extends State {
 
     private int getTotalStates() {
         StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
-                ComputingInfrastructure.getInfrastructure(), this.getMaxLambda());
+                ComputingInfrastructure.getInfrastructure(), this.getMaxLambda() + 1);
         int count = 0;
         while (stateIterator.hasNext()) {
             stateIterator.next();
@@ -42,7 +42,7 @@ public class KLambdaState extends State {
     public INDArray arrayRepresentation(int features) throws IllegalArgumentException {
         if (this.getIndex() < 0) {
             StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
-                    ComputingInfrastructure.getInfrastructure(), this.getMaxLambda());
+                    ComputingInfrastructure.getInfrastructure(), this.getMaxLambda() + 1);
             while (stateIterator.hasNext()) {
                 State state = stateIterator.next();
                 if (this.equals(state)) {
@@ -75,24 +75,6 @@ public class KLambdaState extends State {
     private double lambdaLevelNormalized(int value, int maxValue) {
         return (double) value/ (double) maxValue;
     }
-
-    /*
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof KLambdaState)) return false;
-        if (!super.equals(o)) return false;
-        KLambdaState that = (KLambdaState) o;
-        return Arrays.equals(getK(), that.getK());
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + MathUtils.toBase10(k, maxParallelism + 1);
-        return result;
-    }
-    */
 
     public int[] getK() {
         return k;

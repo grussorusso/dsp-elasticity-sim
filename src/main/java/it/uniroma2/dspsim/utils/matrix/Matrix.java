@@ -28,7 +28,6 @@ public abstract class Matrix<X, Y, V extends Number> implements MatrixOps<X, Y, 
     @Override
     public void setValue(X x, Y y, V v) {
         table.put(x, y, v);
-        System.out.println(this.table.rowKeySet().size());
     }
 
     public void add(X x, Y y, V v) {
@@ -85,4 +84,18 @@ public abstract class Matrix<X, Y, V extends Number> implements MatrixOps<X, Y, 
 
     protected abstract V sum(V v1, V v2);
     protected abstract V multiplyValues(V v1, V v2);
+
+    public void print() {
+        Set<X> xLabels = this.getRowLabels();
+        for (X x : xLabels) {
+            System.out.println("Row: " + x.toString());
+            Set<Y> yLabels = this.getColLabels(x);
+            StringBuilder row = new StringBuilder();
+            for (Y y : yLabels) {
+                row.append(this.getValue(x, y));
+                row.append("\t");
+            }
+            System.out.println(row);
+        }
+    }
 }

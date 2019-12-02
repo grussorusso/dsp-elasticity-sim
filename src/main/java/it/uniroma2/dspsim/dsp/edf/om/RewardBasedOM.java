@@ -133,7 +133,7 @@ public abstract class RewardBasedOM extends OperatorManager {
         final int inputRateLevel = MathUtils.discretizeValue(maxInputRate, monitoringInfo.getInputRate(), inputRateLevels);
         // build new state
         return StateFactory.createState(stateRepresentation, -1, deployment, inputRateLevel,
-                this.inputRateLevels, this.operator.getMaxParallelism());
+                this.inputRateLevels - 1, this.operator.getMaxParallelism());
     }
 
     private double computeCost(Action action, State currentState, double inputRate) {

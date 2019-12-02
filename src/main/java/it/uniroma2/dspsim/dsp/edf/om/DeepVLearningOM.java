@@ -104,7 +104,7 @@ public class DeepVLearningOM extends DeepLearningOM {
             int aIndex = action.getResTypeIndex();
             pdk[aIndex] = pdk[aIndex] + action.getDelta();
             return StateFactory.createState(this.getStateRepresentation(), -1, pdk,
-                    state.getLambda(), this.getInputRateLevels(), this.operator.getMaxParallelism());
+                    state.getLambda(), this.getInputRateLevels() - 1, this.operator.getMaxParallelism());
         } else {
             return state;
         }

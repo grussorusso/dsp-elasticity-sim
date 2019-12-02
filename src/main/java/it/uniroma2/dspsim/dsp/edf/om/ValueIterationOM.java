@@ -1,23 +1,15 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.InputRateFileReader;
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.Reconfiguration;
-import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
-import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
-import it.uniroma2.dspsim.dsp.edf.om.rl.AbstractAction;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
@@ -27,7 +19,6 @@ import it.uniroma2.dspsim.utils.MathUtils;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.matrix.IntegerMatrix;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.*;
 
@@ -46,15 +37,8 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
     public ValueIterationOM(Operator operator) {
         super(operator);
 
-        this.pMatrix = new DoubleMatrix<>(0.0);
-        this.policy = new DoubleMatrix<>(0.0);
-
-        // TODO configure
-        this.gamma = 0.9;
-
         this.inputRateFilePath = Configuration.getInstance()
                 .getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
-
 
         try {
             this.pMatrix = buildPMatrix(this.inputRateFilePath);
@@ -62,15 +46,15 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
             e.printStackTrace();
         }
 
-        StateIterator stateIterator = new StateIterator(getStateRepresentation(), operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
-        long count = 0L;
-        while (stateIterator.hasNext()) {
-            State s = stateIterator.next();
-            count++;
-        }
+        this.policy = new DoubleMatrix<>(0.0);
 
-        valueIteration(0, 0.05);
+        // TODO configure
+        this.gamma = 0.9;
+
+
+        valueIteration(0, 60000, 0.00000000000001);
+
+        this.policy.print();
     }
 
     /**
@@ -79,11 +63,18 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
      *                      even if delta is still greater than theta
      * @param theta accuracy threshold
      */
-    private void valueIteration(int maxIterations, double theta) {
+    private void valueIteration(int maxIterations, long maxTimeMillis, double theta) {
         int stepsCounter = 0;
+        long startIterationTime = 0L;
         double delta = Double.POSITIVE_INFINITY;
-        while (delta > theta || stepsCounter < maxIterations) {
+        while (delta > theta || stepsCounter < maxIterations || maxTimeMillis > 0) {
+            if (maxTimeMillis > 0L)
+                startIterationTime = System.currentTimeMillis();
+
             delta = vi();
+
+            if (maxTimeMillis > 0L)
+                maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);
             // if max iterations is greater than 0 increment counter
             if (maxIterations > 0) {
                 stepsCounter++;
@@ -123,7 +114,7 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
             double newQ = evaluateQ(state, action);
             this.policy.setValue(state.hashCode(), action.hashCode(), newQ);
 
-            delta = Math.max(delta, Math.abs(oldQ - newQ));
+            delta = Math.max(delta, Math.abs(newQ - oldQ));
         }
 
         return delta;
@@ -146,7 +137,8 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
             double p = this.pMatrix.getValue(s.getLambda(), lambda);
             // compute slo violation and deployment cost from post decision operator view
             // recover input rate value from lambda level getting middle value of relative interval
-            double pdCost = computePostDecisionCost(pds.getActualDeployment(), a, MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()));
+            double pdCost = computePostDecisionCost(pds.getActualDeployment(),
+                    MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()));
 
             cost += p * (pdCost + this.gamma * v);
         }
@@ -160,17 +152,14 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
             int aIndex = action.getResTypeIndex();
             pdk[aIndex] = pdk[aIndex] + action.getDelta();
             return StateFactory.createState(this.getStateRepresentation(), -1, pdk,
-                    state.getLambda(), this.getInputRateLevels(), this.operator.getMaxParallelism());
+                    state.getLambda(), this.getInputRateLevels() - 1, this.operator.getMaxParallelism());
         } else {
             return state;
         }
     }
 
-    private double computePostDecisionCost(int[] deployment, Action action, double inputRate) {
+    private double computePostDecisionCost(int[] deployment, double inputRate) {
         double cost = 0.0;
-
-        if (action.getDelta() != 0)
-            cost += this.getwReconf();
 
         final double OPERATOR_SLO = 0.1;
 
