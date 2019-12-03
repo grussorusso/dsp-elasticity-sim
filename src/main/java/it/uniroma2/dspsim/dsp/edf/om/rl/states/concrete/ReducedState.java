@@ -69,4 +69,16 @@ public class ReducedState extends State {
         oneHotVector.put(0, index - 1, 1);
         return oneHotVector;
     }
+
+    public int getkLevel() {
+        return kLevel;
+    }
+
+    public int getMaxKLevel() {
+        return maxKLevel;
+    }
+
+    public int[] getkMask() {
+        return kMask;
+    }
 }

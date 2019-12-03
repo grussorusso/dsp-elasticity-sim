@@ -105,4 +105,16 @@ public class GeneralResourcesState extends State {
 
         return array;
     }
+
+    public double getNormalizedCPUSpeedup() {
+        return normalizedCPUSpeedup;
+    }
+
+    public double getMaxCPUSpeedupInUse() {
+        return maxCPUSpeedupInUse;
+    }
+
+    public double getMinCPUSpeedupInUse() {
+        return minCPUSpeedupInUse;
+    }
 }
