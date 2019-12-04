@@ -30,9 +30,6 @@ public class RLQLearningOM extends ReinforcementLearningOM {
     private static final String STAT_BELLMAN_ERROR_MEAN = "Mean Bellman Error";
     private static final String STAT_BELLMAN_ERROR_SUM = "Bellman Error Sum";
 
-    private static final String SEMI_LOG_SAMPLER_ID = "semi-log-sampler";
-    private static final String STEP_SAMPLER_ID = "step-sampler";
-
     public RLQLearningOM(Operator operator) {
         super(operator);
 
@@ -62,7 +59,7 @@ public class RLQLearningOM extends ReinforcementLearningOM {
         // mean bellman error
         statistics.registerMetric(new MeanMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_MEAN),
                 statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
-                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_LEARNING_STEP_COUNTER))));
+                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER))));
 
         // GLOBAL METRICS
         // total bellman error
@@ -70,12 +67,9 @@ public class RLQLearningOM extends ReinforcementLearningOM {
         // mean bellman error
         MeanMetric meanBellmanErrorMetric = new MeanMetric(STAT_BELLMAN_ERROR_MEAN,
                 statistics.getMetric(STAT_BELLMAN_ERROR_SUM),
-                (CountMetric) statistics.getMetric(STAT_LEARNING_STEP_COUNTER));
-        // add semi-logarithmic sampling to mean bellman error metric
-        TimeLogSampler semiLogSampler = new TimeLogSampler(SEMI_LOG_SAMPLER_ID, 60, 10);
-        meanBellmanErrorMetric.addSampler(semiLogSampler);
+                (CountMetric) statistics.getMetric(STAT_GET_REWARD_COUNTER));
         // add step sampling to mean bellman error metric
-        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 5000);
+        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
         meanBellmanErrorMetric.addSampler(stepSampler);
         statistics.registerMetricIfNotExists(meanBellmanErrorMetric);
     }

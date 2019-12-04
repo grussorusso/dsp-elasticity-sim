@@ -52,7 +52,7 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
         this.gamma = 0.9;
 
 
-        valueIteration(0, 60000, 0.00000000000001);
+        valueIteration(0, 0, 0.0000000000000000001);
 
         this.policy.print();
     }

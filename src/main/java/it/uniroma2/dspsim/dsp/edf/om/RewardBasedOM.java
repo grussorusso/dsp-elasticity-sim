@@ -13,6 +13,7 @@ import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
+import it.uniroma2.dspsim.stats.metrics.IncrementalMeanMetric;
 import it.uniroma2.dspsim.stats.metrics.MeanMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
@@ -21,8 +22,8 @@ import it.uniroma2.dspsim.utils.MathUtils;
 
 public abstract class RewardBasedOM extends OperatorManager {
 
-    private Action lastChosenAction;
-    private State lastState;
+    protected Action lastChosenAction;
+    protected State lastState;
 
     private int maxInputRate;
     private int inputRateLevels;
@@ -35,11 +36,11 @@ public abstract class RewardBasedOM extends OperatorManager {
 
     private ActionSelectionPolicy actionSelectionPolicy;
 
-    private static final String STAT_REWARD_MEAN = "Mean Reward";
-    private static final String STAT_REWARD_SUM = "Reward Sum";
+    protected static final String STAT_REWARD_INCREMENTAL_MEAN = "Incremental Mean Reward";
+    protected static final String STAT_REWARD_SUM = "Reward Sum";
     protected static final String STAT_GET_REWARD_COUNTER = "Get Reward Counter";
 
-    private static final String STEP_SAMPLER_ID = "step-sampler";
+    protected static final String STEP_SAMPLER_ID = "step-sampler";
 
     public RewardBasedOM(Operator operator) {
         super(operator);
@@ -73,23 +74,19 @@ public abstract class RewardBasedOM extends OperatorManager {
         statistics.registerMetric(new CountMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER)));
         // total reward
         statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_REWARD_SUM)));
-        // mean reward
-        statistics.registerMetric(new MeanMetric(getOperatorMetricName(STAT_REWARD_MEAN),
-                statistics.getMetric(getOperatorMetricName(STAT_REWARD_SUM)),
-                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER))));
+        // incremental mean reward
+        statistics.registerMetric(new IncrementalMeanMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_MEAN)));
 
         //GLOBAL METRICS
         // learning step counter
         statistics.registerMetricIfNotExists(new CountMetric(STAT_GET_REWARD_COUNTER));
         // total reward
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_REWARD_SUM));
-        // mean reward
-        MeanMetric meanRewardMetric = new MeanMetric(STAT_REWARD_MEAN, statistics.getMetric(STAT_REWARD_SUM),
-                (CountMetric) statistics.getMetric(STAT_GET_REWARD_COUNTER));
-        // add step sampling to mean reward metric
-        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 5000);
-        meanRewardMetric.addSampler(stepSampler);
-        statistics.registerMetricIfNotExists(meanRewardMetric);
+        // incremental mean reward
+        IncrementalMeanMetric incrementalMeanMetric = new IncrementalMeanMetric(STAT_REWARD_INCREMENTAL_MEAN);
+        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
+        incrementalMeanMetric.addSampler(stepSampler);
+        statistics.registerMetricIfNotExists(incrementalMeanMetric);
     }
 
     protected String getOperatorMetricName(String metricName) {
@@ -111,6 +108,8 @@ public abstract class RewardBasedOM extends OperatorManager {
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_SUM), reward);
             Statistics.getInstance().updateMetric(STAT_GET_REWARD_COUNTER, 1);
             Statistics.getInstance().updateMetric(STAT_REWARD_SUM, reward);
+            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_MEAN), reward);
+            Statistics.getInstance().updateMetric(STAT_REWARD_INCREMENTAL_MEAN, reward);
         }
 
         // pick new action
@@ -136,7 +135,7 @@ public abstract class RewardBasedOM extends OperatorManager {
                 this.inputRateLevels - 1, this.operator.getMaxParallelism());
     }
 
-    private double computeCost(Action action, State currentState, double inputRate) {
+    protected double computeCost(Action action, State currentState, double inputRate) {
         double cost = 0.0;
 
         if (action.getDelta() != 0)
@@ -157,7 +156,7 @@ public abstract class RewardBasedOM extends OperatorManager {
         return cost;
     }
 
-    private Reconfiguration action2reconfiguration(Action action) {
+    protected Reconfiguration action2reconfiguration(Action action) {
         int delta = action.getDelta();
 
         if (delta > 1 || delta < -1) throw new RuntimeException("Unsupported action!");
