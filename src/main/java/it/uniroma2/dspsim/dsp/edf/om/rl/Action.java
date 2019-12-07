@@ -42,4 +42,11 @@ public class Action extends AbstractAction {
     public int getResTypeIndex() {
         return resTypeIndex;
     }
+
+    /**
+     * Dump action
+     */
+    public String dump() {
+        return String.format("A(%d,%d)", delta, resTypeIndex);
+    }
 }

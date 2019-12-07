@@ -19,7 +19,10 @@ import it.uniroma2.dspsim.utils.MathUtils;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.matrix.IntegerMatrix;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 
 public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
@@ -49,12 +52,14 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
         this.policy = new DoubleMatrix<>(0.0);
 
         // TODO configure
-        this.gamma = 0.9;
+        this.gamma = 0.99;
 
-
-        valueIteration(0, 0, 0.0000000000000000001);
+        valueIteration(0, 60000, 1E-14);
 
         this.policy.print();
+
+        dumpPolicyOnFile(String.format("wReconf_%.2f_wSLO_%.2f_wRes_%.2f_gamma_%.3f_vi_QTable.txt",
+                getwReconf(), getwSLO(), getwResources(), gamma));
     }
 
     /**
@@ -83,6 +88,8 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
                 }
             }
         }
+
+        System.out.println(delta);
     }
 
     private double vi() {
@@ -235,5 +242,37 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
     @Override
     protected ActionSelectionPolicy initActionSelectionPolicy() {
         return ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.GREEDY, this);
+    }
+
+    /**
+     * Dump policy on file
+     */
+    private void dumpPolicyOnFile(String filename) {
+        // create file
+        File file = new File(filename);
+        try {
+            if (!file.exists())
+                file.createNewFile();
+            PrintWriter printWriter =new PrintWriter(new FileOutputStream(new File(filename), true));
+            StateIterator stateIterator = new StateIterator(getStateRepresentation(), operator.getMaxParallelism(),
+                    ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
+            while (stateIterator.hasNext()) {
+                State s = stateIterator.next();
+                // print state line
+                printWriter.println(s.dump());
+                ActionIterator ait = new ActionIterator();
+                while (ait.hasNext()) {
+                    Action a = ait.next();
+                    double v = this.policy.getValue(s.hashCode(), a.hashCode());
+                    if (s.validateAction(a)) {
+                        printWriter.print(String.format("%s\t%f\n",a.dump(), v));
+                    }
+                }
+            }
+            printWriter.flush();
+            printWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

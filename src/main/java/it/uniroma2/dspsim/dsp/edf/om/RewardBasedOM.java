@@ -8,6 +8,9 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.GeneralResourcesState;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.KLambdaState;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.ReducedState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
@@ -41,6 +44,8 @@ public abstract class RewardBasedOM extends OperatorManager {
     protected static final String STAT_GET_REWARD_COUNTER = "Get Reward Counter";
 
     protected static final String STEP_SAMPLER_ID = "step-sampler";
+
+    private long counter;
 
     public RewardBasedOM(Operator operator) {
         super(operator);
@@ -84,8 +89,8 @@ public abstract class RewardBasedOM extends OperatorManager {
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_REWARD_SUM));
         // incremental mean reward
         IncrementalMeanMetric incrementalMeanMetric = new IncrementalMeanMetric(STAT_REWARD_INCREMENTAL_MEAN);
-        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
-        incrementalMeanMetric.addSampler(stepSampler);
+        /*StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
+        incrementalMeanMetric.addSampler(stepSampler);*/
         statistics.registerMetricIfNotExists(incrementalMeanMetric);
     }
 
@@ -117,6 +122,12 @@ public abstract class RewardBasedOM extends OperatorManager {
 
         // update state
         lastState = currentState;
+
+        if ((long) Statistics.getInstance().getMetric(STAT_GET_REWARD_COUNTER).getValue() % 5000 == 0) {
+            System.out.println(String.format("Step %d \t -> \t%s",
+                    (long) Statistics.getInstance().getMetric(STAT_GET_REWARD_COUNTER).getValue(),
+                    currentState.dump()));
+        }
 
         // construct reconfiguration from action
         return action2reconfiguration(lastChosenAction);

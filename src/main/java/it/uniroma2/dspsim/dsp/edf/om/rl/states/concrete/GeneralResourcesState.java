@@ -117,4 +117,10 @@ public class GeneralResourcesState extends State {
     public double getMinCPUSpeedupInUse() {
         return minCPUSpeedupInUse;
     }
+
+    @Override
+    public String dump() {
+        return super.dump() + String.format("\t%f\t%f\t%f", this.normalizedCPUSpeedup,
+                this.minCPUSpeedupInUse, this.maxCPUSpeedupInUse);
+    }
 }

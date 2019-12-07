@@ -81,4 +81,17 @@ public class ReducedState extends State {
     public int[] getkMask() {
         return kMask;
     }
+
+    @Override
+    public String dump() {
+        StringBuilder str = new StringBuilder(super.dump());
+        str.append("\t[");
+        for (int i = 0; i < this.kMask.length; i++) {
+            str.append(String.format("%d", this.kMask[i]));
+            if (i < this.kMask.length - 1)
+                str.append(", ");
+        }
+        str.append(String.format("]\t%d\t%d", this.kLevel, this.maxKLevel));
+        return str.toString();
+    }
 }

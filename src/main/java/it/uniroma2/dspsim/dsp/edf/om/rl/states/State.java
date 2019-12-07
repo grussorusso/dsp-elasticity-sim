@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.om.rl.states;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
+import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.utils.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -63,6 +64,20 @@ public abstract class State {
 
     public double getNormalizedLambda() {
         return MathUtils.normalizeValue(this.lambda, this.maxLambda);
+    }
+
+    /**
+     * Dump state
+     */
+    public String dump() {
+        StringBuilder str = new StringBuilder("[");
+        for (int i = 0; i < this.actualDeployment.length; i++) {
+            str.append(String.format("%d", this.actualDeployment[i]));
+            if (i < this.actualDeployment.length - 1)
+                str.append(", ");
+        }
+        str.append(String.format("]\t%d\t%d", this.lambda, this.maxLambda));
+        return str.toString();
     }
 
     public INDArray arrayRepresentation() throws IllegalArgumentException {

@@ -9,10 +9,14 @@ public class ApplicationBuilder {
 	static public Application singleOperatorApplication() {
 		Application app = new Application();
 
+		final double mu = 180.0;
+		final double serviceTimeMean = 1/mu;
+		final double serviceTimeVariance = 1.0/mu*1.0/mu/2.0;
+
 		final int maxParallelism = Configuration.getInstance()
 				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
 		Operator op = new Operator("filter",
-				new MG1OperatorQueueModel(1/100.0, 0.0), maxParallelism);
+				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
 		app.addOperator(op);
 		return app;
 	}
