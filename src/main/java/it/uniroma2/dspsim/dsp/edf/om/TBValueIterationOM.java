@@ -21,9 +21,12 @@ import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.matrix.IntegerMatrix;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
+import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
+import org.deeplearning4j.nn.conf.layers.DropoutLayer;
+import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -33,6 +36,9 @@ import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -95,13 +101,19 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
             startNetworkUIServer();
         }
 
-        tbvi(10000, 512, 32);
+        tbvi(60000, 512, 32);
 
         StateIterator stateIterator = new StateIterator(getStateRepresentation(), this.operator.getMaxParallelism(),
                 ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
         while (stateIterator.hasNext()) {
             State s = stateIterator.next();
-            System.out.println(s.dump() + "\tvalue: " + getV(s));
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action a = actionIterator.next();
+                if (validateAction(s, a)) {
+                    System.out.println(s.dump() + "\t" + a.dump() + "\tV: " + getV(computePostDecisionState(s, a)));
+                }
+            }
         }
     }
 
@@ -110,27 +122,23 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
         // get initial state
         State state = null;
         long tl = 0L;
-        boolean updateNetwork = false;
 
         while (millis > 0) {
             long startIteration = System.currentTimeMillis();
 
             if (trajectoryLength > 0 && tl % trajectoryLength == 0)
                 tl = 0L;
-            if (tl == 0L)
+            if (tl == 0L) {
+                // reset memory
+                this.training = null;
+                this.labels = null;
                 // start new trajectory
                 state = randomState();
+            }
             // choose random action to evaluate
             Action action = randomASP.selectAction(state);
 
-            updateNetwork = tl % batchSize == 0 && tl > 0;
-
-            state = tbviIteration(state, action, updateNetwork);
-
-            if (updateNetwork) {
-                training = null;
-                labels = null;
-            }
+            state = tbviIteration(state, action, batchSize);
 
             tl++;
 
@@ -138,26 +146,28 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
         }
     }
 
-    private State tbviIteration(State s, Action a, boolean update) {
+    private State tbviIteration(State s, Action a, int batchSize) {
         double oldQ = getQ(s, a).getDouble(0);
-        double newQ = evaluateQ(s, a);
-        double delta = newQ - oldQ;
+        double r = evaluateReward(s, a);
+        State pds = computePostDecisionState(s, a);
+        double q = getQ(pds, getActionSelectionPolicy().selectAction(pds)).getDouble(0);
+        double delta = (r + this.gamma * q) - oldQ;
         //System.out.println(delta);
 
         INDArray trainingInput = buildInput(computePostDecisionState(s, a));
-        INDArray label = Nd4j.create(1).put(0, 0, newQ);
+        INDArray label = Nd4j.create(1).put(0, 0, r + (this.gamma * q));
 
-        if (training == null && labels == null) {
-            training = trainingInput;
-            labels = label;
+        if (this.training == null && this.labels == null) {
+            this.training = trainingInput;
+            this.labels = label;
         } else {
             training = Nd4j.concat(0, training, trainingInput);
             labels = Nd4j.concat(0, labels, label);
         }
-
-        if (update) {
-            this.policy.fit(training, labels);
-        }
+        DataSet memory = new DataSet(this.training, this.labels);
+        memory.shuffle();
+        List<DataSet> batches = memory.batchBy(batchSize);
+        this.policy.fit(batches.get(0));
 
         return sampleNextState(s, a);
     }
@@ -234,16 +244,13 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
         }
     }
 
-    private double evaluateQ(State s, Action a) {
+    private double evaluateReward(State s, Action a) {
         double cost = 0.0;
         // compute reconfiguration cost
         if (a.getDelta() != 0)
             cost += this.getwReconf();
         // from s,a compute pds
         State pds = computePostDecisionState(s, a);
-        // get V(s) using the greedy action selection policy from post decision state
-        Action greedyAction = getActionSelectionPolicy().selectAction(pds);
-        double v = getQ(pds, greedyAction).getDouble(0);
         // for each lambda level with p != 0 in s.getLambda() row
         Set<Integer> possibleLambdas = pMatrix.getColLabels(s.getLambda());
         for (int lambda : possibleLambdas) {
@@ -254,7 +261,7 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
             double pdCost = computePostDecisionCost(pds.getActualDeployment(),
                     MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()));
 
-            cost += p * (pdCost + this.gamma * v);
+            cost += p * pdCost;
         }
 
         return cost;
@@ -345,17 +352,20 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
                                 .nOut(32)
                                 .activation(Activation.RELU)
                                 .build(),
-                        new DenseLayer.Builder()
+                        /*new LSTM.Builder()
+                                .activation(Activation.SOFTSIGN)
                                 .nIn(32)
-                                .nOut(this.actionsCount)
-                                .activation(Activation.RELU)
-                                .build(),
+                                .nOut(32)
+                                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
+                                .gradientNormalizationThreshold(10)
+                                .build(),*/
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                //.activation(Activation.SOFTMAX)
-                                .nIn(this.actionsCount)
+                                .activation(Activation.IDENTITY)
+                                .nIn(32)
                                 .nOut(this.outputLayerNodesNumber)
                                 .build()
                 )
+                .pretrain(false)
                 .backprop(true)
                 .build();
 
