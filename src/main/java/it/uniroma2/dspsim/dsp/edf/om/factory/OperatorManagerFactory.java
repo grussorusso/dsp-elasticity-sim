@@ -30,6 +30,8 @@ public class OperatorManagerFactory {
                 return new DeepVLearningOM(operator);
             case VALUE_ITERATION:
                 return new ValueIterationOM(operator);
+            case TRAJECTORY_BASED_VALUE_ITERATION:
+                return new TBValueIterationOM(operator);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not valid operator manager type: " + operatorManagerType.toString());

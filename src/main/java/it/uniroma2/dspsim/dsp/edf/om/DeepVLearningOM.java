@@ -131,7 +131,7 @@ public class DeepVLearningOM extends DeepLearningOM {
     @Override
     protected MultiLayerConfiguration buildNeuralNetwork() {
         return new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.ZERO)
+                .weightInit(WeightInit.XAVIER)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new Sgd(0.05))
                 .list(
