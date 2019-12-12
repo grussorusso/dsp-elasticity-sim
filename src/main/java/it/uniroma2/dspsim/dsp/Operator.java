@@ -19,6 +19,8 @@ public class Operator {
 	private Collection<Operator> upstreamOperators = new ArrayList<>();
 	private Collection<Operator> downstreamOperators = new ArrayList<>();
 
+	private double sloRespTime;
+
 	public Operator(String name, OperatorQueueModel queueModel, int maxParallelism) {
 		this.name = name;
 
@@ -34,6 +36,10 @@ public class Operator {
 
 	public void setSelectivity(double selectivity) {
 		this.selectivity = selectivity;
+	}
+
+	public void setSloRespTime(double sloRespTime) {
+		this.sloRespTime = sloRespTime;
 	}
 
 	public double utilization(double inputRate) {
@@ -142,6 +148,8 @@ public class Operator {
 	public ArrayList<NodeType> getInstances() {
 		return instances;
 	}
+
+	public double getSloRespTime() { return sloRespTime; }
 
 	@Override
 	public boolean equals(Object o) {

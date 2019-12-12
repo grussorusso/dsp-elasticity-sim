@@ -8,19 +8,14 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.GeneralResourcesState;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.KLambdaState;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.ReducedState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.IncrementalMeanMetric;
-import it.uniroma2.dspsim.stats.metrics.MeanMetric;
+import it.uniroma2.dspsim.stats.metrics.IncrementalAvgMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
-import it.uniroma2.dspsim.stats.samplers.TimeLogSampler;
 import it.uniroma2.dspsim.utils.MathUtils;
 
 public abstract class RewardBasedOM extends OperatorManager {
@@ -80,7 +75,7 @@ public abstract class RewardBasedOM extends OperatorManager {
         // total reward
         statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_REWARD_SUM)));
         // incremental mean reward
-        statistics.registerMetric(new IncrementalMeanMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_MEAN)));
+        statistics.registerMetric(new IncrementalAvgMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_MEAN)));
 
         //GLOBAL METRICS
         // learning step counter
@@ -88,10 +83,10 @@ public abstract class RewardBasedOM extends OperatorManager {
         // total reward
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_REWARD_SUM));
         // incremental mean reward
-        IncrementalMeanMetric incrementalMeanMetric = new IncrementalMeanMetric(STAT_REWARD_INCREMENTAL_MEAN);
-        /*StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
-        incrementalMeanMetric.addSampler(stepSampler);*/
-        statistics.registerMetricIfNotExists(incrementalMeanMetric);
+        IncrementalAvgMetric incrementalAvgMetric = new IncrementalAvgMetric(STAT_REWARD_INCREMENTAL_MEAN);
+        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
+        incrementalAvgMetric.addSampler(stepSampler);
+        statistics.registerMetricIfNotExists(incrementalAvgMetric);
     }
 
     protected String getOperatorMetricName(String metricName) {
@@ -123,12 +118,6 @@ public abstract class RewardBasedOM extends OperatorManager {
         // update state
         lastState = currentState;
 
-        if ((long) Statistics.getInstance().getMetric(STAT_GET_REWARD_COUNTER).getValue() % 5000 == 0) {
-            System.out.println(String.format("Step %d \t -> \t%s",
-                    (long) Statistics.getInstance().getMetric(STAT_GET_REWARD_COUNTER).getValue(),
-                    currentState.dump()));
-        }
-
         // construct reconfiguration from action
         return action2reconfiguration(lastChosenAction);
     }
@@ -152,14 +141,11 @@ public abstract class RewardBasedOM extends OperatorManager {
         if (action.getDelta() != 0)
             cost += wReconf;
 
-        /* TODO Given the application latency SLO,
-           we should give the OperatorManager a per-operator SLO
+        /* we give the OperatorManager a per-operator SLO
            at the beginning (e.g., each operator gets at most 1/n of the application SLO,
            where n is the number of operators on a source-sink path.
         */
-        final double OPERATOR_SLO = 0.1;
-
-        if (operator.responseTime(inputRate) > OPERATOR_SLO)
+        if (operator.responseTime(inputRate) > operator.getSloRespTime())
             cost += wSLO;
 
         cost += operator.computeNormalizedDeploymentCost() * wResources;

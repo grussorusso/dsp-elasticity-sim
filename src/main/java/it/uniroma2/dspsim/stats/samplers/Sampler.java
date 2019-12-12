@@ -21,8 +21,9 @@ public abstract class Sampler {
 
         //TODO configure it
         this.writers = new KeyValueStorage<>();
-        this.writers.addKeyValue("console", new ConsoleMetricOutputWriter());
-        this.writers.addKeyValue("csv", new CSVMetricOutputWriter(new String[]{"Day", "Value"}));
+
+        // TODO sampler builder
+        //this.writers.addKeyValue("console", new ConsoleMetricOutputWriter());
     }
 
     protected void dump(double step, Metric m) {
@@ -43,5 +44,9 @@ public abstract class Sampler {
 
     public KeyValueStorage<String, MetricSampleInfo> getMetricSampleInfo() {
         return metricSampleInfo;
+    }
+
+    public KeyValueStorage<String, MetricOutputWriter> getWriters() {
+        return writers;
     }
 }

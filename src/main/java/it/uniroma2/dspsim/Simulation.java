@@ -10,7 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.MeanMetric;
+import it.uniroma2.dspsim.stats.metrics.AvgMetric;
 import it.uniroma2.dspsim.stats.metrics.PercentageMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.utils.LoggingUtils;
@@ -84,7 +84,7 @@ public class Simulation {
 		statistics.registerMetric(new PercentageMetric(STAT_RESOURCES_COST_PERCENTAGE,
 				statistics.getMetric(STAT_RESOURCES_COST_USED_SUM), statistics.getMetric(STAT_RESOURCES_COST_MAX_SUM)));
 		// resources cost mean
-		statistics.registerMetric(new MeanMetric(STAT_RESOURCES_COST_MEAN,
+		statistics.registerMetric(new AvgMetric(STAT_RESOURCES_COST_MEAN,
 				statistics.getMetric(STAT_RESOURCES_COST_USED_SUM), (CountMetric) statistics.getMetric(STAT_STEPS_COUNTER)));
 	}
 
@@ -123,6 +123,10 @@ public class Simulation {
 
 			// metrics sampling
 			Statistics.getInstance().sampleAll(time);
+
+			if (time % 5000 == 0)
+				// TODO print simulation completion percentage
+				System.out.println(time);
 
 			time++;
 		}
@@ -163,7 +167,7 @@ public class Simulation {
 					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
-			Application app = ApplicationBuilder.singleOperatorApplication();
+			Application app = ApplicationBuilder.buildPaperApplication();
 			ApplicationManager am = new ApplicationManager(app);
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);

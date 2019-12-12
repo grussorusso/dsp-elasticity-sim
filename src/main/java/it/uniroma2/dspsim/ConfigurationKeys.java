@@ -31,7 +31,7 @@ public abstract class ConfigurationKeys {
 	 * Constraints.
 	 */
 	/** Current SLO in terms of application latency (seconds). */
-	public static final String SLO_LATENCY_KEY = "dsp.slolatency";
+	public static final String SLO_LATENCY_KEY = "dsp.slo.latency";
 
 	/**
 	 * Type of OperatorManager to use.

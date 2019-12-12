@@ -270,8 +270,6 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
     private double computePostDecisionCost(int[] deployment, double inputRate) {
         double cost = 0.0;
 
-        final double OPERATOR_SLO = 0.1;
-
         double currentSpeedup = Double.POSITIVE_INFINITY;
         List<NodeType> usedNodeTypes = new ArrayList<>();
         List<NodeType> operatorInstances = new ArrayList<>();
@@ -286,7 +284,7 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
         for (NodeType nt : usedNodeTypes)
             currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
 
-        if (this.operator.getQueueModel().responseTime(inputRate, operatorInstances.size(), currentSpeedup) > OPERATOR_SLO)
+        if (this.operator.getQueueModel().responseTime(inputRate, operatorInstances.size(), currentSpeedup) > this.operator.getSloRespTime())
             cost += this.getwSLO();
 
         double deploymentCost = 0.0;

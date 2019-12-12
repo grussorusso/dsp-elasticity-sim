@@ -1,11 +1,11 @@
 package it.uniroma2.dspsim.stats.metrics;
 
-public class MeanMetric extends Metric {
+public class AvgMetric extends Metric {
 
     private Metric sum;
     private CountMetric count;
 
-    public MeanMetric(String id, Metric sum, CountMetric count) {
+    public AvgMetric(String id, Metric sum, CountMetric count) {
         super(id);
         if (sum instanceof CountMetric || sum instanceof RealValuedCountMetric) {
             this.sum = sum;

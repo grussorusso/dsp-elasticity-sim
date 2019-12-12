@@ -10,18 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCa
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
-import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.infrastructure.NodeType;
-import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.IncrementalMeanMetric;
-import it.uniroma2.dspsim.stats.metrics.MeanMetric;
-import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
-import it.uniroma2.dspsim.stats.samplers.StepSampler;
-import it.uniroma2.dspsim.stats.samplers.TimeLogSampler;
-import it.uniroma2.dspsim.utils.MathUtils;
 
 public abstract class ReinforcementLearningOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
 

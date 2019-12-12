@@ -11,11 +11,10 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelection
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.MeanMetric;
+import it.uniroma2.dspsim.stats.metrics.AvgMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
-import it.uniroma2.dspsim.stats.samplers.TimeLogSampler;
 
 public class RLQLearningOM extends ReinforcementLearningOM {
     private QTable qTable;
@@ -57,7 +56,7 @@ public class RLQLearningOM extends ReinforcementLearningOM {
         // total bellman error
         statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)));
         // mean bellman error
-        statistics.registerMetric(new MeanMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_MEAN),
+        statistics.registerMetric(new AvgMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_MEAN),
                 statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
                 (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER))));
 
@@ -65,7 +64,7 @@ public class RLQLearningOM extends ReinforcementLearningOM {
         // total bellman error
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_BELLMAN_ERROR_SUM));
         // mean bellman error
-        MeanMetric meanBellmanErrorMetric = new MeanMetric(STAT_BELLMAN_ERROR_MEAN,
+        AvgMetric meanBellmanErrorMetric = new AvgMetric(STAT_BELLMAN_ERROR_MEAN,
                 statistics.getMetric(STAT_BELLMAN_ERROR_SUM),
                 (CountMetric) statistics.getMetric(STAT_GET_REWARD_COUNTER));
         // add step sampling to mean bellman error metric

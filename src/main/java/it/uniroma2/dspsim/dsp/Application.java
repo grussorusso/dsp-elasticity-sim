@@ -109,10 +109,6 @@ public class Application {
 		return operators;
 	}
 
-	public List<ArrayList<Operator>> getSourceSinkPaths() {
-		return sourceSinkPaths;
-	}
-
 	public double computeDeploymentCost() {
 		double totalCost = 0.0;
 		for (Operator op : getOperators())
@@ -128,4 +124,17 @@ public class Application {
 
 		return totalCost;
 	}
+
+    public double getMaxPathLength(Operator operator) {
+		int length = 1;
+		for (ArrayList<Operator> path : this.sourceSinkPaths) {
+			for (Operator op : path) {
+				if (operator.equals(op)) {
+					length = Math.max(length, path.size());
+					break;
+				}
+			}
+		}
+		return length;
+    }
 }

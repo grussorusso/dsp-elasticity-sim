@@ -1,6 +1,11 @@
 package it.uniroma2.dspsim.stats.samplers;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
+import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
 import it.uniroma2.dspsim.stats.metrics.Metric;
+import it.uniroma2.dspsim.stats.output.CSVMetricOutputWriter;
+import it.uniroma2.dspsim.stats.output.TextMetricOutputWriter;
 
 public class StepSampler extends Sampler {
     private final String STEP_COUNTER_KEY = "counter";
@@ -10,11 +15,16 @@ public class StepSampler extends Sampler {
     public StepSampler(String id, int step) {
         super(id);
         this.step = step;
+
+        //this.getWriters().addKeyValue("csv", new CSVMetricOutputWriter(true, "Day", "Value"));
+        this.getWriters().addKeyValue("dat", new TextMetricOutputWriter(true));
     }
 
     @Override
     public void addMetricSampleInfo(Metric metric) {
-        String filename = String.format("%s_step_%d_sampling.csv", metric.getId(), step);
+        //String filename = String.format("%s_step_%d_sampling.csv", metric.getId(), step);
+        String filename = String.format("%s_step_%d_sampling_%s.dat", metric.getId(), step,
+                Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""));
         MetricSampleInfo metricSampleInfo = new MetricSampleInfo(metric.getId(), filename);
         metricSampleInfo.getMetadata().addKeyValue(STEP_COUNTER_KEY, -1);
         this.getMetricSampleInfo().addKeyValue(metric.getId(), metricSampleInfo);

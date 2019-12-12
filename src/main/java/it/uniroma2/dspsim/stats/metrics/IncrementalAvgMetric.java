@@ -1,10 +1,10 @@
 package it.uniroma2.dspsim.stats.metrics;
 
-public class IncrementalMeanMetric extends Metric {
+public class IncrementalAvgMetric extends Metric {
     private long count;
     private double mean;
 
-    public IncrementalMeanMetric(String id) {
+    public IncrementalAvgMetric(String id) {
         super(id);
         this.count = 0L;
         this.mean = 0.0;
