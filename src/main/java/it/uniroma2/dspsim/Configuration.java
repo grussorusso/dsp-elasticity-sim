@@ -4,6 +4,7 @@ package it.uniroma2.dspsim;
 import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.io.*;
+import java.time.Instant;
 import java.util.Properties;
 
 public class Configuration {

@@ -26,7 +26,7 @@ public class RLQLearningOM extends ReinforcementLearningOM {
 
     private ActionSelectionPolicy greedyActionSelection;
 
-    private static final String STAT_BELLMAN_ERROR_MEAN = "Mean Bellman Error";
+    private static final String STAT_BELLMAN_ERROR_AVG = "Bellman Error Avg";
     private static final String STAT_BELLMAN_ERROR_SUM = "Bellman Error Sum";
 
     public RLQLearningOM(Operator operator) {
@@ -55,22 +55,22 @@ public class RLQLearningOM extends ReinforcementLearningOM {
         // PER OPERATOR METRICS
         // total bellman error
         statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)));
-        // mean bellman error
-        statistics.registerMetric(new AvgMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_MEAN),
+        // bellman error avg
+        statistics.registerMetric(new AvgMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_AVG),
                 statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
                 (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER))));
 
         // GLOBAL METRICS
         // total bellman error
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_BELLMAN_ERROR_SUM));
-        // mean bellman error
-        AvgMetric meanBellmanErrorMetric = new AvgMetric(STAT_BELLMAN_ERROR_MEAN,
+        // bellman error avg
+        AvgMetric bellmanErrorAvgMetric = new AvgMetric(STAT_BELLMAN_ERROR_AVG,
                 statistics.getMetric(STAT_BELLMAN_ERROR_SUM),
                 (CountMetric) statistics.getMetric(STAT_GET_REWARD_COUNTER));
-        // add step sampling to mean bellman error metric
+        // add step sampling to bellman error avg metric
         StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
-        meanBellmanErrorMetric.addSampler(stepSampler);
-        statistics.registerMetricIfNotExists(meanBellmanErrorMetric);
+        bellmanErrorAvgMetric.addSampler(stepSampler);
+        statistics.registerMetricIfNotExists(bellmanErrorAvgMetric);
     }
 
     @Override

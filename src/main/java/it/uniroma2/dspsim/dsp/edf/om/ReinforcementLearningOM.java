@@ -29,13 +29,13 @@ public abstract class ReinforcementLearningOM extends RewardBasedOM implements A
             double reward = computeCost(lastChosenAction, currentState, monitoringInfo.getInputRate());
             // learning step
             learningStep(lastState, lastChosenAction, currentState, reward);
-            // update mean reward statistic
+            // update avg reward statistic
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER), 1);
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_SUM), reward);
             Statistics.getInstance().updateMetric(STAT_GET_REWARD_COUNTER, 1);
             Statistics.getInstance().updateMetric(STAT_REWARD_SUM, reward);
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_MEAN), reward);
-            Statistics.getInstance().updateMetric(STAT_REWARD_INCREMENTAL_MEAN, reward);
+            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_AVG), reward);
+            Statistics.getInstance().updateMetric(STAT_REWARD_INCREMENTAL_AVG, reward);
         }
 
         // pick new action

@@ -2,12 +2,12 @@ package it.uniroma2.dspsim.stats.metrics;
 
 public class IncrementalAvgMetric extends Metric {
     private long count;
-    private double mean;
+    private double avg;
 
     public IncrementalAvgMetric(String id) {
         super(id);
         this.count = 0L;
-        this.mean = 0.0;
+        this.avg = 0.0;
     }
 
     @Override
@@ -18,7 +18,7 @@ public class IncrementalAvgMetric extends Metric {
     @Override
     public void update(Double realValue) {
         this.count++;
-        this.mean += ((realValue - this.mean) / this.count);
+        this.avg += ((realValue - this.avg) / this.count);
     }
 
     @Override
@@ -28,6 +28,6 @@ public class IncrementalAvgMetric extends Metric {
 
     @Override
     public Number getValue() {
-        return this.mean;
+        return this.avg;
     }
 }

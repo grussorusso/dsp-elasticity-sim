@@ -34,7 +34,7 @@ public abstract class RewardBasedOM extends OperatorManager {
 
     private ActionSelectionPolicy actionSelectionPolicy;
 
-    protected static final String STAT_REWARD_INCREMENTAL_MEAN = "Incremental Mean Reward";
+    protected static final String STAT_REWARD_INCREMENTAL_AVG = "Incremental Avg Reward";
     protected static final String STAT_REWARD_SUM = "Reward Sum";
     protected static final String STAT_GET_REWARD_COUNTER = "Get Reward Counter";
 
@@ -74,16 +74,16 @@ public abstract class RewardBasedOM extends OperatorManager {
         statistics.registerMetric(new CountMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER)));
         // total reward
         statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_REWARD_SUM)));
-        // incremental mean reward
-        statistics.registerMetric(new IncrementalAvgMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_MEAN)));
+        // incremental avg reward
+        statistics.registerMetric(new IncrementalAvgMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_AVG)));
 
         //GLOBAL METRICS
         // learning step counter
         statistics.registerMetricIfNotExists(new CountMetric(STAT_GET_REWARD_COUNTER));
         // total reward
         statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_REWARD_SUM));
-        // incremental mean reward
-        IncrementalAvgMetric incrementalAvgMetric = new IncrementalAvgMetric(STAT_REWARD_INCREMENTAL_MEAN);
+        // incremental avg reward
+        IncrementalAvgMetric incrementalAvgMetric = new IncrementalAvgMetric(STAT_REWARD_INCREMENTAL_AVG);
         StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
         incrementalAvgMetric.addSampler(stepSampler);
         statistics.registerMetricIfNotExists(incrementalAvgMetric);
@@ -103,13 +103,13 @@ public abstract class RewardBasedOM extends OperatorManager {
             // compute reconfiguration's cost and use it as reward
             double reward = computeCost(lastChosenAction, currentState, monitoringInfo.getInputRate());
 
-            // update mean reward statistic
+            // update avg reward statistic
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER), 1);
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_SUM), reward);
             Statistics.getInstance().updateMetric(STAT_GET_REWARD_COUNTER, 1);
             Statistics.getInstance().updateMetric(STAT_REWARD_SUM, reward);
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_MEAN), reward);
-            Statistics.getInstance().updateMetric(STAT_REWARD_INCREMENTAL_MEAN, reward);
+            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_AVG), reward);
+            Statistics.getInstance().updateMetric(STAT_REWARD_INCREMENTAL_AVG, reward);
         }
 
         // pick new action

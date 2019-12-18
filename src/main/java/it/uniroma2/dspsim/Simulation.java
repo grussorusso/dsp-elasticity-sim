@@ -39,7 +39,7 @@ public class Simulation {
 	private static final String STAT_RESOURCES_COST_USED_SUM = "Resources Cost Used Sum";
 	private static final String STAT_RESOURCES_COST_MAX_SUM = "Resources Cost Max Sum";
 	private static final String STAT_RESOURCES_COST_PERCENTAGE = "Resources Cost Percentage";
-	private static final String STAT_RESOURCES_COST_MEAN = "Resources Cost Mean";
+	private static final String STAT_RESOURCES_COST_AVG = "Resources Cost Avg";
 
 	private InputRateFileReader inputRateFileReader;
 	private ApplicationManager applicationManager;
@@ -83,8 +83,8 @@ public class Simulation {
 		// resources cost percentage
 		statistics.registerMetric(new PercentageMetric(STAT_RESOURCES_COST_PERCENTAGE,
 				statistics.getMetric(STAT_RESOURCES_COST_USED_SUM), statistics.getMetric(STAT_RESOURCES_COST_MAX_SUM)));
-		// resources cost mean
-		statistics.registerMetric(new AvgMetric(STAT_RESOURCES_COST_MEAN,
+		// resources cost avg
+		statistics.registerMetric(new AvgMetric(STAT_RESOURCES_COST_AVG,
 				statistics.getMetric(STAT_RESOURCES_COST_USED_SUM), (CountMetric) statistics.getMetric(STAT_STEPS_COUNTER)));
 	}
 
@@ -151,7 +151,7 @@ public class Simulation {
 		return appReconfigured;
 	}
 
-	public static void main (String args[]) {
+	public static void main (String[] args) {
 		LoggingUtils.configureLogging();
 
 		Configuration conf = Configuration.getInstance();
@@ -167,7 +167,7 @@ public class Simulation {
 					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
-			Application app = ApplicationBuilder.buildPaperApplication();
+			Application app = ApplicationBuilder.singleOperatorApplication();
 			ApplicationManager am = new ApplicationManager(app);
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);

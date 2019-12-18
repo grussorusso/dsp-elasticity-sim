@@ -13,6 +13,11 @@ package it.uniroma2.dspsim;
 public abstract class ConfigurationKeys {
 
 	/**
+	 * Test base path
+	 */
+	public static final String TEST_BASE_PATH_KEY = "test.base.path";
+
+	/**
 	 * Data source.
 	 */
 	public static final String INPUT_FILE_PATH_KEY = "input.file.path";
