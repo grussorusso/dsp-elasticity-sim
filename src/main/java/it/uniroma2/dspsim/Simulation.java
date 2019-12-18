@@ -158,6 +158,9 @@ public class Simulation {
 				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
 				Configuration.getInstance().getInitTime(),
 				Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, "")));
+		if (!configCopy.getParentFile().exists()) {
+			configCopy.getParentFile().mkdirs();
+		}
 		FileOutputStream fos = null;
 		try {
 			fos = new FileOutputStream(configCopy);
@@ -168,13 +171,16 @@ public class Simulation {
 	}
 
 	private void dumpStats() {
-		File configCopy = new File(String.format("%s/%s/%s/others/final_stats",
+		File statsOutput = new File(String.format("%s/%s/%s/others/final_stats",
 				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
 				Configuration.getInstance().getInitTime(),
 				Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, "")));
+		if (!statsOutput.getParentFile().exists()) {
+			statsOutput.getParentFile().mkdirs();
+		}
 		FileOutputStream fos = null;
 		try {
-			fos = new FileOutputStream(configCopy);
+			fos = new FileOutputStream(statsOutput);
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
