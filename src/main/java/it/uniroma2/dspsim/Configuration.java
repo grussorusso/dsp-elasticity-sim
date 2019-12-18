@@ -13,9 +13,11 @@ public class Configuration {
 
 	private Configuration() {
 		this.properties = new Properties();
+		this.initTime = Instant.now();
 	}
 
 	private Properties properties;
+	private Instant initTime;
 
 	public static synchronized Configuration getInstance() {
 		if (instance == null) {
@@ -95,24 +97,27 @@ public class Configuration {
 		return defaultValue;
 	}
 
+	public boolean getBoolean(String key, boolean defaultValue) {
+		if (properties.containsKey(key))
+			return Boolean.parseBoolean(properties.getProperty(key));
+
+		properties.setProperty(key, Boolean.toString(defaultValue));
+		return defaultValue;
+	}
+
+	public String getInitTime() {
+		return initTime.toString();
+	}
+
 	/**
 	 * Prints currently loaded properties
 	 * @param os OutputStream to be used.
 	 */
-	public void dump(OutputStream os)
-	{
+	public void dump(OutputStream os) {
 		try {
 			properties.store(os, "");
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
-    public boolean getBoolean(String key, boolean defaultValue) {
-		if (properties.containsKey(key))
-			return Boolean.parseBoolean(properties.getProperty(key));
-
-		properties.setProperty(key, Boolean.toString(defaultValue));
-		return defaultValue;
-    }
 }

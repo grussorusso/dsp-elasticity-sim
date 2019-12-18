@@ -15,7 +15,7 @@ public abstract class ConfigurationKeys {
 	/**
 	 * Test base path
 	 */
-	public static final String TEST_BASE_PATH_KEY = "test.base.path";
+	public static final String OUTPUT_BASE_PATH_KEY = "output.base.path";
 
 	/**
 	 * Data source.

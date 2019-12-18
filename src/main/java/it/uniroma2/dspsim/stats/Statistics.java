@@ -81,6 +81,20 @@ public class Statistics {
 			System.out.println(m.toString());
 	}
 
+	public void dumpAll(OutputStream out) {
+		try {
+			for (Metric m : metrics.values()) {
+				byte[] bytes = m.toString().getBytes();
+				out.write(bytes);
+				out.write("\n".getBytes());
+			}
+			out.flush();
+			out.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
     // get sample of all metrics in hash map that
 	// have been configured to be sampled during simulation
 	public void sampleAll(long simulationTime) {

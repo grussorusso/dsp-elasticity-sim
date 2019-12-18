@@ -13,11 +13,13 @@ import it.uniroma2.dspsim.stats.metrics.CountMetric;
 import it.uniroma2.dspsim.stats.metrics.AvgMetric;
 import it.uniroma2.dspsim.stats.metrics.PercentageMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.samplers.StepSampler;
+import it.uniroma2.dspsim.stats.tracker.TrackerManager;
 import it.uniroma2.dspsim.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
+import java.io.*;
 import java.util.Map;
 
 public class Simulation {
@@ -151,6 +153,34 @@ public class Simulation {
 		return appReconfigured;
 	}
 
+	private void dumpConfigs() {
+		File configCopy = new File(String.format("%s/%s/%s/others/configs",
+				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
+				Configuration.getInstance().getInitTime(),
+				Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, "")));
+		FileOutputStream fos = null;
+		try {
+			fos = new FileOutputStream(configCopy);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		Configuration.getInstance().dump(fos);
+	}
+
+	private void dumpStats() {
+		File configCopy = new File(String.format("%s/%s/%s/others/final_stats",
+				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
+				Configuration.getInstance().getInitTime(),
+				Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, "")));
+		FileOutputStream fos = null;
+		try {
+			fos = new FileOutputStream(configCopy);
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		Statistics.getInstance().dumpAll(fos);
+	}
+
 	public static void main (String[] args) {
 		LoggingUtils.configureLogging();
 
@@ -161,6 +191,13 @@ public class Simulation {
 		ComputingInfrastructure
 				.initDefaultInfrastructure(conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
 
+		//TODO try to use tracker
+		TrackerManager completeSimulationTracker = new TrackerManager.Builder("Complete Simulation Tracker")
+				.trackExecTime()
+				.trackMemory()
+				.trackCPU()
+				.addSampler(new StepSampler("STEP SAMPLER", 1))
+				.build();
 
 		try {
 			final String inputFile = conf
@@ -171,13 +208,19 @@ public class Simulation {
 			ApplicationManager am = new ApplicationManager(app);
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);
+
+			// track simulation run elapsed time and memory and cpu usage
+			completeSimulationTracker.startTracking();
+			// run simulation
 			simulation.run();
+			//get tracked metrics
+			completeSimulationTracker.track();
 
-			/* Dump used configuration. */
-			conf.dump(System.out);
+			/* Dump used configuration in output folder. */
+			simulation.dumpConfigs();
 
-			/* Dump statistics to standard output. */
-			Statistics.getInstance().dumpAll();
+			/* Dump statistics in output folder. */
+			simulation.dumpStats();
 
 		} catch (IOException e) {
 			e.printStackTrace();

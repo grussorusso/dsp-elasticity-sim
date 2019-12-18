@@ -1,9 +1,6 @@
 package it.uniroma2.dspsim.utils;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class KeyValueStorage<K, V> {
     private HashMap<K, V> map;
@@ -22,17 +19,11 @@ public class KeyValueStorage<K, V> {
     }
 
     public V getValue(K key) {
-        V value = this.map.get(key);
-
-        if (value != null) {
-            return value;
-        } else {
-            throw new IllegalArgumentException(String.format("key '%s' not in metadata", key));
-        }
+        return this.map.get(key);
     }
 
-    public List<Object> getAll() {
-        return Arrays.asList(this.map.values().toArray());
+    public Collection<V> getAll() {
+        return this.map.values();
     }
 
     // update value in metadata removing old value and adding new value

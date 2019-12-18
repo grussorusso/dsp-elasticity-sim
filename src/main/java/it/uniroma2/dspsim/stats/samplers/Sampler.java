@@ -26,15 +26,21 @@ public abstract class Sampler {
         //this.writers.addKeyValue("console", new ConsoleMetricOutputWriter());
     }
 
+    protected void dump(Metric m) {
+        for (MetricOutputWriter writer : this.writers.getAll()) {
+            writer.write(m, this.metricSampleInfo.getValue(m.getId()), m.dumpValue());
+        }
+    }
+
     protected void dump(double step, Metric m) {
-        for (Object writer : this.writers.getAll()) {
-            if (writer instanceof MetricOutputWriter) {
-                ((MetricOutputWriter) writer).write(m, this.metricSampleInfo.getValue(m.getId()), step, m.dumpValue());
-            }
+        for (MetricOutputWriter writer : this.writers.getAll()) {
+            writer.write(m, this.metricSampleInfo.getValue(m.getId()), m.dumpValue());
         }
     }
 
     public abstract void addMetricSampleInfo(Metric metric);
+
+    public abstract void sample(Metric metric);
 
     public abstract void sample(Metric metric, long simulationTime);
 

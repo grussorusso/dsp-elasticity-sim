@@ -18,7 +18,7 @@ public abstract class FileMetricOutputWriter implements MetricOutputWriter {
             if (metric.getId().equals(metricSampleInfo.getMetricID())) {
                 String filename = metricSampleInfo.getFilename();
                 File file = new File(filename);
-                if (!file.exists() && file.createNewFile()) {
+                if (!file.exists() && (file.getParentFile().mkdirs() || file.createNewFile())) {
                     fileCreationCallback(filename, metric, metricSampleInfo, args);
                 }
                 if (shouldWrite(metric, metricSampleInfo, args)) {

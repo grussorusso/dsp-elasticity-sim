@@ -15,6 +15,8 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.stats.samplers.StepSampler;
+import it.uniroma2.dspsim.stats.tracker.TrackerManager;
 import it.uniroma2.dspsim.utils.MathUtils;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.matrix.IntegerMatrix;
@@ -37,8 +39,29 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
     // V matrix
     private DoubleMatrix<Integer, Integer> policy;
 
+    // tracker manager
+    private TrackerManager viStepTrackerManager;
+
     public ValueIterationOM(Operator operator) {
         super(operator);
+
+        // build tracker manager to get metrics about elapsed time, memory and cpu usage
+        TrackerManager viManager = new TrackerManager.Builder("Global VI Tracker " + this.operator.getName())
+                .trackExecTime()
+                .trackCPU()
+                .trackMemory()
+                .addSampler(new StepSampler("STEP SAMPLER", 1))
+                .build();
+
+        // build tracker manager to get metrics about elapsed time, memory and cpu usage
+        viStepTrackerManager = new TrackerManager.Builder("VI Step Tracker " + this.operator.getName())
+                .trackExecTime()
+                .trackCPU()
+                .trackMemory()
+                .addSampler(new StepSampler("STEP SAMPLER", 1))
+                .build();
+
+        viManager.startTracking();
 
         this.inputRateFilePath = Configuration.getInstance()
                 .getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
@@ -54,7 +77,10 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
         // TODO configure
         this.gamma = 0.99;
 
+        viStepTrackerManager.startTracking();
         valueIteration(0, 60000, 1E-14);
+
+        viManager.track();
 
         this.policy.print();
 
@@ -77,6 +103,8 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
                 startIterationTime = System.currentTimeMillis();
 
             delta = vi();
+
+            viStepTrackerManager.track();
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);

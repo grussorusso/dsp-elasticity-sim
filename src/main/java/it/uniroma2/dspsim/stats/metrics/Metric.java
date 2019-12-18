@@ -42,6 +42,11 @@ public abstract class Metric {
 		}
 	}
 
+	public void sample() {
+		for (String key : this.samplers.keySet()) {
+			this.samplers.get(key).sample(this);
+		}
+	}
 	abstract public void update (Integer intValue);
 
 	abstract public void update (Double realValue);
