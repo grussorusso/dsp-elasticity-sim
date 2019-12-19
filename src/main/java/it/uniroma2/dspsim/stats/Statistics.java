@@ -35,12 +35,12 @@ public class Statistics {
 	}
 
 	public void updateMetric (String id, Integer intValue, String... inner_ids) {
-		this.updateMetricThree(id, intValue, inner_ids);
+		this.updateMetricTree(id, intValue, inner_ids);
 	}
 
 
 	public void updateMetric (String id, Double realValue, String... inner_ids) {
-		this.updateMetricThree(id, realValue, inner_ids);
+		this.updateMetricTree(id, realValue, inner_ids);
 	}
 
 	/**
@@ -53,7 +53,7 @@ public class Statistics {
 	 * @param value : updating value
 	 * @param inner_ids : inner ids path
 	 */
-	private void updateMetricThree(String id, Number value, String... inner_ids) {
+	private void updateMetricTree(String id, Number value, String... inner_ids) {
 		if (inner_ids == null || inner_ids.length <= 0)
 			if (value instanceof Double)
 				metrics.get(id).update((double) value);
@@ -64,7 +64,7 @@ public class Statistics {
 		else {
 			String[] ids = new String[inner_ids.length - 1];
 			System.arraycopy(inner_ids, 1, ids, 0, inner_ids.length - 1);
-			updateMetricThree(inner_ids[0], value, ids);
+			updateMetricTree(inner_ids[0], value, ids);
 		}
 	}
 

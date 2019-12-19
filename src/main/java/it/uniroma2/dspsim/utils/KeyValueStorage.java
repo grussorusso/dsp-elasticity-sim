@@ -36,4 +36,8 @@ public class KeyValueStorage<K, V> {
     public void removeKeyValue(K key) {
         this.map.remove(key);
     }
+
+    public boolean containsKey(K key) {
+        return this.map.containsKey(key);
+    }
 }

@@ -15,8 +15,10 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.stats.metrics.MemoryMetric;
+import it.uniroma2.dspsim.stats.metrics.TimeMetric;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
-import it.uniroma2.dspsim.stats.tracker.TrackerManager;
 import it.uniroma2.dspsim.utils.MathUtils;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.matrix.IntegerMatrix;
@@ -29,6 +31,9 @@ import java.util.*;
 
 public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
 
+    private static final String STAT_VI_MEMORY_USAGE = "VI Memory Usage";
+    private static final String STAT_VI_STEP_TIME = "VI Step Time";
+
     private String inputRateFilePath;
 
     private double gamma;
@@ -39,29 +44,8 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
     // V matrix
     private DoubleMatrix<Integer, Integer> policy;
 
-    // tracker manager
-    private TrackerManager viStepTrackerManager;
-
     public ValueIterationOM(Operator operator) {
         super(operator);
-
-        // build tracker manager to get metrics about elapsed time, memory and cpu usage
-        TrackerManager viManager = new TrackerManager.Builder("Global VI Tracker " + this.operator.getName())
-                .trackExecTime()
-                .trackCPU()
-                .trackMemory()
-                .addSampler(new StepSampler("STEP SAMPLER", 1))
-                .build();
-
-        // build tracker manager to get metrics about elapsed time, memory and cpu usage
-        viStepTrackerManager = new TrackerManager.Builder("VI Step Tracker " + this.operator.getName())
-                .trackExecTime()
-                .trackCPU()
-                .trackMemory()
-                .addSampler(new StepSampler("STEP SAMPLER", 1))
-                .build();
-
-        viManager.startTracking();
 
         this.inputRateFilePath = Configuration.getInstance()
                 .getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
@@ -77,15 +61,35 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
         // TODO configure
         this.gamma = 0.99;
 
-        viStepTrackerManager.startTracking();
         valueIteration(0, 60000, 1E-14);
-
-        viManager.track();
 
         this.policy.print();
 
         dumpPolicyOnFile(String.format("wReconf_%.2f_wSLO_%.2f_wRes_%.2f_gamma_%.3f_vi_QTable.txt",
                 getwReconf(), getwSLO(), getwResources(), gamma));
+    }
+
+    @Override
+    protected void registerMetrics(Statistics statistics) {
+        super.registerMetrics(statistics);
+
+        StepSampler stepSampler = new StepSampler("VI Step Sampler", 1);
+
+        // per operator metrics
+        MemoryMetric opMemoryMetric = new MemoryMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE));
+        //opMemoryMetric.addSampler(stepSampler);
+        statistics.registerMetric(opMemoryMetric);
+        TimeMetric opTimeMetric = new TimeMetric(getOperatorMetricName(STAT_VI_STEP_TIME));
+        //opTimeMetric.addSampler(stepSampler);
+        statistics.registerMetric(opTimeMetric);
+
+        // global metrics
+        MemoryMetric memoryMetric = new MemoryMetric(STAT_VI_MEMORY_USAGE);
+        memoryMetric.addSampler(stepSampler);
+        statistics.registerMetric(memoryMetric);
+        TimeMetric timeMetric = new TimeMetric(STAT_VI_STEP_TIME);
+        timeMetric.addSampler(stepSampler);
+        statistics.registerMetric(timeMetric);
     }
 
     /**
@@ -104,7 +108,10 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
 
             delta = vi();
 
-            viStepTrackerManager.track();
+            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_STEP_TIME), 0);
+            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE), 0);
+            Statistics.getInstance().updateMetric(STAT_VI_STEP_TIME, 0);
+            Statistics.getInstance().updateMetric(STAT_VI_MEMORY_USAGE, 0);
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);

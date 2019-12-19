@@ -9,12 +9,7 @@ import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.*;
-import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.AvgMetric;
-import it.uniroma2.dspsim.stats.metrics.PercentageMetric;
-import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
-import it.uniroma2.dspsim.stats.samplers.StepSampler;
-import it.uniroma2.dspsim.stats.tracker.TrackerManager;
+import it.uniroma2.dspsim.stats.metrics.*;
 import it.uniroma2.dspsim.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +37,9 @@ public class Simulation {
 	private static final String STAT_RESOURCES_COST_MAX_SUM = "Resources Cost Max Sum";
 	private static final String STAT_RESOURCES_COST_PERCENTAGE = "Resources Cost Percentage";
 	private static final String STAT_RESOURCES_COST_AVG = "Resources Cost Avg";
+
+	private static final String STAT_SIMULATION_TIME = "Simulation Time";
+	private static final String STAT_SIMULATION_MEMORY = "Simulation Memory";
 
 	private InputRateFileReader inputRateFileReader;
 	private ApplicationManager applicationManager;
@@ -197,14 +195,6 @@ public class Simulation {
 		ComputingInfrastructure
 				.initDefaultInfrastructure(conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
 
-		//TODO try to use tracker
-		TrackerManager completeSimulationTracker = new TrackerManager.Builder("Complete Simulation Tracker")
-				.trackExecTime()
-				.trackMemory()
-				.trackCPU()
-				.addSampler(new StepSampler("STEP SAMPLER", 1))
-				.build();
-
 		try {
 			final String inputFile = conf
 					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
@@ -215,12 +205,13 @@ public class Simulation {
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);
 
-			// track simulation run elapsed time and memory and cpu usage
-			completeSimulationTracker.startTracking();
+			Statistics.getInstance().registerMetric(new TimeMetric(STAT_SIMULATION_TIME));
+			Statistics.getInstance().registerMetric(new MemoryMetric(STAT_SIMULATION_MEMORY));
 			// run simulation
 			simulation.run();
-			//get tracked metrics
-			completeSimulationTracker.track();
+
+			Statistics.getInstance().updateMetric(STAT_SIMULATION_TIME, 0);
+			Statistics.getInstance().updateMetric(STAT_SIMULATION_MEMORY, 0);
 
 			/* Dump used configuration in output folder. */
 			simulation.dumpConfigs();
