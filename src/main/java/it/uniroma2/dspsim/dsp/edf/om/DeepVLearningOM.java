@@ -148,16 +148,19 @@ public class DeepVLearningOM extends DeepLearningOM {
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(64)
+                                .nOut(128)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(128)
+                                .nOut(64)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(64)
                                 .nOut(32)
                                 .activation(Activation.RELU)
                                 .build(),
-                        /*new LSTM.Builder()
-                                .activation(Activation.SOFTSIGN)
-                                .nIn(32)
-                                .nOut(32)
-                                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
-                                .gradientNormalizationThreshold(10)
-                                .build(),*/
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                 .activation(Activation.IDENTITY)
                                 .nIn(32)

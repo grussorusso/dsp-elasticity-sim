@@ -60,9 +60,16 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         this.network = new MultiLayerNetwork(this.networkConf);
         this.network.init();
 
+        printNetwork();
+
         if (configuration.getBoolean(ConfigurationKeys.DL_OM_ENABLE_NETWORK_UI_KEY, false)) {
             startNetworkUIServer();
         }
+    }
+
+    private void printNetwork() {
+        System.out.println(this.network.getLayerWiseConfigurations().toJson());
+        System.out.println(this.network.getLayerWiseConfigurations().toYaml());
     }
 
     private void startNetworkUIServer() {

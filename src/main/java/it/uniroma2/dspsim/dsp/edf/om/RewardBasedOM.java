@@ -40,8 +40,6 @@ public abstract class RewardBasedOM extends OperatorManager {
 
     protected static final String STEP_SAMPLER_ID = "step-sampler";
 
-    private long counter;
-
     public RewardBasedOM(Operator operator) {
         super(operator);
 
@@ -102,6 +100,8 @@ public abstract class RewardBasedOM extends OperatorManager {
         if (lastChosenAction != null) {
             // compute reconfiguration's cost and use it as reward
             double reward = computeCost(lastChosenAction, currentState, monitoringInfo.getInputRate());
+
+            useReward(reward, lastState, lastChosenAction, currentState, monitoringInfo);
 
             // update avg reward statistic
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER), 1);
@@ -172,6 +172,7 @@ public abstract class RewardBasedOM extends OperatorManager {
      */
 
     protected abstract ActionSelectionPolicy initActionSelectionPolicy();
+    protected abstract void useReward(double reward, State lastState, Action lastChosenAction, State currentState, OMMonitoringInfo monitoringInfo);
 
     /**
      * GETTERS

@@ -1,5 +1,11 @@
 package it.uniroma2.dspsim.stats.metrics;
 
+
+import com.sun.management.OperatingSystemMXBean;
+
+import java.lang.management.ManagementFactory;
+
+
 public class CpuMetric extends Metric {
     private double cpu;
 
@@ -20,7 +26,8 @@ public class CpuMetric extends Metric {
 
     @Override
     public void update(Double realValue) {
-        this.cpu = 0.0;
+        OperatingSystemMXBean osInfo = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
+        this.cpu = osInfo.getProcessCpuLoad();
 
         this.count++;
 

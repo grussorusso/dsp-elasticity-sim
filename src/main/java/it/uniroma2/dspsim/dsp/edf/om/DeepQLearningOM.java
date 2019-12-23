@@ -15,6 +15,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -85,14 +86,35 @@ public class DeepQLearningOM extends DeepLearningOM {
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber)
                                 .nOut(32)
-                                .activation(new ActivationReLU())
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(32)
+                                .nOut(64)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(64)
+                                .nOut(128)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(128)
+                                .nOut(64)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(64)
+                                .nOut(32)
+                                .activation(Activation.RELU)
                                 .build(),
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                //.activation(Activation.SOFTMAX)
+                                .activation(Activation.IDENTITY)
                                 .nIn(32)
                                 .nOut(this.outputLayerNodesNumber)
                                 .build()
                 )
+                .pretrain(false)
                 .backprop(true)
                 .build();
     }

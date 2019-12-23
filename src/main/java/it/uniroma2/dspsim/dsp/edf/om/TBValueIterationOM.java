@@ -20,6 +20,7 @@ import it.uniroma2.dspsim.utils.MathUtils;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.matrix.IntegerMatrix;
 import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -43,14 +44,13 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.*;
 
-public class TBValueIterationOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
-
-    private String inputRateFilePath;
-
-    private double gamma;
+public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
 
     private int inputLayerNodesNumber;
     private int outputLayerNodesNumber;
@@ -63,37 +63,13 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
     private INDArray training = null;
     private INDArray labels = null;
 
-    // p matrix
-    private DoubleMatrix<Integer, Integer> pMatrix;
-
     //policy
     private MultiLayerNetwork policy;
 
     public TBValueIterationOM(Operator operator) {
         super(operator);
 
-        this.inputLayerNodesNumber = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(),
-                this.getInputRateLevels()).next().getArrayRepresentationLength();
-
-        this.outputLayerNodesNumber = 1;
-
         this.actionsCount = computeActionsCount();
-
-        this.policy = buildPolicy();
-
-        this.inputRateFilePath = Configuration.getInstance()
-                .getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
-
-        try {
-            this.pMatrix = buildPMatrix(this.inputRateFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        // TODO configure
-        this.gamma = 0.99;
-
         this.statesCount = computeStatesCount();
         this.rng = new Random();
 
@@ -101,20 +77,16 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
             startNetworkUIServer();
         }
 
+        // TODO configure
         tbvi(60000, 512, 32);
 
-        StateIterator stateIterator = new StateIterator(getStateRepresentation(), this.operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
-        while (stateIterator.hasNext()) {
-            State s = stateIterator.next();
-            ActionIterator actionIterator = new ActionIterator();
-            while (actionIterator.hasNext()) {
-                Action a = actionIterator.next();
-                if (validateAction(s, a)) {
-                    System.out.println(s.dump() + "\t" + a.dump() + "\tV: " + getV(computePostDecisionState(s, a)));
-                }
-            }
-        }
+        dumpPolicyOnFile(String.format("%s/%s/%s/%s/policy",
+                Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
+                Configuration.getInstance().getInitTime(),
+                Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
+                "others"));
+
+        printTBVIResults();
     }
 
     private void tbvi(long millis, long trajectoryLength, int batchSize) {
@@ -151,11 +123,11 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
         double r = evaluateReward(s, a);
         State pds = computePostDecisionState(s, a);
         double q = getQ(pds, getActionSelectionPolicy().selectAction(pds)).getDouble(0);
-        double delta = (r + this.gamma * q) - oldQ;
+        double delta = (r + getGamma() * q) - oldQ;
         //System.out.println(delta);
 
         INDArray trainingInput = buildInput(computePostDecisionState(s, a));
-        INDArray label = Nd4j.create(1).put(0, 0, r + (this.gamma * q));
+        INDArray label = Nd4j.create(1).put(0, 0, r + (getGamma() * q));
 
         if (this.training == null && this.labels == null) {
             this.training = trainingInput;
@@ -213,8 +185,8 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
     private State sampleNextState(State s, Action a) {
         State pds = computePostDecisionState(s, a);
         List<Double> pArray = new ArrayList<>();
-        for (int l : this.pMatrix.getColLabels(s.getLambda())) {
-            int times = (int) Math.floor(100 * this.pMatrix.getValue(s.getLambda(), l));
+        for (int l : this.getpMatrix().getColLabels(s.getLambda())) {
+            int times = (int) Math.floor(100 * this.getpMatrix().getValue(s.getLambda(), l));
             times = times > 0 ? times : 1;
             for (int i = 0; i < times; i++) {
                 pArray.add((double) l);
@@ -231,19 +203,6 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
                 getInputRateLevels() - 1, this.operator.getMaxParallelism());
     }
 
-
-    private State computePostDecisionState(State state, Action action) {
-        if (action.getDelta() != 0) {
-            int[] pdk = Arrays.copyOf(state.getActualDeployment(), state.getActualDeployment().length);
-            int aIndex = action.getResTypeIndex();
-            pdk[aIndex] = pdk[aIndex] + action.getDelta();
-            return StateFactory.createState(this.getStateRepresentation(), -1, pdk,
-                    state.getLambda(), this.getInputRateLevels() - 1, this.operator.getMaxParallelism());
-        } else {
-            return state;
-        }
-    }
-
     private double evaluateReward(State s, Action a) {
         double cost = 0.0;
         // compute reconfiguration cost
@@ -252,10 +211,10 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
         // from s,a compute pds
         State pds = computePostDecisionState(s, a);
         // for each lambda level with p != 0 in s.getLambda() row
-        Set<Integer> possibleLambdas = pMatrix.getColLabels(s.getLambda());
+        Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
         for (int lambda : possibleLambdas) {
             // get transition probability from s.lambda to lambda level
-            double p = this.pMatrix.getValue(s.getLambda(), lambda);
+            double p = this.getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation and deployment cost from post decision operator view
             // recover input rate value from lambda level getting middle value of relative interval
             double pdCost = computePostDecisionCost(pds.getActualDeployment(),
@@ -265,111 +224,6 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
         }
 
         return cost;
-    }
-
-    private double computePostDecisionCost(int[] deployment, double inputRate) {
-        double cost = 0.0;
-
-        double currentSpeedup = Double.POSITIVE_INFINITY;
-        List<NodeType> usedNodeTypes = new ArrayList<>();
-        List<NodeType> operatorInstances = new ArrayList<>();
-        for (int i = 0; i < deployment.length; i++) {
-            if (deployment[i] > 0)
-                usedNodeTypes.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
-            for (int j = 0; j < deployment[i]; j++) {
-                operatorInstances.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
-            }
-        }
-
-        for (NodeType nt : usedNodeTypes)
-            currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
-
-        if (this.operator.getQueueModel().responseTime(inputRate, operatorInstances.size(), currentSpeedup) > this.operator.getSloRespTime())
-            cost += this.getwSLO();
-
-        double deploymentCost = 0.0;
-        for (NodeType nt : operatorInstances)
-            deploymentCost += nt.getCost();
-
-        double maxCost = this.operator.getMaxParallelism() * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
-
-        cost += (deploymentCost / maxCost) * this.getwResources();
-
-        return cost;
-    }
-
-    private DoubleMatrix<Integer, Integer> buildPMatrix(String inputRateFilePath) throws IOException {
-        InputRateFileReader inputRateFileReader = new InputRateFileReader(inputRateFilePath);
-
-        IntegerMatrix<Integer, Integer> transitionMatrix = computeTransitionMatrix(inputRateFileReader);
-
-        DoubleMatrix<Integer, Integer> pMatrix = new DoubleMatrix<>(0.0);
-
-        for (Integer x : transitionMatrix.getRowLabels()) {
-            Integer total = transitionMatrix.rowSum(x);
-            for (Integer y : transitionMatrix.getColLabels(x)) {
-                pMatrix.setValue(x, y, transitionMatrix.getValue(x, y).doubleValue() / total.doubleValue());
-            }
-        }
-
-        return pMatrix;
-    }
-
-    private IntegerMatrix<Integer, Integer> computeTransitionMatrix(InputRateFileReader inputRateFileReader) throws IOException {
-        IntegerMatrix<Integer, Integer> transitionMatrix = new IntegerMatrix<>(0);
-        if (inputRateFileReader.hasNext()) {
-            int prevInputRateLevel = MathUtils.discretizeValue(this.getMaxInputRate(), inputRateFileReader.next(), this.getInputRateLevels());
-            while (inputRateFileReader.hasNext()) {
-                int inputRateLevel = MathUtils.discretizeValue(this.getMaxInputRate(), inputRateFileReader.next(), this.getInputRateLevels());
-                transitionMatrix.add(prevInputRateLevel, inputRateLevel, 1);
-                prevInputRateLevel = inputRateLevel;
-            }
-        }
-
-        return transitionMatrix;
-    }
-
-    private MultiLayerNetwork buildPolicy() {
-        MultiLayerConfiguration config = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Sgd(0.05))
-                .list(
-                        new DenseLayer.Builder()
-                                .nIn(this.inputLayerNodesNumber)
-                                .nOut(32)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(32)
-                                .nOut(64)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(64)
-                                .nOut(32)
-                                .activation(Activation.RELU)
-                                .build(),
-                        /*new LSTM.Builder()
-                                .activation(Activation.SOFTSIGN)
-                                .nIn(32)
-                                .nOut(32)
-                                .gradientNormalization(GradientNormalization.ClipElementWiseAbsoluteValue)
-                                .gradientNormalizationThreshold(10)
-                                .build(),*/
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .activation(Activation.IDENTITY)
-                                .nIn(32)
-                                .nOut(this.outputLayerNodesNumber)
-                                .build()
-                )
-                .pretrain(false)
-                .backprop(true)
-                .build();
-
-        MultiLayerNetwork policy = new MultiLayerNetwork(config);
-        policy.init();
-        return policy;
     }
 
     private INDArray buildInput(State state) {
@@ -404,11 +258,96 @@ public class TBValueIterationOM extends RewardBasedOM implements ActionSelection
         return ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.GREEDY, this);
     }
 
+    @Override
+    protected void buildPolicy() {
+        this.inputLayerNodesNumber = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(),
+                this.getInputRateLevels()).next().getArrayRepresentationLength();
+
+        this.outputLayerNodesNumber = 1;
+
+        MultiLayerConfiguration config = new NeuralNetConfiguration.Builder()
+                .weightInit(WeightInit.XAVIER)
+                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+                .updater(new Sgd(0.05))
+                .list(
+                        new DenseLayer.Builder()
+                                .nIn(this.inputLayerNodesNumber)
+                                .nOut(32)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(32)
+                                .nOut(64)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(64)
+                                .nOut(128)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(128)
+                                .nOut(64)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(64)
+                                .nOut(32)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+                                .activation(Activation.IDENTITY)
+                                .nIn(32)
+                                .nOut(this.outputLayerNodesNumber)
+                                .build()
+                )
+                .pretrain(false)
+                .backprop(true)
+                .build();
+
+        this.policy = new MultiLayerNetwork(config);
+        policy.init();
+    }
+
+    @Override
+    protected void dumpPolicyOnFile(String filename) {
+        // create file
+        File file = new File(filename);
+        try {
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
+            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
+            printWriter.print(this.policy.getLayerWiseConfigurations().toJson());
+            printWriter.flush();
+            printWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     private void startNetworkUIServer() {
         // http://localhost:9000/train
         UIServer uiServer = UIServer.getInstance();
         StatsStorage statsStorage = new InMemoryStatsStorage();
         uiServer.attach(statsStorage);
         this.policy.setListeners(new StatsListener(statsStorage));
+    }
+
+    private void printTBVIResults() {
+        StateIterator stateIterator = new StateIterator(getStateRepresentation(), this.operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
+        while (stateIterator.hasNext()) {
+            State s = stateIterator.next();
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action a = actionIterator.next();
+                if (validateAction(s, a)) {
+                    System.out.println(s.dump() + "\t" + a.dump() + "\tV: " + getV(computePostDecisionState(s, a)));
+                }
+            }
+        }
     }
 }

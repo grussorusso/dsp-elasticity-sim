@@ -19,41 +19,17 @@ public abstract class ReinforcementLearningOM extends RewardBasedOM implements A
     }
 
     @Override
-    public Reconfiguration pickReconfiguration(OMMonitoringInfo monitoringInfo) {
-        // compute new state
-        State currentState = computeNewState(monitoringInfo);
-
-        // learning step
-        if (lastChosenAction != null) {
-            // compute reconfiguration's cost and use it as reward
-            double reward = computeCost(lastChosenAction, currentState, monitoringInfo.getInputRate());
-            // learning step
-            learningStep(lastState, lastChosenAction, currentState, reward);
-            // update avg reward statistic
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER), 1);
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_SUM), reward);
-            Statistics.getInstance().updateMetric(STAT_GET_REWARD_COUNTER, 1);
-            Statistics.getInstance().updateMetric(STAT_REWARD_SUM, reward);
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_AVG), reward);
-            Statistics.getInstance().updateMetric(STAT_REWARD_INCREMENTAL_AVG, reward);
-        }
-
-        // pick new action
-        lastChosenAction = this.getActionSelectionPolicy().selectAction(currentState);
-
-        // update state
-        lastState = currentState;
-
-        // construct reconfiguration from action
-        return action2reconfiguration(lastChosenAction);
-    }
-
-    @Override
     protected ActionSelectionPolicy initActionSelectionPolicy() {
         // action selection policy
         ActionSelectionPolicyType aspType = ActionSelectionPolicyType.fromString(
         Configuration.getInstance().getString(ConfigurationKeys.ASP_TYPE_KEY, "e-greedy"));
         return  ActionSelectionPolicyFactory.getPolicy(aspType, this);
+    }
+
+    @Override
+    protected void useReward(double reward, State lastState, Action lastChosenAction, State currentState, OMMonitoringInfo monitoringInfo) {
+        // learning step
+        learningStep(lastState, lastChosenAction, currentState, reward);
     }
 
     /**

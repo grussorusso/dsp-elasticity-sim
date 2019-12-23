@@ -16,6 +16,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.stats.metrics.CpuMetric;
 import it.uniroma2.dspsim.stats.metrics.MemoryMetric;
 import it.uniroma2.dspsim.stats.metrics.TimeMetric;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
@@ -29,17 +30,11 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 
-public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
+public class ValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
 
     private static final String STAT_VI_MEMORY_USAGE = "VI Memory Usage";
     private static final String STAT_VI_STEP_TIME = "VI Step Time";
-
-    private String inputRateFilePath;
-
-    private double gamma;
-
-    // p matrix
-    private DoubleMatrix<Integer, Integer> pMatrix;
+    private static final String STAT_VI_CPU_USAGE = "VI CPU Usage";
 
     // V matrix
     private DoubleMatrix<Integer, Integer> policy;
@@ -47,26 +42,14 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
     public ValueIterationOM(Operator operator) {
         super(operator);
 
-        this.inputRateFilePath = Configuration.getInstance()
-                .getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
-
-        try {
-            this.pMatrix = buildPMatrix(this.inputRateFilePath);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        this.policy = new DoubleMatrix<>(0.0);
-
         // TODO configure
-        this.gamma = 0.99;
-
         valueIteration(0, 60000, 1E-14);
 
-        this.policy.print();
-
-        dumpPolicyOnFile(String.format("wReconf_%.2f_wSLO_%.2f_wRes_%.2f_gamma_%.3f_vi_QTable.txt",
-                getwReconf(), getwSLO(), getwResources(), gamma));
+        dumpPolicyOnFile(String.format("%s/%s/%s/%s/policy",
+                Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
+                Configuration.getInstance().getInitTime(),
+                Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
+                "others"));
     }
 
     @Override
@@ -82,6 +65,9 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
         TimeMetric opTimeMetric = new TimeMetric(getOperatorMetricName(STAT_VI_STEP_TIME));
         //opTimeMetric.addSampler(stepSampler);
         statistics.registerMetric(opTimeMetric);
+        CpuMetric opCpuMetric = new CpuMetric(getOperatorMetricName(STAT_VI_CPU_USAGE));
+        //opCpuMetric.addSampler(stepSampler);
+        statistics.registerMetric(opCpuMetric);
 
         // global metrics
         MemoryMetric memoryMetric = new MemoryMetric(STAT_VI_MEMORY_USAGE);
@@ -90,6 +76,9 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
         TimeMetric timeMetric = new TimeMetric(STAT_VI_STEP_TIME);
         timeMetric.addSampler(stepSampler);
         statistics.registerMetric(timeMetric);
+        CpuMetric CpuMetric = new CpuMetric(STAT_VI_CPU_USAGE);
+        CpuMetric.addSampler(stepSampler);
+        statistics.registerMetric(CpuMetric);
     }
 
     /**
@@ -108,10 +97,13 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
 
             delta = vi();
 
+
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_STEP_TIME), 0);
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE), 0);
+            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_CPU_USAGE), 0);
             Statistics.getInstance().updateMetric(STAT_VI_STEP_TIME, 0);
             Statistics.getInstance().updateMetric(STAT_VI_MEMORY_USAGE, 0);
+            Statistics.getInstance().updateMetric(STAT_VI_CPU_USAGE, 0);
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);
@@ -173,93 +165,24 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
         Action greedyAction = getActionSelectionPolicy().selectAction(pds);
         double v = policy.getValue(pds.hashCode(), greedyAction.hashCode());
         // for each lambda level with p != 0 in s.getLambda() row
-        Set<Integer> possibleLambdas = pMatrix.getColLabels(s.getLambda());
+        Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
         for (int lambda : possibleLambdas) {
             // get transition probability from s.lambda to lambda level
-            double p = this.pMatrix.getValue(s.getLambda(), lambda);
+            double p = getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation and deployment cost from post decision operator view
             // recover input rate value from lambda level getting middle value of relative interval
             double pdCost = computePostDecisionCost(pds.getActualDeployment(),
                     MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()));
 
-            cost += p * (pdCost + this.gamma * v);
+            cost += p * (pdCost + getGamma() * v);
         }
 
         return cost;
     }
 
-    private State computePostDecisionState(State state, Action action) {
-        if (action.getDelta() != 0) {
-            int[] pdk = Arrays.copyOf(state.getActualDeployment(), state.getActualDeployment().length);
-            int aIndex = action.getResTypeIndex();
-            pdk[aIndex] = pdk[aIndex] + action.getDelta();
-            return StateFactory.createState(this.getStateRepresentation(), -1, pdk,
-                    state.getLambda(), this.getInputRateLevels() - 1, this.operator.getMaxParallelism());
-        } else {
-            return state;
-        }
-    }
-
-    private double computePostDecisionCost(int[] deployment, double inputRate) {
-        double cost = 0.0;
-
-        double currentSpeedup = Double.POSITIVE_INFINITY;
-        List<NodeType> usedNodeTypes = new ArrayList<>();
-        List<NodeType> operatorInstances = new ArrayList<>();
-        for (int i = 0; i < deployment.length; i++) {
-            if (deployment[i] > 0)
-                usedNodeTypes.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
-            for (int j = 0; j < deployment[i]; j++) {
-                operatorInstances.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
-            }
-        }
-
-        for (NodeType nt : usedNodeTypes)
-            currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
-
-        if (this.operator.getQueueModel().responseTime(inputRate, operatorInstances.size(), currentSpeedup) > this.operator.getSloRespTime())
-            cost += this.getwSLO();
-
-        double deploymentCost = 0.0;
-        for (NodeType nt : operatorInstances)
-            deploymentCost += nt.getCost();
-
-        double maxCost = this.operator.getMaxParallelism() * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
-
-        cost += (deploymentCost / maxCost) * this.getwResources();
-
-        return cost;
-    }
-
-    private DoubleMatrix<Integer, Integer> buildPMatrix(String inputRateFilePath) throws IOException {
-        InputRateFileReader inputRateFileReader = new InputRateFileReader(inputRateFilePath);
-
-        IntegerMatrix<Integer, Integer> transitionMatrix = computeTransitionMatrix(inputRateFileReader);
-
-        DoubleMatrix<Integer, Integer> pMatrix = new DoubleMatrix<>(0.0);
-
-        for (Integer x : transitionMatrix.getRowLabels()) {
-            Integer total = transitionMatrix.rowSum(x);
-            for (Integer y : transitionMatrix.getColLabels(x)) {
-                pMatrix.setValue(x, y, transitionMatrix.getValue(x, y).doubleValue() / total.doubleValue());
-            }
-        }
-
-        return pMatrix;
-    }
-
-    private IntegerMatrix<Integer, Integer> computeTransitionMatrix(InputRateFileReader inputRateFileReader) throws IOException {
-        IntegerMatrix<Integer, Integer> transitionMatrix = new IntegerMatrix<>(0);
-        if (inputRateFileReader.hasNext()) {
-            int prevInputRateLevel = MathUtils.discretizeValue(this.getMaxInputRate(), inputRateFileReader.next(), this.getInputRateLevels());
-            while (inputRateFileReader.hasNext()) {
-                int inputRateLevel = MathUtils.discretizeValue(this.getMaxInputRate(), inputRateFileReader.next(), this.getInputRateLevels());
-                transitionMatrix.add(prevInputRateLevel, inputRateLevel, 1);
-                prevInputRateLevel = inputRateLevel;
-            }
-        }
-
-        return transitionMatrix;
+    @Override
+    protected void buildPolicy() {
+        this.policy = new DoubleMatrix<>(0.0);
     }
 
     @Override
@@ -280,13 +203,16 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
     /**
      * Dump policy on file
      */
-    private void dumpPolicyOnFile(String filename) {
+    @Override
+    protected void dumpPolicyOnFile(String filename) {
         // create file
         File file = new File(filename);
         try {
-            if (!file.exists())
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
                 file.createNewFile();
-            PrintWriter printWriter =new PrintWriter(new FileOutputStream(new File(filename), true));
+            }
+            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
             StateIterator stateIterator = new StateIterator(getStateRepresentation(), operator.getMaxParallelism(),
                     ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
             while (stateIterator.hasNext()) {
@@ -298,7 +224,7 @@ public class ValueIterationOM extends RewardBasedOM implements ActionSelectionPo
                     Action a = ait.next();
                     double v = this.policy.getValue(s.hashCode(), a.hashCode());
                     if (s.validateAction(a)) {
-                        printWriter.print(String.format("%s\t%f\n",a.dump(), v));
+                        printWriter.print(String.format("%s\t%f\n", a.dump(), v));
                     }
                 }
             }
