@@ -80,9 +80,8 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
         // TODO configure
         tbvi(60000, 512, 32);
 
-        dumpPolicyOnFile(String.format("%s/%s/%s/%s/policy",
+        dumpPolicyOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-                Configuration.getInstance().getInitTime(),
                 Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
                 "others"));
 

@@ -13,11 +13,9 @@ public class Configuration {
 
 	private Configuration() {
 		this.properties = new Properties();
-		this.initTime = Instant.now();
 	}
 
 	private Properties properties;
-	private Instant initTime;
 
 	public static synchronized Configuration getInstance() {
 		if (instance == null) {
@@ -103,10 +101,6 @@ public class Configuration {
 
 		properties.setProperty(key, Boolean.toString(defaultValue));
 		return defaultValue;
-	}
-
-	public String getInitTime() {
-		return initTime.toString();
 	}
 
 	/**

@@ -45,9 +45,8 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         // TODO configure
         valueIteration(0, 60000, 1E-14);
 
-        dumpPolicyOnFile(String.format("%s/%s/%s/%s/policy",
+        dumpPolicyOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-                Configuration.getInstance().getInitTime(),
                 Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
                 "others"));
     }
