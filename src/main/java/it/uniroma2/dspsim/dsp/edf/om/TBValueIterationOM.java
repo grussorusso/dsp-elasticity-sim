@@ -92,6 +92,7 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
         ActionSelectionPolicy randomASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.RANDOM, this);
         // get initial state
         State state = null;
+        // current trajectory length
         long tl = 0L;
 
         while (millis > 0) {
