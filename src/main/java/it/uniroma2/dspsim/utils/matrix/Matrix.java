@@ -30,11 +30,13 @@ public abstract class Matrix<X, Y, V extends Number> implements MatrixOps<X, Y, 
         table.put(x, y, v);
     }
 
+    @Override
     public void add(X x, Y y, V v) {
         V value = this.getValue(x, y);
         this.setValue(x, y, this.sum(value, v));
     }
 
+    @Override
     public void multiply(X x, Y y, V v) {
         V value = this.getValue(x, y);
         this.setValue(x, y,this.multiplyValues(value, v));
