@@ -91,4 +91,11 @@ public abstract class Tiling extends Feature {
     public double[] getzRange() {
         return zRange;
     }
+
+    public double getMinX() { return xRange[0]; }
+    public double getMaxX() { return xRange[1]; }
+    public double getMinY() { return yRange[0]; }
+    public double getMaxY() { return yRange[1]; }
+    public double getMinZ() { return zRange[0]; }
+    public double getMaxZ() { return zRange[1]; }
 }

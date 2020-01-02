@@ -32,16 +32,12 @@ public class RectangleTilingShape extends TilingShape {
 
     @Override
     public Coordinate3D map(Coordinate3D coordinate3D, Tiling tiling) {
-        final double minX = tiling.getxRange()[0];
-        final double maxX = tiling.getxRange()[1];
-        final double minY = tiling.getyRange()[0];
-        final double maxY = tiling.getyRange()[1];
-        final double minZ = tiling.getzRange()[0];
-        final double maxZ = tiling.getzRange()[1];
-
-        final int x = (int) Math.ceil((this.xTiles / (maxX - minX)) * (coordinate3D.getX() - minX));
-        final int y = (int) Math.ceil((this.yTiles / (maxY - minY)) * (coordinate3D.getY() - minY));
-        final int z = (int) Math.ceil((this.zTiles / (maxZ - minZ)) * (coordinate3D.getZ() - minZ));
+        final int x = (int) Math.ceil((this.xTiles / (tiling.getMaxX() - tiling.getMinX())) *
+                (coordinate3D.getX() - tiling.getMinX()));
+        final int y = (int) Math.ceil((this.yTiles / (tiling.getMaxY() - tiling.getMinY())) *
+                (coordinate3D.getY() - tiling.getMinY()));
+        final int z = (int) Math.ceil((this.zTiles / (tiling.getMaxZ() - tiling.getMinZ())) *
+                (coordinate3D.getZ() - tiling.getMinZ()));
 
         return new Coordinate3D(x, y, z);
     }
