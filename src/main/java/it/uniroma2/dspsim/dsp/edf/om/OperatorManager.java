@@ -14,4 +14,7 @@ public abstract class OperatorManager {
 
 	abstract public Reconfiguration pickReconfiguration (OMMonitoringInfo monitoringInfo);
 
+	public Operator getOperator() {
+		return operator;
+	}
 }

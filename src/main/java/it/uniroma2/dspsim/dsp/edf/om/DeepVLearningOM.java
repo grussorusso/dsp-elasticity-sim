@@ -5,6 +5,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -38,7 +39,7 @@ public class DeepVLearningOM extends DeepLearningOM {
     @Override
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
         // get post decision state from old state and action
-        State pdState = computePostDecisionState(oldState, action);
+        State pdState = StateUtils.computePostDecisionState(oldState, action, this);
 
         // get V(current state) as min{Q(current state, a) - c(a)} for each action
         ActionIterator ait = new ActionIterator();
@@ -63,7 +64,7 @@ public class DeepVLearningOM extends DeepLearningOM {
         }
 
         // compute new post decision state from current state and best action from current state
-        State newPDState = computePostDecisionState(currentState, bestAction);
+        State newPDState = StateUtils.computePostDecisionState(currentState, bestAction, this);
         // update old state output in actionIndex position with new estimation
         // we get min(newQ) because we want to minimize cost
         // reward = cost -> minimize Q equals minimize cost
@@ -86,7 +87,7 @@ public class DeepVLearningOM extends DeepLearningOM {
     }
 
     private INDArray getQ(State state, Action action) {
-        State postDecisionState = computePostDecisionState(state, action);
+        State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
         INDArray v = getV(postDecisionState);
         v.put(0, 0, v.getDouble(0) + computeActionCost(action));
         return v;
@@ -97,18 +98,6 @@ public class DeepVLearningOM extends DeepLearningOM {
             return this.getwReconf();
         else
             return 0;
-    }
-
-    private State computePostDecisionState(State state, Action action) {
-        if (action.getDelta() != 0) {
-            int[] pdk = Arrays.copyOf(state.getActualDeployment(), state.getActualDeployment().length);
-            int aIndex = action.getResTypeIndex();
-            pdk[aIndex] = pdk[aIndex] + action.getDelta();
-            return StateFactory.createState(this.getStateRepresentation(), -1, pdk,
-                    state.getLambda(), this.getInputRateLevels() - 1, this.operator.getMaxParallelism());
-        } else {
-            return state;
-        }
     }
 
     private INDArray buildInput(State state) {

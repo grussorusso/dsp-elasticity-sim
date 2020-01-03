@@ -47,49 +47,6 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
         buildPolicy();
     }
 
-    protected State computePostDecisionState(State state, Action action) {
-        if (action.getDelta() != 0) {
-            int[] pdk = Arrays.copyOf(state.getActualDeployment(), state.getActualDeployment().length);
-            int aIndex = action.getResTypeIndex();
-            pdk[aIndex] = pdk[aIndex] + action.getDelta();
-            return StateFactory.createState(this.getStateRepresentation(), -1, pdk,
-                    state.getLambda(), this.getInputRateLevels() - 1, this.operator.getMaxParallelism());
-        } else {
-            return state;
-        }
-    }
-
-    protected double computePostDecisionCost(int[] deployment, double inputRate) {
-        double cost = 0.0;
-
-        double currentSpeedup = Double.POSITIVE_INFINITY;
-        List<NodeType> usedNodeTypes = new ArrayList<>();
-        List<NodeType> operatorInstances = new ArrayList<>();
-        for (int i = 0; i < deployment.length; i++) {
-            if (deployment[i] > 0)
-                usedNodeTypes.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
-            for (int j = 0; j < deployment[i]; j++) {
-                operatorInstances.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
-            }
-        }
-
-        for (NodeType nt : usedNodeTypes)
-            currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
-
-        if (this.operator.getQueueModel().responseTime(inputRate, operatorInstances.size(), currentSpeedup) > this.operator.getSloRespTime())
-            cost += this.getwSLO();
-
-        double deploymentCost = 0.0;
-        for (NodeType nt : operatorInstances)
-            deploymentCost += nt.getCost();
-
-        double maxCost = this.operator.getMaxParallelism() * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
-
-        cost += (deploymentCost / maxCost) * this.getwResources();
-
-        return cost;
-    }
-
     private DoubleMatrix<Integer, Integer> buildPMatrix(String inputRateFilePath) throws IOException {
         InputRateFileReader inputRateFileReader = new InputRateFileReader(inputRateFilePath);
 

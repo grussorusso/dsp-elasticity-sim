@@ -1,7 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om.fa;
 
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.Feature;
-import it.uniroma2.dspsim.dsp.edf.om.fa.tiling.Tiling;
 
 import java.util.ArrayList;
 import java.util.List;

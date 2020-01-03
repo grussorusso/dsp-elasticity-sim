@@ -14,6 +14,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.utils.MathUtils;
@@ -121,12 +122,12 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
     private State tbviIteration(State s, Action a, int batchSize) {
         double oldQ = getQ(s, a).getDouble(0);
         double r = evaluateReward(s, a);
-        State pds = computePostDecisionState(s, a);
+        State pds = StateUtils.computePostDecisionState(s, a, this);
         double q = getQ(pds, getActionSelectionPolicy().selectAction(pds)).getDouble(0);
         double delta = (r + getGamma() * q) - oldQ;
         //System.out.println(delta);
 
-        INDArray trainingInput = buildInput(computePostDecisionState(s, a));
+        INDArray trainingInput = buildInput(StateUtils.computePostDecisionState(s, a, this));
         INDArray label = Nd4j.create(1).put(0, 0, r + (getGamma() * q));
 
         if (this.training == null && this.labels == null) {
@@ -183,7 +184,7 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
     }
 
     private State sampleNextState(State s, Action a) {
-        State pds = computePostDecisionState(s, a);
+        State pds = StateUtils.computePostDecisionState(s, a, this);
         List<Double> pArray = new ArrayList<>();
         for (int l : this.getpMatrix().getColLabels(s.getLambda())) {
             int times = (int) Math.floor(100 * this.getpMatrix().getValue(s.getLambda(), l));
@@ -209,7 +210,7 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
         if (a.getDelta() != 0)
             cost += this.getwReconf();
         // from s,a compute pds
-        State pds = computePostDecisionState(s, a);
+        State pds = StateUtils.computePostDecisionState(s, a, this);
         // for each lambda level with p != 0 in s.getLambda() row
         Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
         for (int lambda : possibleLambdas) {
@@ -217,8 +218,8 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
             double p = this.getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation and deployment cost from post decision operator view
             // recover input rate value from lambda level getting middle value of relative interval
-            double pdCost = computePostDecisionCost(pds.getActualDeployment(),
-                    MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()));
+            double pdCost = StateUtils.computePostDecisionCost(pds.getActualDeployment(),
+                    MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()), this);
 
             cost += p * pdCost;
         }
@@ -236,7 +237,7 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
     }
 
     private INDArray getQ(State state, Action action) {
-        State postDecisionState = computePostDecisionState(state, action);
+        State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
         INDArray v = getV(postDecisionState);
         v.put(0, 0, v.getDouble(0) + (action.getDelta() != 0 ? getwReconf() : 0));
         return v;
@@ -345,7 +346,7 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
             while (actionIterator.hasNext()) {
                 Action a = actionIterator.next();
                 if (validateAction(s, a)) {
-                    System.out.println(s.dump() + "\t" + a.dump() + "\tV: " + getV(computePostDecisionState(s, a)));
+                    System.out.println(s.dump() + "\t" + a.dump() + "\tV: " + getV(StateUtils.computePostDecisionState(s, a, this)));
                 }
             }
         }

@@ -6,6 +6,23 @@ public class Geometry2DUtils {
     private Geometry2DUtils() { }
 
     /**
+     * Get a value and map it in a interval system
+     * Compute interval length and detect witch interval contains value
+     * If value is less than min value or greater than max value it will be put in first or last interval
+     * @param intervalsNum number of intervals
+     * @param minValue min possible value
+     * @param maxValue max possible value
+     * @param value current value
+     * @return interval number
+     */
+    public static int mapInIntervals(int intervalsNum, double minValue, double maxValue, double value) {
+        if (value < minValue) return 0;
+        if (value >= maxValue) return intervalsNum - 1;
+
+        return (int) Math.ceil((intervalsNum / (maxValue - minValue)) * (value - minValue));
+    }
+
+    /**
      * Compute point to point distance
      * @param p1 first point
      * @param p2 second point
@@ -90,11 +107,11 @@ public class Geometry2DUtils {
         // and distance between point and linePoint as hypotenuse
         double hypotenuse = pointPointDistance(point, linePoint);
 
-        return hypotenuse * Math.sin(theta);
+        return Math.abs(hypotenuse * Math.sin(theta));
     }
 
     /**
-     * Compute direction in radians between a point and a line
+     * Compute direction in radians between a point and a line respect x axis built on point
      * the line is determined by a point and a direction expressed in radians
      * @param point coordinate (x, y)
      * @param linePoint a point of the line
@@ -105,8 +122,44 @@ public class Geometry2DUtils {
         // get angle between line and point
         double theta = computeLinePointAngle(point, linePoint, radians);
 
-        // compute third angle of a right triangle
-        return (1.0 / 2.0) * Math.PI - theta;
+        // compute third angle of a right triangle. Call it alpha
+        double alpha = (1.0 / 2.0) * Math.PI - theta;
+
+        // compute angle between point and linePoint considering point as reference. Call it gamma
+        double gamma = pointPointRadians(point, linePoint);
+
+        // compute angle between line point and point.
+        // compute epsilon as angle between line and point using and subtract radians in module
+        double epsilon = Math.abs(pointPointRadians(linePoint, point) - radians);
+
+        // get angle between x axis built on point
+        // and the line that intercept reference line forming a right angle
+        // use the position of point relative to linePoint to compute the direction
+        switch (getQuadrant(linePoint, point)) {
+            case 1:
+                // if gamma + alpha > 3/2 * pi return gamma + alpha else return gamma - alpha
+                return gamma + alpha > (3.0 / 2.0) * Math.PI ? gamma + alpha : gamma - alpha;
+            case 2:
+                // if epsilon > pi point is on the other side of the line so gamma cover also alpha
+                // return gamma - alpha
+                if (epsilon > Math.PI) return gamma - alpha;
+                // if gamma + alpha < 2pi return gamma + alpha else return gamma + alpha - 2pi
+                return gamma + alpha < 2 * Math.PI ? gamma + alpha : gamma + alpha - (2 * Math.PI);
+            case 3:
+                // if epsilon > pi point is on the other side of the line
+                // so gamma don't cover alpha and alpha don't cover gamma
+                // return gamma + alpha
+                if (epsilon > Math.PI) return gamma + alpha;
+                // if gamma < alpha return 2pi - (alpha - gamma) else return gamma - alpha
+                return gamma < alpha ? 2 * Math.PI - (alpha - gamma) : gamma - alpha;
+            case 4:
+                // if epsilon > pi point is on the other side of the line so gamma cover alpha
+                // return gamma - alpha
+                if (epsilon < Math.PI) return gamma - alpha;
+                return gamma + alpha;
+            default:
+                return 0;
+        }
     }
 
     /**
@@ -117,8 +170,6 @@ public class Geometry2DUtils {
      * @return angle in radians
      */
     public static double computeLinePointAngle(Coordinate2D point, Coordinate2D linePoint, double radians) {
-        // compute distance between point and linePoint and use it as right triangle hypotenuse
-        double hypotenuse = pointPointDistance(point, linePoint);
         // compute angle between line point and point. Call it alpha
         double alpha = pointPointRadians(linePoint, point);
         // compute theta as angle between line and point using alpha and radians. Call it theta

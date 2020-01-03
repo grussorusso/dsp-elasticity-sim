@@ -1,15 +1,12 @@
-package it.uniroma2.dspsim.dsp.edf.om.fa.tiling.shape;
+package it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.shape;
 
-import it.uniroma2.dspsim.dsp.edf.om.fa.tiling.Tiling;
+import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.Tiling;
 import it.uniroma2.dspsim.utils.Coordinate2D;
 import it.uniroma2.dspsim.utils.Coordinate3D;
 import it.uniroma2.dspsim.utils.Geometry2DUtils;
 
 public class StripeTilingShape extends TilingShape {
     private int stripesNum;
-
-    private int xTiles;
-    private int yTiles;
     private int zTiles;
 
     public StripeTilingShape(int stripesNum) {
@@ -19,17 +16,6 @@ public class StripeTilingShape extends TilingShape {
     public StripeTilingShape(int stripesNum, int zTiles) {
         this.stripesNum = stripesNum;
         this.zTiles = zTiles;
-    }
-
-    @Override
-    public void to3D(int zTiles) {
-        if (zTiles == 0) {
-            this.zTiles = 0;
-        } else {
-            throw new IllegalArgumentException(
-                    String.format("This tiling set has already 3D shape with %d z-tiles", this.zTiles)
-            );
-        }
     }
 
     @Override
@@ -80,9 +66,10 @@ public class StripeTilingShape extends TilingShape {
         }
 
         // get intersection between detected stripe and anti diagonal to map point to right tile
-        Coordinate2D stripe = antiDiagonalIntersection[minDistanceIndex];
-
+        final Coordinate2D stripe = antiDiagonalIntersection[minDistanceIndex];
         // add z to complete tile mapping building
-        return new Coordinate3D(stripe.getX(), stripe.getY(), coordinate3D.getZ());
+        final int z = Geometry2DUtils.mapInIntervals(this.zTiles, tiling.getMinZ(), tiling.getMaxZ(), coordinate3D.getZ());
+
+        return new Coordinate3D(stripe.getX(), stripe.getY(), z);
     }
 }

@@ -13,6 +13,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.Statistics;
@@ -159,7 +160,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         if (a.getDelta() != 0)
             cost += this.getwReconf();
         // from s,a compute pds
-        State pds = computePostDecisionState(s, a);
+        State pds = StateUtils.computePostDecisionState(s, a, this);
         // get V(s) using the greedy action selection policy from post decision state
         Action greedyAction = getActionSelectionPolicy().selectAction(pds);
         double v = policy.getValue(pds.hashCode(), greedyAction.hashCode());
@@ -170,8 +171,8 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
             double p = getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation and deployment cost from post decision operator view
             // recover input rate value from lambda level getting middle value of relative interval
-            double pdCost = computePostDecisionCost(pds.getActualDeployment(),
-                    MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()));
+            double pdCost = StateUtils.computePostDecisionCost(pds.getActualDeployment(),
+                    MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()), this);
 
             cost += p * (pdCost + getGamma() * v);
         }
