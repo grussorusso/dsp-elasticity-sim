@@ -46,7 +46,7 @@ public class DeepQLearningOM extends DeepLearningOM {
         INDArray trainingInput = buildInput(oldState);
 
         // training step
-        this.network.fit(trainingInput, oldQ);
+        this.learn(trainingInput, oldQ);
 
         // decrement gamma if necessary
         decrementGamma();
@@ -109,7 +109,7 @@ public class DeepQLearningOM extends DeepLearningOM {
                                 .activation(Activation.RELU)
                                 .build(),
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .activation(Activation.IDENTITY)
+                                .activation(Activation.SOFTMAX)
                                 .nIn(32)
                                 .nOut(this.outputLayerNodesNumber)
                                 .build()

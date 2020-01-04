@@ -75,7 +75,7 @@ public class DeepVLearningOM extends DeepLearningOM {
         INDArray trainingInput = buildInput(pdState);
 
         // training step
-        this.network.fit(trainingInput, v);
+        this.learn(trainingInput, v);
 
         // decrement gamma if necessary
         decrementGamma();
@@ -134,21 +134,25 @@ public class DeepVLearningOM extends DeepLearningOM {
                                 .nIn(32)
                                 .nOut(64)
                                 .activation(Activation.RELU)
+                                .dropOut(0.5)
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(64)
                                 .nOut(128)
                                 .activation(Activation.RELU)
+                                .dropOut(0.5)
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(128)
                                 .nOut(64)
                                 .activation(Activation.RELU)
+                                .dropOut(0.5)
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(64)
                                 .nOut(32)
                                 .activation(Activation.RELU)
+                                .dropOut(0.5)
                                 .build(),
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                 .activation(Activation.IDENTITY)
