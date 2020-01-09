@@ -27,8 +27,8 @@ public class KLambdaResTypeTiling extends Tiling {
         // create actual deployment mask
         // revert mask array to consider it a base 2 number
         int[] deploymentNumber = new int[pds.getActualDeployment().length];
-        // TODO occhio potrebbe essere sbagliato devi convertire in one hot vector e poi in decimale?
         for (int i = 0; i < pds.getActualDeployment().length; i++) {
+            // TODO check it
             if (pds.getActualDeployment()[pds.getActualDeployment().length - 1 - i] > 0)
                 deploymentNumber[i] = 1;
             else

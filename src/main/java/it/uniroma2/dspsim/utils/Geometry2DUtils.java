@@ -19,6 +19,7 @@ public class Geometry2DUtils {
         if (value < minValue) return 0;
         if (value >= maxValue) return intervalsNum - 1;
 
-        return (int) Math.ceil((intervalsNum / (maxValue - minValue)) * (value - minValue));
+        // subtract 1 to start counting from 0;
+        return (int) Math.ceil((intervalsNum / (maxValue - minValue)) * (value - minValue)) - 1;
     }
 }

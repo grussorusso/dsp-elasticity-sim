@@ -4,6 +4,11 @@ import it.uniroma2.dspsim.dsp.edf.om.RewardBasedOM;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.Feature;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.utils.Tuple2;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class ReconfigurationFeature extends Feature {
     private int delta;
@@ -32,9 +37,13 @@ public class ReconfigurationFeature extends Feature {
             return 0.0;
     }
 
+    @Override
+    protected void updateWeight(double updateValue, State state, Action action, RewardBasedOM om) {
+        this.weights[0] += updateValue;
+    }
 
     @Override
-    public void updateWeight(double updateValue, State state, Action action, RewardBasedOM om) {
-        this.weights[0] += updateValue;
+    public List<Tuple2<Object, Double>> getWeights() {
+        return Collections.singletonList(new Tuple2<>(0, this.weights[0]));
     }
 }

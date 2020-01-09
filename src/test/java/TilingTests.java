@@ -7,13 +7,18 @@ import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.Tiling;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.TilingBuilder;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.TilingType;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.shape.RectangleTilingShape;
+import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.shape.StripeTilingShape;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.KLambdaState;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.utils.Coordinate3D;
+import it.uniroma2.dspsim.utils.Tuple2;
 import org.junit.Assert;
 import org.junit.Test;
+
+import java.util.List;
 
 public class TilingTests {
 
@@ -23,23 +28,87 @@ public class TilingTests {
         RewardBasedOM om = new RLQLearningOM(new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0),5));
 
         Tiling tiling = new TilingBuilder()
-                .setShape(new RectangleTilingShape(5, 5, 3))
-                .setXRange(0.0, 5.0)
-                .setYRange(0.0, 30)
-                .setZRange(0.0, 20.0)
+                .setShape(new RectangleTilingShape(6, 4, 9))
+                .setXRange(-3.2, 4.7)
+                .setYRange(-2.6, 30.6)
+                .setZRange(-1, 6.3)
                 .build(TilingType.K_LAMBDA_RES_TYPE);
 
+        Action doNothingAction = new Action(0, 0, 0);
 
-        State s1 = new KLambdaState(0, new int[] {2, 0, 0}, 5, 30, 5);
-        Action a1 = new Action(0, 0, 0);
+        State s1 = new KLambdaState(0, new int[] {1, 2, 0}, 6, 100, 100);
+        State s2 = new KLambdaState(0, new int[] {9, 6, 0}, 53, 100, 100);
+        State s3 = new KLambdaState(0, new int[] {1, 1, 1, 1, 0, 2}, 3, 100, 100);
 
-        Assert.assertTrue(tiling.isActive(s1, a1, om));
+        Assert.assertTrue(tiling.isActive(s1, doNothingAction, om));
+        Assert.assertEquals(0.0, tiling.evaluate(s1, doNothingAction, om), 0.0);
+        Assert.assertFalse(tiling.isActive(s2, doNothingAction, om));
+        Assert.assertEquals(0.0, tiling.evaluate(s2, doNothingAction, om), 0.0);
+        Assert.assertFalse(tiling.isActive(s3, doNothingAction, om));
+        Assert.assertEquals(0.0, tiling.evaluate(s3, doNothingAction, om), 0.0);
 
-        tiling.evaluate(s1, a1, om);
-        tiling.updateWeight(2.3, s1, a1, om);
-        tiling.evaluate(s1, a1, om);
-        tiling.updateWeight(9.5, s1, a1, om);
 
-        Assert.assertEquals(0.0 + 9.5 + 2.3, tiling.evaluate(s1, a1, om), 0.0);
+        tiling.update(2.3, s1, doNothingAction, om);
+        tiling.update(5.6, s2, doNothingAction, om);
+
+        List<Tuple2<Object, Double>> weights = tiling.getWeights();
+
+        for (Tuple2<Object, Double> weight : weights) {
+            Assert.assertTrue(weight.getK() instanceof Coordinate3D);
+            double x = ((Coordinate3D) weight.getK()).getX();
+            double y = ((Coordinate3D) weight.getK()).getY();
+            double z = ((Coordinate3D) weight.getK()).getZ();
+            System.out.println(String.format("(%f, %f, %f) -> %f", x, y, z, weight.getV()));
+        }
+
+        Assert.assertArrayEquals(new double[] {4,1,4},
+                new double[] {((Coordinate3D) weights.get(0).getK()).getX(),
+                        ((Coordinate3D) weights.get(0).getK()).getY(),
+                        ((Coordinate3D) weights.get(0).getK()).getZ()}, 0.0);
+    }
+
+    @Test
+    public void stripeShapeTilingTest() {
+        ComputingInfrastructure.initDefaultInfrastructure(2);
+        RewardBasedOM om = new RLQLearningOM(new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0),5));
+
+        Tiling tiling = new TilingBuilder()
+                .setShape(new StripeTilingShape(7, 1.0, 9))
+                .setXRange(-3.2, 4.7)
+                .setYRange(-2.6, 30.6)
+                .setZRange(-1, 6.3)
+                .build(TilingType.K_LAMBDA_RES_TYPE);
+
+        Action doNothingAction = new Action(0, 0, 0);
+
+        State s1 = new KLambdaState(0, new int[] {1, 2, 0}, 6, 100, 100);
+        State s2 = new KLambdaState(0, new int[] {9, 6, 0}, 53, 100, 100);
+        State s3 = new KLambdaState(0, new int[] {1, 1, 1, 1, 0, 2}, 3, 100, 100);
+
+        Assert.assertTrue(tiling.isActive(s1, doNothingAction, om));
+        Assert.assertEquals(0.0, tiling.evaluate(s1, doNothingAction, om), 0.0);
+        Assert.assertFalse(tiling.isActive(s2, doNothingAction, om));
+        Assert.assertEquals(0.0, tiling.evaluate(s2, doNothingAction, om), 0.0);
+        Assert.assertFalse(tiling.isActive(s3, doNothingAction, om));
+        Assert.assertEquals(0.0, tiling.evaluate(s3, doNothingAction, om), 0.0);
+
+
+        tiling.update(2.3, s1, doNothingAction, om);
+        tiling.update(5.6, s2, doNothingAction, om);
+
+        List<Tuple2<Object, Double>> weights = tiling.getWeights();
+
+        for (Tuple2<Object, Double> weight : weights) {
+            Assert.assertTrue(weight.getK() instanceof Coordinate3D);
+            double x = ((Coordinate3D) weight.getK()).getX();
+            double y = ((Coordinate3D) weight.getK()).getY();
+            double z = ((Coordinate3D) weight.getK()).getZ();
+            System.out.println(String.format("(%f, %f, %f) -> %f", x, y, z, weight.getV()));
+        }
+
+        Assert.assertArrayEquals(new double[] {5,2,4},
+                new double[] {((Coordinate3D) weights.get(0).getK()).getX(),
+                        ((Coordinate3D) weights.get(0).getK()).getY(),
+                        ((Coordinate3D) weights.get(0).getK()).getZ()}, 0.0);
     }
 }

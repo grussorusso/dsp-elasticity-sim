@@ -7,8 +7,12 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.utils.Coordinate3D;
 import it.uniroma2.dspsim.utils.Tuple2;
+import it.uniroma2.dspsim.utils.matrix.Matrix;
 import it.uniroma2.dspsim.utils.matrix.cube.DoubleCube;
 import scala.Int;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class Tiling extends Feature {
     private TilingShape shape;
@@ -59,11 +63,26 @@ public abstract class Tiling extends Feature {
     }
 
     @Override
-    public void updateWeight(double updateValue, State state, Action action, RewardBasedOM om) {
+    protected void updateWeight(double updateValue, State state, Action action, RewardBasedOM om) {
         Coordinate3D coordinate3D = sa2Coordinate3D(state, action, om);
         Coordinate3D weightCoordinate = this.shape.map(coordinate3D, this);
         double newWeightValue = this.weights.getValue((int) weightCoordinate.getX(), (int) weightCoordinate.getY(), (int) weightCoordinate.getZ()) + updateValue;
         this.weights.setValue((int) weightCoordinate.getX(), (int) weightCoordinate.getY(), (int) weightCoordinate.getZ(), newWeightValue);
+    }
+
+    @Override
+    public List<Tuple2<Object, Double>> getWeights() {
+        List<Tuple2<Object, Double>> weights = new ArrayList<>();
+        for (Tuple2<Integer, Matrix<Integer, Integer, Double>> z : this.weights.get2DSections()) {
+            for (Integer x : z.getV().getRowLabels()) {
+                for (Integer y : z.getV().getColLabels(x)) {
+                    Coordinate3D coordinate3D = new Coordinate3D(x , y, z.getK());
+                    Double value = z.getV().getValue(x, y);
+                    weights.add(new Tuple2<>(coordinate3D, value));
+                }
+            }
+        }
+        return weights;
     }
 
     private boolean contains(State state, Action action, RewardBasedOM om) {
