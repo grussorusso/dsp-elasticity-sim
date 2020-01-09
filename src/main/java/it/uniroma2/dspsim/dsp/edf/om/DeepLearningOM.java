@@ -22,6 +22,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.Iterator;
 import java.util.List;
 
@@ -42,6 +46,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
     private INDArray training = null;
     private INDArray labels = null;
+
     // max memory
     private int memorySize;
     // memory batch used to training
@@ -82,16 +87,14 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         this.network = new MultiLayerNetwork(this.networkConf);
         this.network.init();
 
-        printNetwork();
+        dumpPolicyOnFile(String.format("%s/%s/%s/policy",
+                Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
+                Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
+                "others"));
 
         if (configuration.getBoolean(ConfigurationKeys.DL_OM_ENABLE_NETWORK_UI_KEY, false)) {
             startNetworkUIServer();
         }
-    }
-
-    private void printNetwork() {
-        System.out.println(this.network.getLayerWiseConfigurations().toJson());
-        System.out.println(this.network.getLayerWiseConfigurations().toYaml());
     }
 
     private void startNetworkUIServer() {
@@ -147,7 +150,24 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             DataSet tempMemory = new DataSet(this.training, this.labels);
             tempMemory.shuffle();
             List<DataSet> batches = tempMemory.batchBy(this.memoryBatch);
-            this.network.fit(new ExistingDataSetIterator(batches));
+            this.network.fit(batches.get(0));
+        }
+    }
+
+    private void dumpPolicyOnFile(String filename) {
+        // create file
+        File file = new File(filename);
+        try {
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
+            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
+            printWriter.print(this.network.getLayerWiseConfigurations().toJson());
+            printWriter.flush();
+            printWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
     }
 
@@ -160,4 +180,16 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     protected abstract int computeInputLayerNodesNumber();
 
     protected abstract MultiLayerConfiguration buildNeuralNetwork();
+
+    /**
+     * GETTER
+     */
+
+    public int getMemorySize() {
+        return memorySize;
+    }
+
+    public int getMemoryBatch() {
+        return memoryBatch;
+    }
 }

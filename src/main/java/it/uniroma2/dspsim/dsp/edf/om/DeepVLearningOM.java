@@ -9,8 +9,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
+import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
@@ -127,26 +126,18 @@ public class DeepVLearningOM extends DeepLearningOM {
                 .list(
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber)
-                                .nOut(32)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(32)
                                 .nOut(64)
                                 .activation(Activation.RELU)
-                                .dropOut(0.5)
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(64)
                                 .nOut(128)
                                 .activation(Activation.RELU)
-                                .dropOut(0.5)
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(128)
                                 .nOut(64)
                                 .activation(Activation.RELU)
-                                .dropOut(0.5)
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(64)

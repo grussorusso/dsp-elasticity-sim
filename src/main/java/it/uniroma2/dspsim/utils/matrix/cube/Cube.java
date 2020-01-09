@@ -17,8 +17,8 @@ public abstract class Cube<Z, X, Y, V extends Number> {
         getMatrix(z).setValue(x, y, v);
     }
 
-    public void getValue(X x, Y y, Z z) {
-        getMatrix(z).getValue(x, y);
+    public V getValue(X x, Y y, Z z) {
+        return getMatrix(z).getValue(x, y);
     }
 
     public void add(X x, Y y, Z z, V v) {
@@ -30,9 +30,10 @@ public abstract class Cube<Z, X, Y, V extends Number> {
     }
 
     private Matrix<X, Y, V> getMatrix(Z z) {
-        Matrix matrix = cube.get(z);
+        Matrix<X, Y, V> matrix = cube.get(z);
         if (matrix == null) {
             matrix = initMatrix(initValue);
+            this.cube.put(z, matrix);
         }
         return matrix;
     }

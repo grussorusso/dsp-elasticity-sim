@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class Feature {
-    protected Object weights;
 
     public Feature() {
         initWeights();
     }
 
     protected abstract void initWeights();
-    public abstract void updateWeight(double updateValue, Number... coordinate);
+    public abstract void updateWeight(double updateValue, State state, Action action, RewardBasedOM om);
+    public abstract boolean isActive(State state, Action action, RewardBasedOM om);
     public abstract double evaluate(State state, Action action, RewardBasedOM om);
 }

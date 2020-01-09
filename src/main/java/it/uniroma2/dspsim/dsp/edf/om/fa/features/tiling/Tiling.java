@@ -8,12 +8,15 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.utils.Coordinate3D;
 import it.uniroma2.dspsim.utils.Tuple2;
 import it.uniroma2.dspsim.utils.matrix.cube.DoubleCube;
+import scala.Int;
 
 public abstract class Tiling extends Feature {
     private TilingShape shape;
     private double[] xRange;
     private double[] yRange;
     private double[] zRange;
+
+    private DoubleCube<Integer, Integer, Integer> weights;
 
     public Tiling(TilingShape shape, Tuple2<Double, Double> xRange, Tuple2<Double, Double> yRange) {
         this(shape, xRange, yRange, new Tuple2<>(0.0, 0.0));
@@ -40,15 +43,27 @@ public abstract class Tiling extends Feature {
 
     @Override
     protected void initWeights() {
-        this.weights = new DoubleCube<Integer, Integer, Integer>(0.0);
+        this.weights = new DoubleCube<>(0.0);
+    }
+
+    @Override
+    public boolean isActive(State state, Action action, RewardBasedOM om) {
+        return contains(state, action, om);
     }
 
     @Override
     public double evaluate(State state, Action action, RewardBasedOM om) {
-        if (contains(state, action, om))
-            return 1.0;
-        else
-            return 0.0;
+        Coordinate3D coordinate3D = sa2Coordinate3D(state, action, om);
+        Coordinate3D weightCoordinate = this.shape.map(coordinate3D, this);
+        return this.weights.getValue((int) weightCoordinate.getX(), (int) weightCoordinate.getY(), (int) weightCoordinate.getZ());
+    }
+
+    @Override
+    public void updateWeight(double updateValue, State state, Action action, RewardBasedOM om) {
+        Coordinate3D coordinate3D = sa2Coordinate3D(state, action, om);
+        Coordinate3D weightCoordinate = this.shape.map(coordinate3D, this);
+        double newWeightValue = this.weights.getValue((int) weightCoordinate.getX(), (int) weightCoordinate.getY(), (int) weightCoordinate.getZ()) + updateValue;
+        this.weights.setValue((int) weightCoordinate.getX(), (int) weightCoordinate.getY(), (int) weightCoordinate.getZ(), newWeightValue);
     }
 
     private boolean contains(State state, Action action, RewardBasedOM om) {

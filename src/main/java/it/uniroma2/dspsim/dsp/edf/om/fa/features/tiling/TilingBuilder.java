@@ -43,8 +43,6 @@ public class TilingBuilder {
     public Tiling build(TilingType type) {
         this.validate();
         switch (type) {
-            case K_LAMBDA_RES_TYPE:
-                return new KLambdaResTypeTiling(shape, xRange, yRange, zRange);
             default:
                 return new KLambdaResTypeTiling(shape, xRange, yRange, zRange);
         }

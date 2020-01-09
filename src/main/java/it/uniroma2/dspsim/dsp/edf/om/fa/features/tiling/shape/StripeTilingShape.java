@@ -7,69 +7,46 @@ import it.uniroma2.dspsim.utils.Geometry2DUtils;
 
 public class StripeTilingShape extends TilingShape {
     private int stripesNum;
+    private double stripesSlope;
     private int zTiles;
 
-    public StripeTilingShape(int stripesNum) {
-        this(stripesNum, 0);
+    public StripeTilingShape(int stripesNum, double stripesSlope) {
+        this(stripesNum, stripesSlope, 0);
     }
 
-    public StripeTilingShape(int stripesNum, int zTiles) {
+    public StripeTilingShape(int stripesNum, double stripesSlope, int zTiles) {
         this.stripesNum = stripesNum;
+        this.stripesSlope = stripesSlope;
         this.zTiles = zTiles;
     }
 
     @Override
     public Coordinate3D map(Coordinate3D coordinate3D, Tiling tiling) {
-        // get top left 2D tiling point
-        Coordinate2D topLeftPoint = new Coordinate2D(tiling.getMinX(), tiling.getMaxY());
-        // get bottom right 2D tiling point
-        Coordinate2D bottomRightPoint = new Coordinate2D(tiling.getMaxX(), tiling.getMinY());
+        // compute q_min and q_max
+        double q_max = this.stripesSlope > 0 ? tiling.getMaxY() - this.stripesSlope * tiling.getMinX()
+                : tiling.getMaxY() - this.stripesSlope * tiling.getMaxX();
 
-        // compute anti-diagonal length and direction (angle in radians)
-        double antiDiagonalLength = Geometry2DUtils.pointPointDistance(topLeftPoint, bottomRightPoint);
-        double antiDiagonalRadians = Geometry2DUtils.pointPointRadians(topLeftPoint, bottomRightPoint);
+        double q_min = this.stripesSlope > 0 ? tiling.getMinY() - this.stripesSlope * tiling.getMaxX()
+                : tiling.getMinY() - this.stripesSlope * tiling.getMinX();
 
-        // compute stripes distance
-        double stripesDist = antiDiagonalLength / this.stripesNum;
+        // compute current q from coordinate3D x and y
+        // eq : y = m*x + q -> q = y - m*x
+        double q = coordinate3D.getY() - this.stripesSlope * coordinate3D.getX();
 
-        // determine stripe intersections with anti-diagonal foreach stripe
-        Coordinate2D[] antiDiagonalIntersection = new Coordinate2D[this.stripesNum];
-        for (int i = 0; i < this.stripesNum; i++) {
-            antiDiagonalIntersection[i] = Geometry2DUtils.findPointFromPoint(topLeftPoint,
-                    i * stripesDist, antiDiagonalRadians);
-        }
+        // compute difference between q_min and q_max adjusted on stripesNum (consider it as new coordinate's x)
+        // eq : floor(abs(q_max - q_min) / stripesNum)
+        // it represent a unique line in tiling's weights matrix
+        // and foreach tiling that calls this method will be always the same
+        int delta = Math.floorDiv((int) (q_max - q_min), this.stripesNum);
 
+        // compute offset (consider it as new coordinate's y)
+        // it represents the column of tiling's weights matrix
+        // it is computed simply calculating difference between current q and q_min adjusted on delta
+        int offset = Math.floorDiv((int) (q - q_min), delta);
 
-        // get x and y parameters from 3D coordinate and compute
-        // distance and direction between (x, y) and stripe foreach stripe
-        double[] pointStripeDistances = new double[antiDiagonalIntersection.length];
-        double[] pointStripeDirection = new double[antiDiagonalIntersection.length];
-        for (int j = 0; j < antiDiagonalIntersection.length; j++) {
-            pointStripeDistances[j] = Geometry2DUtils.pointLineDistance(
-                    new Coordinate2D(coordinate3D.getX(), coordinate3D.getY()),
-                    antiDiagonalIntersection[j],
-                    antiDiagonalRadians + (1.0 / 2.0) * Math.PI);
+        // compute z
+        int z = Geometry2DUtils.mapInIntervals(this.zTiles, tiling.getMinZ(), tiling.getMaxZ(), coordinate3D.getZ());
 
-            pointStripeDirection[j] = Geometry2DUtils.pointLineDirection(
-                    new Coordinate2D(coordinate3D.getX(), coordinate3D.getY()),
-                    antiDiagonalIntersection[j],
-                    antiDiagonalRadians + (1.0 / 2.0) * Math.PI);
-        }
-
-        // find (x,y)'s closer stripe that belongs to 2nd or 3rd quadrant
-        int minDistanceIndex = -1;
-        for (int k = 0; k < pointStripeDistances.length; k++) {
-            if ((minDistanceIndex == -1 || pointStripeDistances[k] < pointStripeDistances[minDistanceIndex]) &&
-                    (pointStripeDirection[k] > (1.0 / 2.0) * Math.PI && pointStripeDirection[k] < (3.0 / 2.0) * Math.PI)) {
-                minDistanceIndex = k;
-            }
-        }
-
-        // get intersection between detected stripe and anti diagonal to map point to right tile
-        final Coordinate2D stripe = antiDiagonalIntersection[minDistanceIndex];
-        // add z to complete tile mapping building
-        final int z = Geometry2DUtils.mapInIntervals(this.zTiles, tiling.getMinZ(), tiling.getMaxZ(), coordinate3D.getZ());
-
-        return new Coordinate3D(stripe.getX(), stripe.getY(), z);
+        return new Coordinate3D(delta, offset, z);
     }
 }

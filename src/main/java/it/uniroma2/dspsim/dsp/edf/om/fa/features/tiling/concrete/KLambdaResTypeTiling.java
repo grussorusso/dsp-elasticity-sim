@@ -24,20 +24,21 @@ public class KLambdaResTypeTiling extends Tiling {
     public Coordinate3D sa2Coordinate3D(State state, Action action, RewardBasedOM om) {
         State pds = StateUtils.computePostDecisionState(state, action, om);
 
-        // revert actual deployment array to consider it a base 2 number
+        // create actual deployment mask
+        // revert mask array to consider it a base 2 number
         int[] deploymentNumber = new int[pds.getActualDeployment().length];
-        for (int i = 0; i < pds.getActualDeployment().length; i++)
-            deploymentNumber[i] = pds.getActualDeployment()[pds.getActualDeployment().length - 1 - i];
+        // TODO occhio potrebbe essere sbagliato devi convertire in one hot vector e poi in decimale?
+        for (int i = 0; i < pds.getActualDeployment().length; i++) {
+            if (pds.getActualDeployment()[pds.getActualDeployment().length - 1 - i] > 0)
+                deploymentNumber[i] = 1;
+            else
+                deploymentNumber[i] = 0;
+        }
 
         double x = pds.overallParallelism();
         double y = pds.getLambda();
         double z = MathUtils.toBase10(deploymentNumber, 2);
 
         return new Coordinate3D(x, y, z);
-    }
-
-    @Override
-    public void updateWeight(double updateValue, Number... coordinate) {
-
     }
 }

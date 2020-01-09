@@ -85,11 +85,6 @@ public class DeepQLearningOM extends DeepLearningOM {
                 .list(
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber)
-                                .nOut(32)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(32)
                                 .nOut(64)
                                 .activation(Activation.RELU)
                                 .build(),
