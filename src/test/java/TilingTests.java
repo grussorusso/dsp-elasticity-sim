@@ -39,6 +39,7 @@ public class TilingTests {
         State s1 = new KLambdaState(0, new int[] {1, 2, 0}, 6, 100, 100);
         State s2 = new KLambdaState(0, new int[] {9, 6, 0}, 53, 100, 100);
         State s3 = new KLambdaState(0, new int[] {1, 1, 1, 1, 0, 2}, 3, 100, 100);
+        State s4 = new KLambdaState(0, new int[] {2, 0, 2}, 19, 100, 100);
 
         Assert.assertTrue(tiling.isActive(s1, doNothingAction, om));
         Assert.assertEquals(0.0, tiling.evaluate(s1, doNothingAction, om), 0.0);
@@ -46,10 +47,13 @@ public class TilingTests {
         Assert.assertEquals(0.0, tiling.evaluate(s2, doNothingAction, om), 0.0);
         Assert.assertFalse(tiling.isActive(s3, doNothingAction, om));
         Assert.assertEquals(0.0, tiling.evaluate(s3, doNothingAction, om), 0.0);
+        Assert.assertTrue(tiling.isActive(s4, doNothingAction, om));
+        Assert.assertEquals(0.0, tiling.evaluate(s4, doNothingAction, om), 0.0);
 
 
         tiling.update(2.3, s1, doNothingAction, om);
         tiling.update(5.6, s2, doNothingAction, om);
+        tiling.update(3.7, s4, doNothingAction, om);
 
         List<Tuple2<Object, Double>> weights = tiling.getWeights();
 
@@ -61,10 +65,15 @@ public class TilingTests {
             System.out.println(String.format("(%f, %f, %f) -> %f", x, y, z, weight.getV()));
         }
 
-        Assert.assertArrayEquals(new double[] {4,1,4},
+        Assert.assertArrayEquals(new double[] {4, 1, 4},
                 new double[] {((Coordinate3D) weights.get(0).getK()).getX(),
                         ((Coordinate3D) weights.get(0).getK()).getY(),
                         ((Coordinate3D) weights.get(0).getK()).getZ()}, 0.0);
+
+        Assert.assertArrayEquals(new double[] {5, 2, 7},
+                new double[] {((Coordinate3D) weights.get(1).getK()).getX(),
+                        ((Coordinate3D) weights.get(1).getK()).getY(),
+                        ((Coordinate3D) weights.get(1).getK()).getZ()}, 0.0);
     }
 
     @Test
@@ -84,6 +93,7 @@ public class TilingTests {
         State s1 = new KLambdaState(0, new int[] {1, 2, 0}, 6, 100, 100);
         State s2 = new KLambdaState(0, new int[] {9, 6, 0}, 53, 100, 100);
         State s3 = new KLambdaState(0, new int[] {1, 1, 1, 1, 0, 2}, 3, 100, 100);
+        State s4 = new KLambdaState(0, new int[] {2, 0, 2}, 19, 100, 100);
 
         Assert.assertTrue(tiling.isActive(s1, doNothingAction, om));
         Assert.assertEquals(0.0, tiling.evaluate(s1, doNothingAction, om), 0.0);
@@ -91,10 +101,13 @@ public class TilingTests {
         Assert.assertEquals(0.0, tiling.evaluate(s2, doNothingAction, om), 0.0);
         Assert.assertFalse(tiling.isActive(s3, doNothingAction, om));
         Assert.assertEquals(0.0, tiling.evaluate(s3, doNothingAction, om), 0.0);
+        Assert.assertTrue(tiling.isActive(s4, doNothingAction, om));
+        Assert.assertEquals(0.0, tiling.evaluate(s4, doNothingAction, om), 0.0);
 
 
         tiling.update(2.3, s1, doNothingAction, om);
         tiling.update(5.6, s2, doNothingAction, om);
+        tiling.update(3.7, s4, doNothingAction, om);
 
         List<Tuple2<Object, Double>> weights = tiling.getWeights();
 
@@ -106,9 +119,14 @@ public class TilingTests {
             System.out.println(String.format("(%f, %f, %f) -> %f", x, y, z, weight.getV()));
         }
 
-        Assert.assertArrayEquals(new double[] {5,2,4},
+        Assert.assertArrayEquals(new double[] {5, 2, 4},
                 new double[] {((Coordinate3D) weights.get(0).getK()).getX(),
                         ((Coordinate3D) weights.get(0).getK()).getY(),
                         ((Coordinate3D) weights.get(0).getK()).getZ()}, 0.0);
+
+        Assert.assertArrayEquals(new double[] {5, 4, 7},
+                new double[] {((Coordinate3D) weights.get(1).getK()).getX(),
+                        ((Coordinate3D) weights.get(1).getK()).getY(),
+                        ((Coordinate3D) weights.get(1).getK()).getZ()}, 0.0);
     }
 }

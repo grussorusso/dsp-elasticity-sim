@@ -1,12 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.om.factory;
 
-import it.uniroma2.dspsim.Configuration;
-import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.*;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
-
-import java.util.HashMap;
 
 public class OperatorManagerFactory {
 
@@ -31,7 +26,7 @@ public class OperatorManagerFactory {
             case VALUE_ITERATION:
                 return new ValueIterationOM(operator);
             case TRAJECTORY_BASED_VALUE_ITERATION:
-                return new TBValueIterationOM(operator);
+                return new DeepTBValueIterationOM(operator);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not valid operator manager type: " + operatorManagerType.toString());

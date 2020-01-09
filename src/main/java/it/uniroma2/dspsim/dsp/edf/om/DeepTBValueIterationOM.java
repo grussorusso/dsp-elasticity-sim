@@ -51,7 +51,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 
-public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
+public class DeepTBValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
 
     private int inputLayerNodesNumber;
     private int outputLayerNodesNumber;
@@ -67,7 +67,7 @@ public class TBValueIterationOM extends DynamicProgrammingOM implements ActionSe
     //policy
     private MultiLayerNetwork policy;
 
-    public TBValueIterationOM(Operator operator) {
+    public DeepTBValueIterationOM(Operator operator) {
         super(operator);
 
         this.actionsCount = computeActionsCount();
