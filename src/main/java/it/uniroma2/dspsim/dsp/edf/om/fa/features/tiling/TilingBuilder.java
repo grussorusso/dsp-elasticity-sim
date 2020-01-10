@@ -10,14 +10,26 @@ public class TilingBuilder {
     private Tuple2<Double, Double> yRange;
     private Tuple2<Double, Double> zRange;
 
+    public TilingBuilder setXRange(double[] range) {
+        return setXRange(range[0], range[1]);
+    }
+
     public TilingBuilder setXRange(double xMin, double xMax) {
         this.xRange = new Tuple2<>(xMin, xMax);
         return this;
     }
 
+    public TilingBuilder setYRange(double[] range) {
+        return setYRange(range[0], range[1]);
+    }
+
     public TilingBuilder setYRange(double yMin, double yMax) {
         this.yRange = new Tuple2<>(yMin, yMax);
         return this;
+    }
+
+    public TilingBuilder setZRange(double[] range) {
+        return setZRange(range[0], range[1]);
     }
 
     public TilingBuilder setZRange(double zMin, double zMax) {

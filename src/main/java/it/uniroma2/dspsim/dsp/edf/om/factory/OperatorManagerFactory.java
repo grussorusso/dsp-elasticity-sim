@@ -25,7 +25,9 @@ public class OperatorManagerFactory {
                 return new DeepVLearningOM(operator);
             case VALUE_ITERATION:
                 return new ValueIterationOM(operator);
-            case TRAJECTORY_BASED_VALUE_ITERATION:
+            case FA_TRAJECTORY_BASED_VALUE_ITERATION:
+                return new FaTBValueIterationOM(operator);
+            case DEEP_TRAJECTORY_BASED_VALUE_ITERATION:
                 return new DeepTBValueIterationOM(operator);
             default:
                 // throw "Not valid om type" exception

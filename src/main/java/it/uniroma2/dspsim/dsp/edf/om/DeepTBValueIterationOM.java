@@ -51,18 +51,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.*;
 
-public class DeepTBValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
+public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     private int inputLayerNodesNumber;
     private int outputLayerNodesNumber;
 
-    private int statesCount;
-    private int actionsCount;
-
-    private Random rng;
-
     private INDArray training = null;
     private INDArray labels = null;
+
+    private int memoryBatch;
 
     //policy
     private MultiLayerNetwork policy;
@@ -70,16 +67,15 @@ public class DeepTBValueIterationOM extends DynamicProgrammingOM implements Acti
     public DeepTBValueIterationOM(Operator operator) {
         super(operator);
 
-        this.actionsCount = computeActionsCount();
-        this.statesCount = computeStatesCount();
-        this.rng = new Random();
-
         if (Configuration.getInstance().getBoolean(ConfigurationKeys.DL_OM_ENABLE_NETWORK_UI_KEY, false)) {
             startNetworkUIServer();
         }
 
         // TODO configure
-        tbvi(60000, 512, 32);
+        this.memoryBatch = 32;
+
+        // TODO configure
+        tbvi(60000, 512);
 
         dumpPolicyOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
@@ -87,144 +83,6 @@ public class DeepTBValueIterationOM extends DynamicProgrammingOM implements Acti
                 "others"));
 
         printTBVIResults();
-    }
-
-    private void tbvi(long millis, long trajectoryLength, int batchSize) {
-        ActionSelectionPolicy randomASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.RANDOM, this);
-        // get initial state
-        State state = null;
-        // current trajectory length
-        long tl = 0L;
-
-        while (millis > 0) {
-            long startIteration = System.currentTimeMillis();
-
-            if (trajectoryLength > 0 && tl % trajectoryLength == 0)
-                tl = 0L;
-            if (tl == 0L) {
-                // reset memory
-                this.training = null;
-                this.labels = null;
-                // start new trajectory
-                state = randomState();
-            }
-            // choose random action to evaluate
-            Action action = randomASP.selectAction(state);
-
-            state = tbviIteration(state, action, batchSize);
-
-            tl++;
-
-            millis -= (System.currentTimeMillis() - startIteration);
-        }
-    }
-
-    private State tbviIteration(State s, Action a, int batchSize) {
-        double oldQ = getQ(s, a).getDouble(0);
-        double r = evaluateReward(s, a);
-        State pds = StateUtils.computePostDecisionState(s, a, this);
-        double q = getQ(pds, getActionSelectionPolicy().selectAction(pds)).getDouble(0);
-        double delta = (r + getGamma() * q) - oldQ;
-        //System.out.println(delta);
-
-        INDArray trainingInput = buildInput(StateUtils.computePostDecisionState(s, a, this));
-        INDArray label = Nd4j.create(1).put(0, 0, r + (getGamma() * q));
-
-        if (this.training == null && this.labels == null) {
-            this.training = trainingInput;
-            this.labels = label;
-        } else {
-            training = Nd4j.concat(0, training, trainingInput);
-            labels = Nd4j.concat(0, labels, label);
-        }
-        DataSet memory = new DataSet(this.training, this.labels);
-        memory.shuffle();
-        List<DataSet> batches = memory.batchBy(batchSize);
-        this.policy.fit(batches.get(0));
-
-        return sampleNextState(s, a);
-    }
-
-    private State randomState() {
-
-        int randomIndex = rng.nextInt(this.statesCount);
-        StateIterator stateIterator = new StateIterator(getStateRepresentation(), this.operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
-
-        State s = null;
-        while (stateIterator.hasNext()) {
-            s = stateIterator.next();
-            if (s.getIndex() == randomIndex)
-                return s;
-        }
-        return s;
-    }
-
-    private int computeStatesCount() {
-        StateIterator stateIterator = new StateIterator(getStateRepresentation(), this.operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
-
-        int count = 0;
-        while (stateIterator.hasNext()) {
-            stateIterator.next();
-            count++;
-        }
-        return count;
-    }
-
-    private int computeActionsCount() {
-        ActionIterator actionIterator = new ActionIterator();
-
-        int count = 0;
-        while (actionIterator.hasNext()) {
-            actionIterator.next();
-            count++;
-        }
-        return count;
-    }
-
-    private State sampleNextState(State s, Action a) {
-        State pds = StateUtils.computePostDecisionState(s, a, this);
-        List<Double> pArray = new ArrayList<>();
-        for (int l : this.getpMatrix().getColLabels(s.getLambda())) {
-            int times = (int) Math.floor(100 * this.getpMatrix().getValue(s.getLambda(), l));
-            times = times > 0 ? times : 1;
-            for (int i = 0; i < times; i++) {
-                pArray.add((double) l);
-            }
-        }
-        double[] lambdas = new double[pArray.size()];
-        for (int i = 0; i < lambdas.length; i++) {
-            lambdas[i] = pArray.get(i);
-        }
-        INDArray lambdaArray = Nd4j.create(lambdas);
-        Nd4j.shuffle(lambdaArray, 0);
-        int nextLambda = lambdaArray.getInt(new Random().nextInt(lambdaArray.length()));
-        return StateFactory.createState(getStateRepresentation(), -1, pds.getActualDeployment(), nextLambda,
-                getInputRateLevels() - 1, this.operator.getMaxParallelism());
-    }
-
-    private double evaluateReward(State s, Action a) {
-        double cost = 0.0;
-        // compute reconfiguration cost
-        if (a.getDelta() != 0)
-            cost += this.getwReconf();
-        // from s,a compute pds
-        State pds = StateUtils.computePostDecisionState(s, a, this);
-        // for each lambda level with p != 0 in s.getLambda() row
-        Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
-        for (int lambda : possibleLambdas) {
-            // get transition probability from s.lambda to lambda level
-            double p = this.getpMatrix().getValue(s.getLambda(), lambda);
-            // compute slo violation and deployment cost from post decision operator view
-            // recover input rate value from lambda level getting middle value of relative interval
-            double pdCost = StateUtils.computePostDecisionCost(pds.getActualDeployment(),
-                    MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()), this);
-
-            cost += p * pdCost;
-        }
-
-        return cost;
     }
 
     private INDArray buildInput(State state) {
@@ -244,14 +102,8 @@ public class DeepTBValueIterationOM extends DynamicProgrammingOM implements Acti
     }
 
     @Override
-    public boolean validateAction(State s, Action a) {
-        return s.validateAction(a);
-    }
-
-    @Override
     public double evaluateAction(State s, Action a) {
-        INDArray networkOutput = getQ(s, a);
-        return networkOutput.getDouble(0);
+        return getQ(s, a).getDouble(0);
     }
 
     @Override
@@ -272,13 +124,15 @@ public class DeepTBValueIterationOM extends DynamicProgrammingOM implements Acti
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new Sgd(0.05))
                 .list(
+                        /*
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber)
                                 .nOut(32)
                                 .activation(Activation.RELU)
                                 .build(),
+                         */
                         new DenseLayer.Builder()
-                                .nIn(32)
+                                .nIn(this.inputLayerNodesNumber)
                                 .nOut(64)
                                 .activation(Activation.RELU)
                                 .build(),
@@ -350,5 +204,46 @@ public class DeepTBValueIterationOM extends DynamicProgrammingOM implements Acti
                 }
             }
         }
+    }
+
+    @Override
+    protected void resetTrajectoryData() {
+        // reset memory
+        this.training = null;
+        this.labels = null;
+    }
+
+    @Override
+    protected double computeQ(State s, Action a) {
+        return this.getQ(s, a).getDouble(0);
+    }
+
+    @Override
+    protected void learn(double tbviDelta, double reward, State state, Action action) {
+        // compute post decision state
+        State pds = StateUtils.computePostDecisionState(state, action, this);
+
+        // compute q of post decision state and action chosen by action selection policy in post decision state
+        double q = computeQ(pds, getActionSelectionPolicy().selectAction(pds));
+
+        // transform post decision state in network input
+        INDArray trainingInput = buildInput(pds);
+        // set label to reward + gamma * q
+        INDArray label = Nd4j.create(1).put(0, 0, reward + (getGamma() * q));
+
+        // init memory if it is null or add example and label to memory
+        if (this.training == null && this.labels == null) {
+            this.training = trainingInput;
+            this.labels = label;
+        } else {
+            training = Nd4j.concat(0, training, trainingInput);
+            labels = Nd4j.concat(0, labels, label);
+        }
+        // shuffle memory and get first memory batch elements
+        DataSet memory = new DataSet(this.training, this.labels);
+        memory.shuffle();
+        List<DataSet> batches = memory.batchBy(this.memoryBatch);
+        // train network
+        this.policy.fit(batches.get(0));
     }
 }
