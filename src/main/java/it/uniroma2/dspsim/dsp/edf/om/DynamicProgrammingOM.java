@@ -5,24 +5,16 @@ import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.InputRateFileReader;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
-import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.utils.MathUtils;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.matrix.IntegerMatrix;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
 
 public abstract class DynamicProgrammingOM extends RewardBasedOM {
 
-    private String inputRateFilePath;
+    private String trainingInputRateFilePath;
 
     private double gamma;
 
@@ -32,11 +24,11 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
     public DynamicProgrammingOM(Operator operator) {
         super(operator);
 
-        this.inputRateFilePath = Configuration.getInstance()
-                .getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
+        this.trainingInputRateFilePath = Configuration.getInstance()
+                .getString(ConfigurationKeys.TRAINING_INPUT_FILE_PATH_KEY, "/Users/simone/Documents/Tesi/profile_last_month.dat");
 
         try {
-            this.pMatrix = buildPMatrix(this.inputRateFilePath);
+            this.pMatrix = buildPMatrix(this.trainingInputRateFilePath);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -91,8 +83,8 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
     /**
      * GETTERS
      */
-    public String getInputRateFilePath() {
-        return inputRateFilePath;
+    public String getTrainingInputRateFilePath() {
+        return trainingInputRateFilePath;
     }
 
     public double getGamma() {

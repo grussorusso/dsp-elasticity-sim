@@ -22,6 +22,9 @@ public abstract class ConfigurationKeys {
 	 */
 	public static final String INPUT_FILE_PATH_KEY = "input.file.path";
 
+	/** File used to train dynamic programming oms **/
+	public static final String TRAINING_INPUT_FILE_PATH_KEY = "input.file.path.training";
+
 	/**
 	 * Node types number.
 	 */

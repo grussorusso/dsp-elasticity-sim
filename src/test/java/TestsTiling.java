@@ -20,7 +20,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-public class TilingTests {
+public class TestsTiling {
 
     @Test
     public void rectangleShapeTilingTest() {
