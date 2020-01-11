@@ -62,7 +62,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     private int memoryBatch;
 
     //policy
-    private MultiLayerNetwork policy;
+    protected MultiLayerNetwork policy;
 
     public DeepTBValueIterationOM(Operator operator) {
         super(operator);

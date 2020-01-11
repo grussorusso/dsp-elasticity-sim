@@ -29,6 +29,8 @@ public class OperatorManagerFactory {
                 return new FaTBValueIterationOM(operator);
             case DEEP_TRAJECTORY_BASED_VALUE_ITERATION:
                 return new DeepTBValueIterationOM(operator);
+            case HYBRID:
+                return new HybridRewardBasedOM(operator);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not valid operator manager type: " + operatorManagerType.toString());

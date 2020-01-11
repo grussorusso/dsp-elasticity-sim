@@ -9,7 +9,8 @@ public enum OperatorManagerType {
     DEEP_V_LEARNING,
     VALUE_ITERATION,
     FA_TRAJECTORY_BASED_VALUE_ITERATION,
-    DEEP_TRAJECTORY_BASED_VALUE_ITERATION;
+    DEEP_TRAJECTORY_BASED_VALUE_ITERATION,
+    HYBRID;
 
     public static OperatorManagerType fromString(String str) throws IllegalArgumentException {
         if (str.equalsIgnoreCase("do-nothing")) {
@@ -30,6 +31,8 @@ public enum OperatorManagerType {
             return FA_TRAJECTORY_BASED_VALUE_ITERATION;
         } else if (str.equalsIgnoreCase("deep-tb-vi")) {
             return DEEP_TRAJECTORY_BASED_VALUE_ITERATION;
+        } else if (str.equalsIgnoreCase("hybrid")){
+            return HYBRID;
         } else {
             throw new IllegalArgumentException("Not valid operator manager type " + str);
         }

@@ -69,11 +69,11 @@ public abstract class RewardBasedOM extends OperatorManager {
     protected void registerMetrics(Statistics statistics) {
         // PER OPERATOR METRICS
         // learning step counter
-        statistics.registerMetric(new CountMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER)));
+        statistics.registerMetricIfNotExists(new CountMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER)));
         // total reward
-        statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_REWARD_SUM)));
+        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_REWARD_SUM)));
         // incremental avg reward
-        statistics.registerMetric(new IncrementalAvgMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_AVG)));
+        statistics.registerMetricIfNotExists(new IncrementalAvgMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_AVG)));
 
         //GLOBAL METRICS
         // learning step counter
