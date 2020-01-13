@@ -2,33 +2,21 @@ package it.uniroma2.dspsim.dsp.edf.om;
 
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
-import it.uniroma2.dspsim.InputRateFileReader;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.RandomActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.infrastructure.NodeType;
-import it.uniroma2.dspsim.utils.MathUtils;
-import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
-import it.uniroma2.dspsim.utils.matrix.IntegerMatrix;
 import org.deeplearning4j.api.storage.StatsStorage;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
-import org.deeplearning4j.nn.conf.GradientNormalization;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.DropoutLayer;
-import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -36,11 +24,8 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.api.iterator.BaseDatasetIterator;
-import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -77,7 +62,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         // TODO configure
         tbvi(60000, 512);
 
-        dumpPolicyOnFile(String.format("%s/%s/%s/policy",
+        dumpQOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
                 Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
                 "others"));
@@ -112,7 +97,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     }
 
     @Override
-    protected void buildPolicy() {
+    protected void buildQ() {
         this.inputLayerNodesNumber = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
                 ComputingInfrastructure.getInfrastructure(),
                 this.getInputRateLevels()).next().getArrayRepresentationLength();
@@ -166,7 +151,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     }
 
     @Override
-    protected void dumpPolicyOnFile(String filename) {
+    protected void dumpQOnFile(String filename) {
         // create file
         File file = new File(filename);
         try {

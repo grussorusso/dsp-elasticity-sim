@@ -6,10 +6,12 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.fa.FunctionApproximationManager;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.Feature;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.simple.ReconfigurationFeature;
+import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.Tiling;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.TilingBuilder;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.TilingType;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.shape.RectangleTilingShape;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.shape.StripeTilingShape;
+import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.shape.TilingShape;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
@@ -55,7 +57,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
     }
 
     @Override
-    protected void buildPolicy() {
+    protected void buildQ() {
         this.policy = new FunctionApproximationManager();
 
         // add scale out and scale in features
@@ -72,17 +74,18 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         double[] resourcesInUseRange = new double[] {1, Math.pow(2, resTypesNumber)};
 
         // compute first tiling tiles number
-        int parallelismTiles = this.operator.getMaxParallelism() / 2;
+        int parallelismTiles = this.operator.getMaxParallelism() / 1 + (this.operator.getMaxParallelism() % 1 == 0 ? 1 : 0);
         int lambdaLevelTiles = (int) Math.ceil(this.getInputRateLevels() / 5.0);
         int resourcesInUseTiles = (int) (Math.pow(2, resTypesNumber) / 2.0);
 
         // add tiling with rectangle shape
-        this.policy.addFeature(new TilingBuilder()
-                .setShape(new RectangleTilingShape(parallelismTiles, lambdaLevelTiles, resourcesInUseTiles))
-                .setXRange(parallelismRange)
-                .setYRange(lambdaLevelsRange)
-                .setZRange(resourcesInUseRange)
-                .build(TilingType.K_LAMBDA_RES_TYPE)
+        this.policy.addFeature(
+                buildTiling(TilingType.K_LAMBDA_RES_TYPE,
+                        new RectangleTilingShape(parallelismTiles, lambdaLevelTiles, resourcesInUseTiles),
+                        parallelismRange,
+                        lambdaLevelsRange,
+                        resourcesInUseRange
+                )
         );
 
         // compute second tiling parameters
@@ -90,12 +93,13 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
                 this.getInputRateLevels() + 1 };
 
         // add tiling with rectangle shape
-        this.policy.addFeature(new TilingBuilder()
-                .setShape(new RectangleTilingShape(parallelismTiles, lambdaLevelTiles, resourcesInUseTiles))
-                .setXRange(parallelismRange)
-                .setYRange(movedLambdaLevelsRange)
-                .setZRange(resourcesInUseRange)
-                .build(TilingType.K_LAMBDA_RES_TYPE)
+        this.policy.addFeature(
+                buildTiling(TilingType.K_LAMBDA_RES_TYPE,
+                        new RectangleTilingShape(parallelismTiles, lambdaLevelTiles, resourcesInUseTiles),
+                        parallelismRange,
+                        movedLambdaLevelsRange,
+                        resourcesInUseRange
+                )
         );
 
         // compute third tiling parameters
@@ -103,17 +107,18 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         double stripeSlope = 2.0;
 
         // add third tiling with stripes shape
-        this.policy.addFeature(new TilingBuilder()
-                .setShape(new StripeTilingShape(stripes, stripeSlope, resourcesInUseTiles))
-                .setXRange(parallelismRange)
-                .setYRange(lambdaLevelsRange)
-                .setZRange(resourcesInUseRange)
-                .build(TilingType.K_LAMBDA_RES_TYPE)
+        this.policy.addFeature(
+                buildTiling(TilingType.K_LAMBDA_RES_TYPE,
+                        new StripeTilingShape(stripes, stripeSlope, resourcesInUseTiles),
+                        parallelismRange,
+                        lambdaLevelsRange,
+                        resourcesInUseRange
+                )
         );
     }
 
     @Override
-    protected void dumpPolicyOnFile(String filename) {
+    protected void dumpQOnFile(String filename) {
         // TODO
     }
 
@@ -125,5 +130,15 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
     @Override
     public double evaluateAction(State s, Action a) {
         return computeQ(s, a);
+    }
+
+
+    public Tiling buildTiling(TilingType type, TilingShape shape, double[] xRange, double[] yRange, double[] zRange) {
+        return new TilingBuilder()
+                .setShape(shape)
+                .setXRange(xRange)
+                .setYRange(yRange)
+                .setZRange(zRange)
+                .build(type);
     }
 }

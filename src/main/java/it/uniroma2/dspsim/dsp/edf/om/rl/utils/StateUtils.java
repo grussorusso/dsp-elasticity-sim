@@ -8,6 +8,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.utils.MathUtils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,37 +27,68 @@ public class StateUtils {
             return StateFactory.createState(om.getStateRepresentation(), -1, pdk,
                     state.getLambda(), om.getInputRateLevels() - 1, om.getOperator().getMaxParallelism());
         } else {
-            return state;
+            return StateFactory.createState(om.getStateRepresentation(), -1, state.getActualDeployment(),
+                    state.getLambda(), om.getInputRateLevels() - 1, om.getOperator().getMaxParallelism());
         }
     }
 
-    public static double computePostDecisionCost(int[] deployment, double inputRate, RewardBasedOM om) {
-        double cost = 0.0;
+    public static double computeDeploymentCost(State state) {
+        List<NodeType> operatorInstances = getOperatorInstances(state);
+        double deploymentCost = 0.0;
+        for (NodeType nt : operatorInstances)
+            deploymentCost += nt.getCost();
 
-        double currentSpeedup = Double.POSITIVE_INFINITY;
-        List<NodeType> usedNodeTypes = new ArrayList<>();
+        return deploymentCost;
+    }
+
+    public static double computeDeploymentCostNormalized(State state, RewardBasedOM om) {
+        double maxCost = om.getOperator().getMaxParallelism() * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
+        return computeDeploymentCost(state) / maxCost;
+    }
+
+    public static List<NodeType> getOperatorInstances(State state) {
+        int[] deployment = state.getActualDeployment();
+
         List<NodeType> operatorInstances = new ArrayList<>();
+
         for (int i = 0; i < deployment.length; i++) {
-            if (deployment[i] > 0)
-                usedNodeTypes.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
             for (int j = 0; j < deployment[i]; j++) {
                 operatorInstances.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
             }
         }
 
+        return operatorInstances;
+    }
+
+    public static List<NodeType> getUsedNodeTypes(State state) {
+        int[] deployment = state.getActualDeployment();
+        List<NodeType> usedNodeTypes = new ArrayList<>();
+        for (int i = 0; i < deployment.length; i++) {
+            if (deployment[i] > 0)
+                usedNodeTypes.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
+        }
+        return usedNodeTypes;
+    }
+
+    public static double computeCurrentSpeedup(State state) {
+        double currentSpeedup = Double.POSITIVE_INFINITY;
+        List<NodeType> usedNodeTypes = getUsedNodeTypes(state);
+
         for (NodeType nt : usedNodeTypes)
             currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
 
+        return currentSpeedup;
+    }
+
+    public static double computeSLOCost(State state, RewardBasedOM om) {
+        double cost = 0.0;
+
+        double currentSpeedup = computeCurrentSpeedup(state);
+        List<NodeType> operatorInstances = getOperatorInstances(state);
+        double inputRate = MathUtils.remapDiscretizedValue(om.getMaxInputRate(), state.getLambda(), om.getInputRateLevels());
+
         if (om.getOperator().getQueueModel().responseTime(inputRate, operatorInstances.size(), currentSpeedup) > om.getOperator().getSloRespTime())
             cost += om.getwSLO();
-
-        double deploymentCost = 0.0;
-        for (NodeType nt : operatorInstances)
-            deploymentCost += nt.getCost();
-
-        double maxCost = om.getOperator().getMaxParallelism() * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
-
-        cost += (deploymentCost / maxCost) * om.getwResources();
 
         return cost;
     }

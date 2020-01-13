@@ -53,6 +53,7 @@ public abstract class State {
     public int getLambda() {
         return lambda;
     }
+    public void setLambda(int lambda) { this.lambda = lambda; }
 
     public int getMaxLambda() {
         return maxLambda;

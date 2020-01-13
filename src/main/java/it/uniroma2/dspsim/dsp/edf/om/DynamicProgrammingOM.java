@@ -36,7 +36,7 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
         // TODO configure
         this.gamma = 0.99;
 
-        buildPolicy();
+        buildQ();
     }
 
     private DoubleMatrix<Integer, Integer> buildPMatrix(String inputRateFilePath) throws IOException {
@@ -77,8 +77,8 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
      * ABSTRACT METHODS
      */
 
-    protected abstract void buildPolicy();
-    protected abstract void dumpPolicyOnFile(String filename);
+    protected abstract void buildQ();
+    protected abstract void dumpQOnFile(String filename);
 
     /**
      * GETTERS

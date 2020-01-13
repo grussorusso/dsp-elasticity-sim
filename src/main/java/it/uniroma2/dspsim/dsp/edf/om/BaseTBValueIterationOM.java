@@ -143,15 +143,17 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
             cost += this.getwReconf();
         // from s,a compute pds
         State pds = StateUtils.computePostDecisionState(s, a, this);
+        // compute deployment cost using pds wighted on wRes
+        cost += StateUtils.computeDeploymentCostNormalized(pds, this) * this.getwResources();
         // for each lambda level with p != 0 in s.getLambda() row
         Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
         for (int lambda : possibleLambdas) {
+            // change pds.lambda to lambda
+            pds.setLambda(lambda);
             // get transition probability from s.lambda to lambda level
             double p = this.getpMatrix().getValue(s.getLambda(), lambda);
-            // compute slo violation and deployment cost from post decision operator view
-            // recover input rate value from lambda level getting middle value of relative interval
-            double pdCost = StateUtils.computePostDecisionCost(pds.getActualDeployment(),
-                    MathUtils.remapDiscretizedValue(this.getMaxInputRate(), lambda, this.getInputRateLevels()), this);
+            // compute slo violation cost
+            double pdCost = StateUtils.computeSLOCost(pds, this);
 
             cost += p * pdCost;
         }
