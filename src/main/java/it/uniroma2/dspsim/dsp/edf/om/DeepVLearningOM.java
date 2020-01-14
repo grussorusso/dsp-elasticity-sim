@@ -2,6 +2,9 @@ package it.uniroma2.dspsim.dsp.edf.om;
 
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
@@ -31,8 +34,13 @@ import java.util.Arrays;
  */
 public class DeepVLearningOM extends DeepLearningOM {
 
+    // this asp is used to select action in learning step
+    private ActionSelectionPolicy greedyASP;
+
     public DeepVLearningOM(Operator operator) {
         super(operator);
+
+        this.greedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.GREEDY, this);
     }
 
     @Override
@@ -41,6 +49,7 @@ public class DeepVLearningOM extends DeepLearningOM {
         State pdState = StateUtils.computePostDecisionState(oldState, action, this);
 
         // get V(current state) as min{Q(current state, a) - c(a)} for each action
+        /*
         ActionIterator ait = new ActionIterator();
         double bestQ = Double.POSITIVE_INFINITY;
         Action bestAction = new Action(0, 0, 0);
@@ -61,14 +70,18 @@ public class DeepVLearningOM extends DeepLearningOM {
                 bestAction = a;
             }
         }
+        */
+
+        Action greedyAction = this.greedyASP.selectAction(currentState);
+        double newV = getV(StateUtils.computePostDecisionState(currentState, greedyAction, this)).getDouble(0);
 
         // compute new post decision state from current state and best action from current state
-        State newPDState = StateUtils.computePostDecisionState(currentState, bestAction, this);
+        //State newPDState = StateUtils.computePostDecisionState(currentState, bestAction, this);
         // update old state output in actionIndex position with new estimation
         // we get min(newQ) because we want to minimize cost
         // reward = cost -> minimize Q equals minimize cost
         INDArray v = getV(pdState);
-        v.put(0, 0, reward + gamma * bestQ);
+        v.put(0, 0, reward + gamma * newV);
 
         // get post decision input array
         INDArray trainingInput = buildInput(pdState);
@@ -126,6 +139,11 @@ public class DeepVLearningOM extends DeepLearningOM {
                 .list(
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber)
+                                .nOut(32)
+                                .activation(Activation.RELU)
+                                .build(),
+                        new DenseLayer.Builder()
+                                .nIn(32)
                                 .nOut(64)
                                 .activation(Activation.RELU)
                                 .build(),

@@ -145,13 +145,13 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             this.labels = Nd4j.concat(0, this.labels, label);
         }
 
-        if (this.training.length() >= this.memoryBatch) {
+        //if (this.training.length() >= this.memoryBatch) {
             // train network
             DataSet tempMemory = new DataSet(this.training, this.labels);
             tempMemory.shuffle();
             List<DataSet> batches = tempMemory.batchBy(this.memoryBatch);
             this.network.fit(batches.get(0));
-        }
+        //}
     }
 
     private void dumpPolicyOnFile(String filename) {

@@ -12,6 +12,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -46,8 +47,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     private int memoryBatch;
 
-    //policy
-    protected MultiLayerNetwork policy;
+    protected MultiLayerNetwork network;
 
     public DeepTBValueIterationOM(Operator operator) {
         super(operator);
@@ -76,7 +76,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     private INDArray getV(State state) {
         INDArray input = buildInput(state);
-        return this.policy.output(input, false);
+        return this.network.output(input, false);
     }
 
     private INDArray getQ(State state, Action action) {
@@ -109,15 +109,13 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new Sgd(0.05))
                 .list(
-                        /*
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber)
                                 .nOut(32)
                                 .activation(Activation.RELU)
                                 .build(),
-                         */
                         new DenseLayer.Builder()
-                                .nIn(this.inputLayerNodesNumber)
+                                .nIn(32)
                                 .nOut(64)
                                 .activation(Activation.RELU)
                                 .build(),
@@ -146,8 +144,8 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
                 .backprop(true)
                 .build();
 
-        this.policy = new MultiLayerNetwork(config);
-        policy.init();
+        this.network = new MultiLayerNetwork(config);
+        network.init();
     }
 
     @Override
@@ -160,7 +158,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
                 file.createNewFile();
             }
             PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
-            printWriter.print(this.policy.getLayerWiseConfigurations().toJson());
+            printWriter.print(this.network.getLayerWiseConfigurations().toJson());
             printWriter.flush();
             printWriter.close();
         } catch (IOException e) {
@@ -173,7 +171,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         UIServer uiServer = UIServer.getInstance();
         StatsStorage statsStorage = new InMemoryStatsStorage();
         uiServer.attach(statsStorage);
-        this.policy.setListeners(new StatsListener(statsStorage));
+        this.network.setListeners(new StatsListener(statsStorage));
     }
 
     private void printTBVIResults() {
@@ -208,13 +206,10 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         // compute post decision state
         State pds = StateUtils.computePostDecisionState(state, action, this);
 
-        // compute q of post decision state and action chosen by action selection policy in post decision state
-        double q = computeQ(pds, getActionSelectionPolicy().selectAction(pds));
-
         // transform post decision state in network input
         INDArray trainingInput = buildInput(pds);
-        // set label to reward + gamma * q
-        INDArray label = Nd4j.create(1).put(0, 0, reward + (getGamma() * q));
+        // set label to reward (it already contains gamma * q)
+        INDArray label = Nd4j.create(1).put(0, 0, reward);
 
         // init memory if it is null or add example and label to memory
         if (this.training == null && this.labels == null) {
@@ -229,6 +224,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         memory.shuffle();
         List<DataSet> batches = memory.batchBy(this.memoryBatch);
         // train network
-        this.policy.fit(batches.get(0));
+        this.network.fit(batches.get(0));
     }
 }

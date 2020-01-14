@@ -68,9 +68,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     protected State tbviIteration(State s, Action a) {
         double oldQ = computeQ(s, a);
         double r = evaluateReward(s, a);
-        State pds = StateUtils.computePostDecisionState(s, a, this);
-        double q = computeQ(pds, getActionSelectionPolicy().selectAction(pds));
-        double delta = (r + getGamma() * q) - oldQ;
+        double delta = r - oldQ;
 
         learn(delta, r, s, a);
 
@@ -150,12 +148,16 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         for (int lambda : possibleLambdas) {
             // change pds.lambda to lambda
             pds.setLambda(lambda);
+            // get Q(s, a) using the greedy action selection policy
+            // from post decision state with lambda ad pds.lambda
+            Action greedyAction = getActionSelectionPolicy().selectAction(pds);
+            double q = computeQ(pds, greedyAction);
             // get transition probability from s.lambda to lambda level
             double p = this.getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation cost
-            double pdCost = StateUtils.computeSLOCost(pds, this);
+            double sloCost = StateUtils.computeSLOCost(pds, this);
 
-            cost += p * pdCost;
+            cost += p * (sloCost + getGamma() * q);
         }
 
         return cost;

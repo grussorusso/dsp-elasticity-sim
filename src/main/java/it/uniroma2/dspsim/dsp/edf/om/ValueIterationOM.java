@@ -163,16 +163,16 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         for (int lambda : possibleLambdas) {
             // change pds.lambda to lambda
             pds.setLambda(lambda);
-            // get V(s) using the greedy action selection policy
-            // from post decision state with lambda ad pds.lambda
+            // get Q(s, a) using the greedy action selection policy
+            // from post decision state with lambda as pds.lambda
             Action greedyAction = getActionSelectionPolicy().selectAction(pds);
-            double v = qTable.getValue(pds.hashCode(), greedyAction.hashCode());
+            double q = qTable.getValue(pds.hashCode(), greedyAction.hashCode());
             // get transition probability from s.lambda to lambda level
             double p = getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation cost
             double pdCost = StateUtils.computeSLOCost(pds, this);
 
-            cost += p * (pdCost + getGamma() * v);
+            cost += p * (pdCost + getGamma() * q);
         }
         return cost;
     }

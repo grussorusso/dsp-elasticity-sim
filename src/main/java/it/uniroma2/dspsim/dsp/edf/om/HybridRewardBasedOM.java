@@ -20,8 +20,8 @@ public class HybridRewardBasedOM extends RewardBasedOM implements ActionSelectio
         this.deepVLearningOM = new DeepVLearningOM(operator);
 
         // overwrite deep-v-learning neural network with deep-tb-vi one
-        this.deepVLearningOM.networkConf = this.deepTBValueIterationOM.policy.getLayerWiseConfigurations();
-        this.deepVLearningOM.network = this.deepTBValueIterationOM.policy;
+        this.deepVLearningOM.networkConf = this.deepTBValueIterationOM.network.getLayerWiseConfigurations();
+        this.deepVLearningOM.network = this.deepTBValueIterationOM.network;
 
         // recall init action selection policy
         // to overwrite initial action selection policy with deep-v-learning configured one

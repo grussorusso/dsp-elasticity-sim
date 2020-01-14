@@ -17,11 +17,10 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.utils.MathUtils;
 
 public class FaTBValueIterationOM extends BaseTBValueIterationOM {
 
-    private FunctionApproximationManager policy;
+    private FunctionApproximationManager functionApproximationManager;
 
     private double alpha;
 
@@ -29,7 +28,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         super(operator);
 
         // TODO configure
-        this.alpha = 0.5;
+        this.alpha = 0.1;
 
         // TODO configure
         tbvi(60000, 512);
@@ -42,13 +41,13 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected double computeQ(State s, Action a) {
-        return this.policy.evaluateQ(s, a, this);
+        return this.functionApproximationManager.evaluateQ(s, a, this);
     }
 
     @Override
     protected void learn(double tbviDelta, double reward, State state, Action action) {
         if (tbviDelta > 1E-10) {
-            for (Feature f : this.policy.getFeatures()) {
+            for (Feature f : this.functionApproximationManager.getFeatures()) {
                 double updatingValue = f.isActive(state, action, this) ? this.alpha * tbviDelta : 0.0;
                 if (updatingValue != 0.0)
                     f.update(updatingValue, state, action, this);
@@ -58,11 +57,11 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void buildQ() {
-        this.policy = new FunctionApproximationManager();
+        this.functionApproximationManager = new FunctionApproximationManager();
 
         // add scale out and scale in features
-        this.policy.addFeature(new ReconfigurationFeature(1));
-        this.policy.addFeature(new ReconfigurationFeature(-1));
+        this.functionApproximationManager.addFeature(new ReconfigurationFeature(1));
+        this.functionApproximationManager.addFeature(new ReconfigurationFeature(-1));
 
 
         // compute max resource types in use in the same moment
@@ -79,7 +78,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         int resourcesInUseTiles = (int) (Math.pow(2, resTypesNumber) / 2.0);
 
         // add tiling with rectangle shape
-        this.policy.addFeature(
+        this.functionApproximationManager.addFeature(
                 buildTiling(TilingType.K_LAMBDA_RES_TYPE,
                         new RectangleTilingShape(parallelismTiles, lambdaLevelTiles, resourcesInUseTiles),
                         parallelismRange,
@@ -93,7 +92,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
                 this.getInputRateLevels() + 1 };
 
         // add tiling with rectangle shape
-        this.policy.addFeature(
+        this.functionApproximationManager.addFeature(
                 buildTiling(TilingType.K_LAMBDA_RES_TYPE,
                         new RectangleTilingShape(parallelismTiles, lambdaLevelTiles, resourcesInUseTiles),
                         parallelismRange,
@@ -107,7 +106,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         double stripeSlope = 2.0;
 
         // add third tiling with stripes shape
-        this.policy.addFeature(
+        this.functionApproximationManager.addFeature(
                 buildTiling(TilingType.K_LAMBDA_RES_TYPE,
                         new StripeTilingShape(stripes, stripeSlope, resourcesInUseTiles),
                         parallelismRange,
