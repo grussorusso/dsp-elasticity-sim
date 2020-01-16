@@ -1,8 +1,6 @@
-import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.RLQLearningOM;
+import it.uniroma2.dspsim.dsp.edf.om.QLearningOM;
 import it.uniroma2.dspsim.dsp.edf.om.RewardBasedOM;
-import it.uniroma2.dspsim.dsp.edf.om.fa.FunctionApproximationManager;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.Tiling;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.TilingBuilder;
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.TilingType;
@@ -25,7 +23,7 @@ public class TestsTiling {
     @Test
     public void rectangleShapeTilingTest() {
         ComputingInfrastructure.initDefaultInfrastructure(2);
-        RewardBasedOM om = new RLQLearningOM(new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0),5));
+        RewardBasedOM om = new QLearningOM(new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0),5));
 
         Tiling tiling = new TilingBuilder()
                 .setShape(new RectangleTilingShape(6, 4, 9))
@@ -79,7 +77,7 @@ public class TestsTiling {
     @Test
     public void stripeShapeTilingTest() {
         ComputingInfrastructure.initDefaultInfrastructure(2);
-        RewardBasedOM om = new RLQLearningOM(new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0),5));
+        RewardBasedOM om = new QLearningOM(new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0),5));
 
         Tiling tiling = new TilingBuilder()
                 .setShape(new StripeTilingShape(7, 1.0, 9))

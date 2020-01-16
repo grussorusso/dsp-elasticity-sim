@@ -31,7 +31,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         this.alpha = 0.1;
 
         // TODO configure
-        tbvi(60000, 512);
+        tbvi(90000, 512);
     }
 
     @Override
@@ -73,9 +73,9 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         double[] resourcesInUseRange = new double[] {1, Math.pow(2, resTypesNumber)};
 
         // compute first tiling tiles number
-        int parallelismTiles = this.operator.getMaxParallelism() / 1 + (this.operator.getMaxParallelism() % 1 == 0 ? 1 : 0);
-        int lambdaLevelTiles = (int) Math.ceil(this.getInputRateLevels() / 5.0);
-        int resourcesInUseTiles = (int) (Math.pow(2, resTypesNumber) / 2.0);
+        int parallelismTiles = this.operator.getMaxParallelism() + 1;
+        int lambdaLevelTiles = (int) Math.ceil(this.getInputRateLevels() / 2.0);
+        int resourcesInUseTiles = (int) (Math.pow(2, resTypesNumber));
 
         // add tiling with rectangle shape
         this.functionApproximationManager.addFeature(
@@ -102,7 +102,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         );
 
         // compute third tiling parameters
-        int stripes = this.operator.getMaxParallelism();
+        int stripes = this.operator.getMaxParallelism() + 1;
         double stripeSlope = 2.0;
 
         // add third tiling with stripes shape

@@ -1,7 +1,4 @@
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.RLQLearningOM;
-import it.uniroma2.dspsim.dsp.edf.om.RewardBasedOM;
-import it.uniroma2.dspsim.dsp.edf.om.ValueIterationOM;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
@@ -12,8 +9,6 @@ import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
-
-import java.util.Iterator;
 
 public class TestQTable {
 

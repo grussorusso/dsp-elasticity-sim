@@ -60,7 +60,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         this.memoryBatch = 32;
 
         // TODO configure
-        tbvi(60000, 512);
+        tbvi(90000, 512);
 
         dumpQOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
@@ -82,7 +82,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     private INDArray getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
         INDArray v = getV(postDecisionState);
-        v.put(0, 0, v.getDouble(0) + (action.getDelta() != 0 ? getwReconf() : 0));
+        v.put(0, 0, v.getDouble(0) + computeActionCost(action));
         return v;
     }
 
@@ -209,7 +209,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         // transform post decision state in network input
         INDArray trainingInput = buildInput(pds);
         // set label to reward (it already contains gamma * q)
-        INDArray label = Nd4j.create(1).put(0, 0, reward);
+        INDArray label = Nd4j.create(1).put(0, 0, reward - computeActionCost(action));
 
         // init memory if it is null or add example and label to memory
         if (this.training == null && this.labels == null) {
@@ -225,5 +225,13 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         List<DataSet> batches = memory.batchBy(this.memoryBatch);
         // train network
         this.network.fit(batches.get(0));
+    }
+
+    private double computeActionCost(Action action) {
+        if (action.getDelta() != 0) {
+            return this.getwReconf();
+        } else {
+            return 0.0;
+        }
     }
 }

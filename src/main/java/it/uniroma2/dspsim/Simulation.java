@@ -189,6 +189,9 @@ public class Simulation {
 		Configuration conf = Configuration.getInstance();
 		conf.parseDefaultConfigurationFile();
 		// TODO parse cli args and other configuration files (if any)
+		if (args.length > 0) {
+			//TODO charge new config file
+		}
 
 		ComputingInfrastructure
 				.initDefaultInfrastructure(conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));

@@ -82,4 +82,20 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
             }
         }
     }
+
+    public void setEpsilon(double epsilon) {
+        this.epsilon = epsilon;
+    }
+
+    public void setEpsilonDecay(double epsilonDecay) {
+        this.epsilonDecay = epsilonDecay;
+    }
+
+    public void setEpsilonDecaySteps(int epsilonDecaySteps) {
+        this.epsilonDecaySteps = epsilonDecaySteps;
+    }
+
+    public void setEpsilonDecayStepsCounter(int epsilonDecayStepsCounter) {
+        this.epsilonDecayStepsCounter = epsilonDecayStepsCounter;
+    }
 }

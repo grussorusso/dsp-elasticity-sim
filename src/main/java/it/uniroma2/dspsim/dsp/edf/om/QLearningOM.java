@@ -1,258 +1,113 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.Reconfiguration;
-import it.uniroma2.dspsim.dsp.edf.om.rl.AbstractAction;
-import it.uniroma2.dspsim.dsp.edf.om.rl.AbstractState;
+import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
-import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.stats.metrics.CountMetric;
+import it.uniroma2.dspsim.stats.metrics.AvgMetric;
+import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.stats.samplers.StepSampler;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Random;
+public class QLearningOM extends ReinforcementLearningOM {
+    private QTable qTable;
 
-public class QLearningOM extends OperatorManager {
+    private double alpha;
+    private double alphaDecay;
+    private int alphaDecaySteps;
+    private int alphaDecayStepsCounter;
 
-	public interface QTable {
+    private ActionSelectionPolicy greedyActionSelection;
 
-		double getQ (AbstractState s, AbstractAction a);
-		void setQ (AbstractState s, AbstractAction a, double value);
+    private static final String STAT_BELLMAN_ERROR_AVG = "Bellman Error Avg";
+    private static final String STAT_BELLMAN_ERROR_SUM = "Bellman Error Sum";
 
-	}
+    public QLearningOM(Operator operator) {
+        super(operator);
 
-	public class GuavaBasedQTable implements QTable {
+        // get configuration instance
+        Configuration configuration = Configuration.getInstance();
 
-		private Table<AbstractState, AbstractAction, Double> table = HashBasedTable.create();
-		private double initializationValue;
+        this.qTable = new GuavaBasedQTable(0.0);
 
-		public GuavaBasedQTable(double initializationValue) {
-			this.initializationValue = initializationValue;
-		}
+        this.alpha = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.2);
+        this.alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.9);
+        this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
+        this.alphaDecayStepsCounter = 0;
 
-		@Override
-		public double getQ(AbstractState s, AbstractAction a) {
-			Double q = table.get(s,a);
-			if (q == null)
-				return initializationValue; // TODO put() before returning?
+        this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
+                ActionSelectionPolicyType.GREEDY,
+                this
+        );
+    }
 
-			return q;
-		}
+    @Override
+    protected void registerMetrics(Statistics statistics) {
+        super.registerMetrics(statistics);
 
-		@Override
-		public void setQ(AbstractState s, AbstractAction a, double value) {
-			table.put(s,a,value);
-		}
-	}
+        // PER OPERATOR METRICS
+        // total bellman error
+        statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)));
+        // bellman error avg
+        statistics.registerMetric(new AvgMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_AVG),
+                statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
+                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER))));
 
-	public class State extends AbstractState {
-		private int k[];
-		private int lambda;
+        // GLOBAL METRICS
+        // total bellman error
+        statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_BELLMAN_ERROR_SUM));
+        // bellman error avg
+        AvgMetric bellmanErrorAvgMetric = new AvgMetric(STAT_BELLMAN_ERROR_AVG,
+                statistics.getMetric(STAT_BELLMAN_ERROR_SUM),
+                (CountMetric) statistics.getMetric(STAT_GET_REWARD_COUNTER));
+        // add step sampling to bellman error avg metric
+        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
+        bellmanErrorAvgMetric.addSampler(stepSampler);
+        statistics.registerMetricIfNotExists(bellmanErrorAvgMetric);
+    }
 
-		public State (int[] k, int lambda) {
-			this.k = k;
-			this.lambda = lambda;
-		}
-		
-		public int overallParallelism() {
-			int p = 0;
-			for (int _k : k) {
-				p += _k;
-			}
-			
-			return p;
-		}
-	}
+    @Override
+    protected void learningStep(State oldState, Action action, State currentState, double reward) {
+        final double oldQ  = qTable.getQ(oldState, action);
+        final double newQ = (1.0 - alpha) * oldQ +
+                alpha * (reward + qTable.getQ(currentState, greedyActionSelection.selectAction(currentState)));
 
-	public class Action extends AbstractAction {
-		private int delta;
-		private int resTypeIndex;
+        final double bellmanError = Math.abs(newQ - oldQ);
 
-		public Action (int delta, int resTypeIndex) {
-			this.delta = delta;
-			this.resTypeIndex = resTypeIndex;
-		}
-		
-		public boolean isValidInState (State s) {
-			if (delta == 0)
-				return true;
-			if (delta < 0) {
-				if (s.k[resTypeIndex] < delta)
-					return false;
-			}
-			
-			return s.overallParallelism() + delta >= 1 && s.overallParallelism() + delta <= QLearningOM.super.operator.getMaxParallelism();
-		}
-	}
+        qTable.setQ(oldState, action, newQ);
 
-	private class ActionIterator implements Iterator<Action> {
+        decrementAlpha();
 
-		/* We iterate over actions in this order:
-		 * (do nothing action), (-1, 0), (-1, 1), ...
-		 * (+1, 0), (+1, 1...)
-		 */
-		private int delta = 0;
-		private int resTypeIndex = 0;
-		boolean first = true;
+        // update bellman error metrics
+        // per operator
+        Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM), bellmanError);
+        // global
+        Statistics.getInstance().updateMetric(STAT_BELLMAN_ERROR_SUM, bellmanError);
+    }
 
-		@Override
-		public boolean hasNext() {
-			return delta < 1 || resTypeIndex < (ComputingInfrastructure.getInfrastructure().getNodeTypes().length-1);
-		}
+    private void decrementAlpha() {
+        if (this.alphaDecaySteps > 0) {
+            this.alphaDecayStepsCounter++;
+            if (this.alphaDecayStepsCounter >= this.alphaDecaySteps) {
+                this.alphaDecayStepsCounter = 0;
+                this.alpha = this.alphaDecay * this.alpha;
+            }
+        }
+    }
 
-		@Override
-		public Action next() {
-			if (first) {
-				first = false;
-				return new Action(0, 0);
-			}
+    /**
+     * ACTION SELECTION POLICY CALLBACK INTERFACE
+     */
 
-			if (!hasNext())
-				return null;
-
-			++resTypeIndex;
-			if (resTypeIndex >= (ComputingInfrastructure.getInfrastructure().getNodeTypes().length)) {
-				resTypeIndex = 0;
-
-				/* Next delta */
-				if (delta == 0)
-					delta = -1;
-				else
-					delta = 1;
-			}
-
-			return new Action(delta, resTypeIndex);
-		}
-	}
-
-	private QTable qTable;
-	private Action lastChosenAction = null;
-	private State lastState = null;
-	private Random actionSelectionRng  = new Random();
-
-	public QLearningOM(Operator operator) {
-		super(operator);
-
-		this.qTable = new GuavaBasedQTable(0.0);
-	}
-
-	protected int discretizeInputRate (double max, int levels, double inputRate)
-	{
-		final double quantum = max / levels;
-		final int level = (int)Math.floor(inputRate/quantum);
-		return level < levels? level : levels-1;
-	}
-
-	@Override
-	public Reconfiguration pickReconfiguration(OMMonitoringInfo monitoringInfo) {
-		final int deployment[] = new int[ComputingInfrastructure.getInfrastructure().getNodeTypes().length];
-		for (NodeType nt : operator.getInstances()) {
-			deployment[nt.getIndex()] += 1;
-		}
-		final int inputRateLevel = discretizeInputRate(600, 20, monitoringInfo.getInputRate()); // TODO define new configuration params
-		State currentState = new State(deployment, inputRateLevel);
-
-		// TODO learning step here
-		if (lastChosenAction != null) {
-			final double reward = computeCost(lastChosenAction, currentState, monitoringInfo.getInputRate());
-
-			final double ALPHA = 0.2; // TODO should change over time
-			final double oldQ  = qTable.getQ(lastState, lastChosenAction);
-			final double newQ = (1.0-ALPHA)*oldQ + ALPHA*(reward + qTable.getQ(currentState, greedyActionSelection(currentState)));
-
-			final double bellmanError = Math.abs(newQ-oldQ);
-			System.out.println(bellmanError); // TODO create a statistic
-
-			qTable.setQ(lastState, lastChosenAction, newQ);
-		}
-
-		//  pick best action
-		lastChosenAction = epsilonGreedyActionSelection(currentState, 0.05);// TODO configurable param, varying over time?
-		lastState = currentState;
-
-		 return action2reconfiguration(lastChosenAction);
-	}
-
-	private Reconfiguration action2reconfiguration(Action a) {
-		if (a.delta == 0)
-			return Reconfiguration.doNothing();
-
-		if (a.delta == 1)  {
-			return Reconfiguration.scaleOut(ComputingInfrastructure.getInfrastructure().getNodeTypes()[a.resTypeIndex]);
-		}
-
-		if (a.delta == -1) {
-			return Reconfiguration.scaleIn(ComputingInfrastructure.getInfrastructure().getNodeTypes()[a.resTypeIndex]);
-		}
-
-		throw new RuntimeException("Unsupported action!");
-	}
-
-	private Action epsilonGreedyActionSelection (State s, double epsilon) {
-		if (actionSelectionRng.nextDouble() <= epsilon)
-			return randomActionSelection(s);
-		else
-			return greedyActionSelection(s);
-	}
-
-	private Action randomActionSelection(State s) {
-		ArrayList<Action> actions = new ArrayList<>();
-		ActionIterator ait = new ActionIterator();
-		while (ait.hasNext()) {
-			final Action a = ait.next();
-			if (!a.isValidInState(s))
-				continue;
-			actions.add(a);
-		}
-
-		return actions.get(actionSelectionRng.nextInt(actions.size()));
-	}
-
-
-	private Action greedyActionSelection (State s) {
-		ActionIterator ait = new ActionIterator();
-		Action newAction = null;
-		double bestQ = 0.0;
-		while (ait.hasNext()) {
-			final Action a = ait.next();
-			if (!a.isValidInState(s))
-				continue;
-			final double q = qTable.getQ(s, a);
-
-			if (newAction == null || q < bestQ) {
-				bestQ = q;
-				newAction = a;
-			}
-		}
-
-		return newAction;
-	}
-
-	private double computeCost (Action a, State newState, double newInputRate) {
-		final double wReconf = 0.33; // TODO config param
-		final double wSLO = 0.33;// TODO config param
-		final double wResources = 0.33;// TODO config param
-
-		double cost = 0.0;
-
-		if (a.delta != 0)
-			cost += wReconf;
-
-		/* TODO Given the application latency SLO,
-		   we should give the OperatorManager a per-operator SLO
-		   at the beginning (e.g., each operator gets at most 1/n of the application SLO,
-		   where n is the number of operators on a source-sink path.
-		*/
-		final double OPERATOR_SLO = 0.1;
-
-		if (operator.responseTime(newInputRate) > OPERATOR_SLO)
-			cost += wSLO;
-
-		cost += operator.computeNormalizedDeploymentCost()*wResources;
-
-		return cost;
-	}
+    @Override
+    public double evaluateAction(State s, Action a) {
+        return qTable.getQ(s, a);
+    }
 }

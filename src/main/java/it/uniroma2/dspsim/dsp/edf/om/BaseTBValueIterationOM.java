@@ -5,6 +5,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.EpsilonGreedyActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
@@ -12,7 +13,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.utils.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -38,7 +38,9 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     }
 
     protected void tbvi(long millis, long trajectoryLength) {
-        ActionSelectionPolicy randomASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.RANDOM, this);
+        ActionSelectionPolicy epsGreedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.EPSILON_GREEDY, this);
+        ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilon(0.1);
+        ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilonDecaySteps(-1);
         // get initial state
         State state = null;
         // current trajectory length
@@ -54,8 +56,9 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
                 // start new trajectory
                 state = randomState();
             }
-            // choose random action to evaluate
-            Action action = randomASP.selectAction(state);
+
+            Action action = epsGreedyASP.selectAction(state);
+
 
             state = tbviIteration(state, action);
 
@@ -67,10 +70,10 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
     protected State tbviIteration(State s, Action a) {
         double oldQ = computeQ(s, a);
-        double r = evaluateReward(s, a);
-        double delta = r - oldQ;
+        double newQ = evaluateNewQ(s, a);
+        double delta = newQ - oldQ;
 
-        learn(delta, r, s, a);
+        learn(delta, newQ, s, a);
 
         return sampleNextState(s, a);
     }
@@ -114,6 +117,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     }
 
     private State sampleNextState(State s, Action a) {
+        // TODO view sampling
         State pds = StateUtils.computePostDecisionState(s, a, this);
         List<Double> pArray = new ArrayList<>();
         for (int l : this.getpMatrix().getColLabels(s.getLambda())) {
@@ -134,7 +138,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
                 getInputRateLevels() - 1, this.operator.getMaxParallelism());
     }
 
-    private double evaluateReward(State s, Action a) {
+    private double evaluateNewQ(State s, Action a) {
         double cost = 0.0;
         // compute reconfiguration cost
         if (a.getDelta() != 0)

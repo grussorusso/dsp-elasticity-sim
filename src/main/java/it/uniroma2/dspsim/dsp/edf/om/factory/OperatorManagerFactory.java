@@ -17,8 +17,6 @@ public class OperatorManagerFactory {
                 return new ThresholdBasedOM(operator);
             case Q_LEARNING:
                 return new QLearningOM(operator);
-            case RL_Q_LEARNING:
-                return new RLQLearningOM(operator);
             case DEEP_Q_LEARNING:
                 return new DeepQLearningOM(operator);
             case DEEP_V_LEARNING:

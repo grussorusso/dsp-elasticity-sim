@@ -48,40 +48,14 @@ public class DeepVLearningOM extends DeepLearningOM {
         // get post decision state from old state and action
         State pdState = StateUtils.computePostDecisionState(oldState, action, this);
 
-        // get V(current state) as min{Q(current state, a) - c(a)} for each action
-        /*
-        ActionIterator ait = new ActionIterator();
-        double bestQ = Double.POSITIVE_INFINITY;
-        Action bestAction = new Action(0, 0, 0);
-        while (ait.hasNext()) {
-            final Action a = ait.next();
-            if (!this.validateAction(currentState, a))
-                continue;
-            // Q(current state, a)
-            double q = this.evaluateAction(currentState, a);
-            // c(a)
-            //double c = this.computeActionCost(a);
-            double c = 0;
-
-            final double diff = q - c;
-
-            if (diff < bestQ) {
-                bestQ = diff;
-                bestAction = a;
-            }
-        }
-        */
-
+        // unknown cost
+        double cU = reward - computeActionCost(action) - StateUtils.computeDeploymentCostNormalized(pdState, this);
         Action greedyAction = this.greedyASP.selectAction(currentState);
-        double newV = getV(StateUtils.computePostDecisionState(currentState, greedyAction, this)).getDouble(0);
+        double newQ = getQ(currentState, greedyAction).getDouble(0);
+        newQ = gamma * newQ + cU;
 
-        // compute new post decision state from current state and best action from current state
-        //State newPDState = StateUtils.computePostDecisionState(currentState, bestAction, this);
-        // update old state output in actionIndex position with new estimation
-        // we get min(newQ) because we want to minimize cost
-        // reward = cost -> minimize Q equals minimize cost
         INDArray v = getV(pdState);
-        v.put(0, 0, reward + gamma * newV);
+        v.put(0, 0, newQ);
 
         // get post decision input array
         INDArray trainingInput = buildInput(pdState);
@@ -101,7 +75,7 @@ public class DeepVLearningOM extends DeepLearningOM {
     private INDArray getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
         INDArray v = getV(postDecisionState);
-        v.put(0, 0, v.getDouble(0) + computeActionCost(action));
+        v.put(0, 0, v.getDouble(0) + computeActionCost(action) + StateUtils.computeDeploymentCostNormalized(postDecisionState, this));
         return v;
     }
 
