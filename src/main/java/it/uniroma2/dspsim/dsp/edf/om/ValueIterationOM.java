@@ -4,6 +4,8 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
+import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
@@ -18,7 +20,6 @@ import it.uniroma2.dspsim.stats.metrics.CpuMetric;
 import it.uniroma2.dspsim.stats.metrics.MemoryMetric;
 import it.uniroma2.dspsim.stats.metrics.TimeMetric;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
-import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -33,13 +34,13 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
     private static final String STAT_VI_CPU_USAGE = "VI CPU Usage";
 
     // V matrix
-    private DoubleMatrix<Integer, Integer> qTable;
+    protected QTable qTable;
 
     public ValueIterationOM(Operator operator) {
         super(operator);
 
         // TODO configure
-        valueIteration(0, 60000, 1E-14);
+        valueIteration(0, 60000, 1E-5);
 
         dumpQOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
@@ -109,9 +110,9 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
                     break;
                 }
             }
+            System.out.println(delta);
         }
 
-        System.out.println(delta);
     }
 
     private double vi() {
@@ -129,7 +130,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         return delta;
     }
 
-    private double computeValueIteration(State state) {
+    protected double computeValueIteration(State state) {
         double delta = 0.0;
 
         ActionIterator actionIterator = new ActionIterator();
@@ -139,9 +140,9 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
             if (!validateAction(state, action))
                 continue;
 
-            double oldQ = this.qTable.getValue(state.hashCode(), action.hashCode());
+            double oldQ = qTable.getQ(state, action);
             double newQ = evaluateQ(state, action);
-            this.qTable.setValue(state.hashCode(), action.hashCode(), newQ);
+            qTable.setQ(state, action, newQ);
 
             delta = Math.max(delta, Math.abs(newQ - oldQ));
         }
@@ -166,7 +167,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
             // get Q(s, a) using the greedy action selection policy
             // from post decision state with lambda as pds.lambda
             Action greedyAction = getActionSelectionPolicy().selectAction(pds);
-            double q = qTable.getValue(pds.hashCode(), greedyAction.hashCode());
+            double q = qTable.getQ(pds, greedyAction);
             // get transition probability from s.lambda to lambda level
             double p = getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation cost
@@ -179,7 +180,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
     @Override
     protected void buildQ() {
-        this.qTable = new DoubleMatrix<>(0.0);
+    	this.qTable = new GuavaBasedQTable(0.0);
     }
 
     @Override
@@ -189,7 +190,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
     @Override
     public double evaluateAction(State s, Action a) {
-        return this.qTable.getValue(s.hashCode(), a.hashCode());
+        return this.qTable.getQ(s, a);
     }
 
     @Override
@@ -219,7 +220,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
                 ActionIterator ait = new ActionIterator();
                 while (ait.hasNext()) {
                     Action a = ait.next();
-                    double v = this.qTable.getValue(s.hashCode(), a.hashCode());
+                    double v = this.qTable.getQ(s, a);
                     if (s.validateAction(a)) {
                         printWriter.print(String.format("%s\t%f\n", a.dump(), v));
                     }
