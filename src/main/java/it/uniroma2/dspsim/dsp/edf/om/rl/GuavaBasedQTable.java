@@ -6,7 +6,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 public class GuavaBasedQTable implements QTable {
 
-	private Table<State, AbstractAction, Double> table = HashBasedTable.create();
+	private Table<Integer, Integer, Double> table = HashBasedTable.create();
 	private double initializationValue;
 
 	public GuavaBasedQTable(double initializationValue) {
@@ -15,7 +15,7 @@ public class GuavaBasedQTable implements QTable {
 
 	@Override
 	public double getQ(State s, AbstractAction a) {
-		Double q = table.get(s,a);
+		Double q = table.get(s.hashCode(),a.hashCode());
 		if (q == null)
 			return initializationValue; // TODO put() before returning?
 
@@ -24,6 +24,6 @@ public class GuavaBasedQTable implements QTable {
 
 	@Override
 	public void setQ(State s, AbstractAction a, double value) {
-		table.put(s,a,value);
+		table.put(s.hashCode(), a.hashCode(), value);
 	}
 }

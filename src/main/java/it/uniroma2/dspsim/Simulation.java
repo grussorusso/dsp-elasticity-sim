@@ -226,6 +226,10 @@ public class Simulation {
 			e.printStackTrace();
 		}
 		Statistics.getInstance().dumpAll(fos);
+
+
+		// TODO: make this optional
+		Statistics.getInstance().dumpAll(System.out);
 	}
 
 	public static void main (String[] args) {
@@ -233,9 +237,16 @@ public class Simulation {
 
 		Configuration conf = Configuration.getInstance();
 		conf.parseDefaultConfigurationFile();
-		// TODO parse cli args and other configuration files (if any)
 		if (args.length > 0) {
-			//TODO charge new config file
+			try {
+				InputStream is = new FileInputStream(new File(args[0]));
+				conf.parseConfigurationFile(is);
+				is.close();
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		}
 
 		ComputingInfrastructure
