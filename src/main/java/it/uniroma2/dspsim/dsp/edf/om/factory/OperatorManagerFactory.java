@@ -23,6 +23,8 @@ public class OperatorManagerFactory {
                 return new DeepVLearningOM(operator);
             case VALUE_ITERATION:
                 return new ValueIterationOM(operator);
+            case VALUE_ITERATION_SPLITQ:
+                return new ValueIterationSplitQOM(operator);
             case FA_TRAJECTORY_BASED_VALUE_ITERATION:
                 return new FaTBValueIterationOM(operator);
             case DEEP_TRAJECTORY_BASED_VALUE_ITERATION:

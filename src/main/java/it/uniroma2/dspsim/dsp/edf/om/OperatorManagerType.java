@@ -7,6 +7,7 @@ public enum OperatorManagerType {
     DEEP_Q_LEARNING,
     DEEP_V_LEARNING,
     VALUE_ITERATION,
+    VALUE_ITERATION_SPLITQ,
     FA_TRAJECTORY_BASED_VALUE_ITERATION,
     DEEP_TRAJECTORY_BASED_VALUE_ITERATION,
     HYBRID;
@@ -24,6 +25,8 @@ public enum OperatorManagerType {
             return DEEP_V_LEARNING;
         } else if (str.equalsIgnoreCase("vi")) {
             return VALUE_ITERATION;
+        } else if (str.equalsIgnoreCase("vi-splitq")) {
+            return VALUE_ITERATION_SPLITQ;
         } else if (str.equalsIgnoreCase("fa-tb-vi")) {
             return FA_TRAJECTORY_BASED_VALUE_ITERATION;
         } else if (str.equalsIgnoreCase("deep-tb-vi")) {

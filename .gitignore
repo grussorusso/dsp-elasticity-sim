@@ -3,3 +3,4 @@ out/
 target/
 .idea/
 simLog.log
+test_results/
