@@ -87,7 +87,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         int stepsCounter = 0;
         long startIterationTime = 0L;
         double delta = Double.POSITIVE_INFINITY;
-        while (delta > theta || stepsCounter < maxIterations || maxTimeMillis > 0) {
+        while (delta > theta && (maxIterations < 1 || stepsCounter < maxIterations) && maxTimeMillis > 0) {
             if (maxTimeMillis > 0L)
                 startIterationTime = System.currentTimeMillis();
 
