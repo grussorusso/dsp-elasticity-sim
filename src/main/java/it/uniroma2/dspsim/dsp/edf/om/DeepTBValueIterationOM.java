@@ -26,6 +26,7 @@ import org.deeplearning4j.ui.stats.StatsListener;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
@@ -47,6 +48,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     private int memoryBatch;
 
+    //protected DoubleMatrix<Integer, Integer> qTable;
     protected MultiLayerNetwork network;
 
     public DeepTBValueIterationOM(Operator operator) {
@@ -60,7 +62,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         this.memoryBatch = 32;
 
         // TODO configure
-        tbvi(90000, 512);
+        tbvi(600000, 512);
 
         dumpQOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
@@ -84,6 +86,9 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         INDArray v = getV(postDecisionState);
         v.put(0, 0, v.getDouble(0) + computeActionCost(action));
         return v;
+        /*
+        return this.qTable.getValue(state.hashCode(), action.hashCode());
+        */
     }
 
     @Override
@@ -98,6 +103,9 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void buildQ() {
+        /*
+        this.qTable = new DoubleMatrix<>(0.0);
+        */
         this.inputLayerNodesNumber = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
                 ComputingInfrastructure.getInfrastructure(),
                 this.getInputRateLevels()).next().getArrayRepresentationLength();
@@ -107,37 +115,22 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         MultiLayerConfiguration config = new NeuralNetConfiguration.Builder()
                 .weightInit(WeightInit.XAVIER)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Sgd(0.05))
+                .updater(new Sgd(0.1))
                 .list(
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber)
-                                .nOut(32)
+                                .nOut(this.inputLayerNodesNumber * 2)
                                 .activation(Activation.RELU)
                                 .build(),
                         new DenseLayer.Builder()
-                                .nIn(32)
-                                .nOut(64)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(64)
-                                .nOut(128)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(128)
-                                .nOut(64)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(64)
-                                .nOut(32)
+                                .nIn(this.inputLayerNodesNumber * 2)
+                                .nOut(this.inputLayerNodesNumber / 2)
                                 .activation(Activation.RELU)
                                 .build(),
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .activation(Activation.IDENTITY)
-                                .nIn(32)
+                                .nIn(this.inputLayerNodesNumber / 2)
                                 .nOut(this.outputLayerNodesNumber)
+                                .activation(Activation.IDENTITY)
                                 .build()
                 )
                 .pretrain(false)
@@ -202,14 +195,18 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     }
 
     @Override
-    protected void learn(double tbviDelta, double reward, State state, Action action) {
+    protected void learn(double tbviDelta, double newQ, State state, Action action) {
+        /*
+        this.qTable.setValue(state.hashCode(), action.hashCode(), newQ);
+        */
+
         // compute post decision state
         State pds = StateUtils.computePostDecisionState(state, action, this);
 
         // transform post decision state in network input
         INDArray trainingInput = buildInput(pds);
         // set label to reward (it already contains gamma * q)
-        INDArray label = Nd4j.create(1).put(0, 0, reward - computeActionCost(action));
+        INDArray label = Nd4j.create(1).put(0, 0, newQ - computeActionCost(action));
 
         // init memory if it is null or add example and label to memory
         if (this.training == null && this.labels == null) {

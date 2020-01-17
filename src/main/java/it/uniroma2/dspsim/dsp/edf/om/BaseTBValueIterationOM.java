@@ -46,6 +46,9 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         // current trajectory length
         long tl = 0L;
 
+        // trajectory counter
+        long trajectoriesComputed = 0;
+
         while (millis > 0) {
             long startIteration = System.currentTimeMillis();
 
@@ -55,6 +58,8 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
                 resetTrajectoryData();
                 // start new trajectory
                 state = randomState();
+
+                trajectoriesComputed++;
             }
 
             Action action = epsGreedyASP.selectAction(state);
@@ -66,6 +71,10 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
             millis -= (System.currentTimeMillis() - startIteration);
         }
+
+        System.out.println("Trajectory length: " + trajectoryLength);
+        System.out.println("Trajectories computed: " + trajectoriesComputed);
+        System.out.println("Samples: " + trajectoriesComputed * trajectoryLength);
     }
 
     protected State tbviIteration(State s, Action a) {
@@ -179,5 +188,5 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
     protected abstract void resetTrajectoryData();
     protected abstract double computeQ(State s, Action a);
-    protected abstract void learn(double tbviDelta, double reward, State state, Action action);
+    protected abstract void learn(double tbviDelta, double newQ, State state, Action action);
 }

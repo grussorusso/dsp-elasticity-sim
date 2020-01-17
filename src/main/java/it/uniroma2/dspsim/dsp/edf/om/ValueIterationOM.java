@@ -39,7 +39,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         super(operator);
 
         // TODO configure
-        valueIteration(0, 60000, 1E-14);
+        valueIteration(0, 60000, 1E-6);
 
         dumpQOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),

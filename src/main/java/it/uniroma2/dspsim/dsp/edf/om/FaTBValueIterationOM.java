@@ -31,7 +31,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         this.alpha = 0.1;
 
         // TODO configure
-        tbvi(90000, 512);
+        tbvi(600000, 512);
     }
 
     @Override

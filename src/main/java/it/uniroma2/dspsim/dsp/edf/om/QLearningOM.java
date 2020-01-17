@@ -26,8 +26,8 @@ public class QLearningOM extends ReinforcementLearningOM {
 
     private ActionSelectionPolicy greedyActionSelection;
 
-    private static final String STAT_BELLMAN_ERROR_AVG = "Bellman Error Avg";
-    private static final String STAT_BELLMAN_ERROR_SUM = "Bellman Error Sum";
+    private static final String STAT_BELLMAN_ERROR_AVG = "Q-Learning Bellman Error Avg";
+    private static final String STAT_BELLMAN_ERROR_SUM = "Q-Learning Bellman Error Sum";
 
     public QLearningOM(Operator operator) {
         super(operator);
@@ -56,17 +56,10 @@ public class QLearningOM extends ReinforcementLearningOM {
         // total bellman error
         statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)));
         // bellman error avg
-        statistics.registerMetric(new AvgMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_AVG),
+        AvgMetric bellmanErrorAvgMetric = new AvgMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_AVG),
                 statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
-                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER))));
-
-        // GLOBAL METRICS
-        // total bellman error
-        statistics.registerMetricIfNotExists(new RealValuedCountMetric(STAT_BELLMAN_ERROR_SUM));
-        // bellman error avg
-        AvgMetric bellmanErrorAvgMetric = new AvgMetric(STAT_BELLMAN_ERROR_AVG,
-                statistics.getMetric(STAT_BELLMAN_ERROR_SUM),
-                (CountMetric) statistics.getMetric(STAT_GET_REWARD_COUNTER));
+                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER)));
+        statistics.registerMetric(bellmanErrorAvgMetric);
         // add step sampling to bellman error avg metric
         StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
         bellmanErrorAvgMetric.addSampler(stepSampler);
@@ -88,8 +81,6 @@ public class QLearningOM extends ReinforcementLearningOM {
         // update bellman error metrics
         // per operator
         Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM), bellmanError);
-        // global
-        Statistics.getInstance().updateMetric(STAT_BELLMAN_ERROR_SUM, bellmanError);
     }
 
     private void decrementAlpha() {

@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.*;
+import it.uniroma2.dspsim.stats.samplers.StepSampler;
 import it.uniroma2.dspsim.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,8 @@ public class Simulation {
 	private final double LATENCY_SLO;
 
 	/* Statistics */
+	private static final String SIMULATION_STATS_NAME_PREFIX = "Simulation - ";
+
 	private static final String STAT_STEPS_COUNTER = "Steps Counter";
 	private static final String STAT_LATENCY_VIOLATIONS = "Latency Violations";
 	private static final String STAT_VIOLATIONS_PERCENTAGE = "Latency Violations Percentage";
@@ -37,14 +40,21 @@ public class Simulation {
 	private static final String STAT_RESOURCES_COST_MAX_SUM = "Resources Cost Max Sum";
 	private static final String STAT_RESOURCES_COST_PERCENTAGE = "Resources Cost Percentage";
 	private static final String STAT_RESOURCES_COST_AVG = "Resources Cost Avg";
+	private static final String STAT_APPLICATION_COST_AVG = "Application Avg Cost";
 
 	private static final String STAT_SIMULATION_TIME = "Simulation Time";
 	private static final String STAT_SIMULATION_MEMORY = "Simulation Memory";
+
+	private static final String STEP_SAMPLER_ID = "Step-sampler";
 
 	private InputRateFileReader inputRateFileReader;
 	private ApplicationManager applicationManager;
 
 	private Logger logger = LoggerFactory.getLogger(Simulation.class);
+
+	private double wSLO;
+	private double wReconf;
+	private double wRes;
 
 	public Simulation (InputRateFileReader inputRateFileReader, ApplicationManager applicationManager) {
 		this.inputRateFileReader = inputRateFileReader;
@@ -52,6 +62,9 @@ public class Simulation {
 
 		Configuration conf = Configuration.getInstance();
 		this.LATENCY_SLO = conf.getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.100);
+		this.wSLO = conf.getDouble(ConfigurationKeys.RL_OM_SLO_WEIGHT_KEY, 0.33);
+		this.wReconf = conf.getDouble(ConfigurationKeys.RL_OM_RECONFIG_WEIGHT_KEY, 0.33);
+		this.wRes = conf.getDouble(ConfigurationKeys.RL_OM_RESOURCES_WEIGHT_KEY, 0.33);
 	}
 
 	public void run() throws IOException {
@@ -63,29 +76,38 @@ public class Simulation {
 
 		//SIMPLE METRICS
 		// steps counter metric
-		statistics.registerMetric(new CountMetric(STAT_STEPS_COUNTER));
+		statistics.registerMetric(new CountMetric(buildMetricName(STAT_STEPS_COUNTER)));
 		// SLO violations counter
-		statistics.registerMetric(new CountMetric(STAT_LATENCY_VIOLATIONS));
+		statistics.registerMetric(new CountMetric(buildMetricName(STAT_LATENCY_VIOLATIONS)));
 		// reconfigurations counter
-		statistics.registerMetric(new CountMetric(STAT_RECONFIGURATIONS));
+		statistics.registerMetric(new CountMetric(buildMetricName(STAT_RECONFIGURATIONS)));
 		// resources cost used sum
-		statistics.registerMetric(new RealValuedCountMetric(STAT_RESOURCES_COST_USED_SUM));
+		statistics.registerMetric(new RealValuedCountMetric(buildMetricName(STAT_RESOURCES_COST_USED_SUM)));
 		// max possible resources sum
-		statistics.registerMetric(new RealValuedCountMetric(STAT_RESOURCES_COST_MAX_SUM));
+		statistics.registerMetric(new RealValuedCountMetric(buildMetricName(STAT_RESOURCES_COST_MAX_SUM)));
 
 		// COMPOSED METRICS
 		// SLO violations percentage
-		statistics.registerMetric(new PercentageMetric(STAT_VIOLATIONS_PERCENTAGE,
-				statistics.getMetric(STAT_LATENCY_VIOLATIONS), statistics.getMetric(STAT_STEPS_COUNTER)));
+		statistics.registerMetric(new PercentageMetric(buildMetricName(STAT_VIOLATIONS_PERCENTAGE),
+				statistics.getMetric(buildMetricName(STAT_LATENCY_VIOLATIONS)), statistics.getMetric(buildMetricName(STAT_STEPS_COUNTER))));
 		// reconfigurations percentage
-		statistics.registerMetric(new PercentageMetric(STAT_RECONFIGURATIONS_PERCENTAGE,
-				statistics.getMetric(STAT_RECONFIGURATIONS), statistics.getMetric(STAT_STEPS_COUNTER)));
+		statistics.registerMetric(new PercentageMetric(buildMetricName(STAT_RECONFIGURATIONS_PERCENTAGE),
+				statistics.getMetric(buildMetricName(STAT_RECONFIGURATIONS)), statistics.getMetric(buildMetricName(STAT_STEPS_COUNTER))));
 		// resources cost percentage
-		statistics.registerMetric(new PercentageMetric(STAT_RESOURCES_COST_PERCENTAGE,
-				statistics.getMetric(STAT_RESOURCES_COST_USED_SUM), statistics.getMetric(STAT_RESOURCES_COST_MAX_SUM)));
+		statistics.registerMetric(new PercentageMetric(buildMetricName(STAT_RESOURCES_COST_PERCENTAGE),
+				statistics.getMetric(buildMetricName(STAT_RESOURCES_COST_USED_SUM)), statistics.getMetric(buildMetricName(STAT_RESOURCES_COST_MAX_SUM))));
 		// resources cost avg
-		statistics.registerMetric(new AvgMetric(STAT_RESOURCES_COST_AVG,
-				statistics.getMetric(STAT_RESOURCES_COST_USED_SUM), (CountMetric) statistics.getMetric(STAT_STEPS_COUNTER)));
+		statistics.registerMetric(new IncrementalAvgMetric(buildMetricName(STAT_RESOURCES_COST_AVG)));
+
+		// incremental avg reward
+		IncrementalAvgMetric incrementalAvgMetric = new IncrementalAvgMetric(buildMetricName(STAT_APPLICATION_COST_AVG));
+		StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
+		incrementalAvgMetric.addSampler(stepSampler);
+		statistics.registerMetric(incrementalAvgMetric);
+	}
+
+	private String buildMetricName(String name) {
+		return this.SIMULATION_STATS_NAME_PREFIX + name;
 	}
 
 	public void run (long stopTime) throws IOException {
@@ -100,26 +122,40 @@ public class Simulation {
 		while (inputRateFileReader.hasNext() && (stopTime <= 0 || time <= stopTime)) {
 			double inputRate = inputRateFileReader.next();
 
+			// compute application cost in this iteration
+			double iterationCost = 0.0;
+
 			double responseTime = app.endToEndLatency(inputRate);
 			if (responseTime > LATENCY_SLO) {
-				Statistics.getInstance().updateMetric(STAT_LATENCY_VIOLATIONS, 1);
+				Statistics.getInstance().updateMetric(buildMetricName(STAT_LATENCY_VIOLATIONS), 1);
+
+				// add slo violation cost
+				iterationCost += this.wSLO;
 			}
 
 			// update used resources cost metric
-			Statistics.getInstance().updateMetric(STAT_RESOURCES_COST_USED_SUM, app.computeDeploymentCost());
+			Statistics.getInstance().updateMetric(buildMetricName(STAT_RESOURCES_COST_USED_SUM), app.computeDeploymentCost());
 			// update max resources cost metric
-			Statistics.getInstance().updateMetric(STAT_RESOURCES_COST_MAX_SUM, app.computeMaxDeploymentCost());
+			Statistics.getInstance().updateMetric(buildMetricName(STAT_RESOURCES_COST_MAX_SUM), app.computeMaxDeploymentCost());
+
+			// add deployment cost normalized
+			iterationCost += (app.computeDeploymentCost() / app.computeMaxDeploymentCost()) * this.wRes;
 
 			/* Reconfiguration */
 			monitoringInfo.setInputRate(inputRate);
 			Map<Operator, Reconfiguration> reconfigurations = edf.pickReconfigurations(monitoringInfo);
 			applyReconfigurations(reconfigurations);
 
+			// add reconfiguration cost if there is a configuration in this iteration
+			iterationCost += checkReconfigurationPresence(reconfigurations) ? this.wReconf : 0.0;
 
 			//System.out.println(inputRate + "\t" + responseTime);
 
 			// update steps counter
-			Statistics.getInstance().updateMetric(STAT_STEPS_COUNTER, 1);
+			Statistics.getInstance().updateMetric(buildMetricName(STAT_STEPS_COUNTER), 1);
+
+			// update application avg cost
+			Statistics.getInstance().updateMetric(buildMetricName(STAT_APPLICATION_COST_AVG), iterationCost);
 
 			// metrics sampling
 			Statistics.getInstance().sampleAll(time);
@@ -130,6 +166,15 @@ public class Simulation {
 
 			time++;
 		}
+	}
+
+	private boolean checkReconfigurationPresence(Map<Operator, Reconfiguration> reconfigurations) {
+		for (Reconfiguration reconfiguration : reconfigurations.values()) {
+			if (reconfiguration.isReconfiguration()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private boolean applyReconfigurations(Map<Operator, Reconfiguration> reconfigurations) {
@@ -146,7 +191,7 @@ public class Simulation {
 		}
 
 		if (appReconfigured)
-			Statistics.getInstance().updateMetric(STAT_RECONFIGURATIONS, 1);
+			Statistics.getInstance().updateMetric(buildMetricName(STAT_RECONFIGURATIONS), 1);
 
 		return appReconfigured;
 	}
@@ -206,13 +251,13 @@ public class Simulation {
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);
 
-			Statistics.getInstance().registerMetric(new TimeMetric(STAT_SIMULATION_TIME));
-			Statistics.getInstance().registerMetric(new MemoryMetric(STAT_SIMULATION_MEMORY));
+			Statistics.getInstance().registerMetric(new TimeMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME));
+			Statistics.getInstance().registerMetric(new MemoryMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY));
 			// run simulation
 			simulation.run();
 
-			Statistics.getInstance().updateMetric(STAT_SIMULATION_TIME, 0);
-			Statistics.getInstance().updateMetric(STAT_SIMULATION_MEMORY, 0);
+			Statistics.getInstance().updateMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME, 0);
+			Statistics.getInstance().updateMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY, 0);
 
 			/* Dump used configuration in output folder. */
 			simulation.dumpConfigs();

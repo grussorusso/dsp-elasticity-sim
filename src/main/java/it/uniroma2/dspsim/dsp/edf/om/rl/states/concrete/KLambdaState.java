@@ -25,6 +25,7 @@ public class KLambdaState extends State {
     @Override
     public int getArrayRepresentationLength() {
         return (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
+        //return this.getTotalStates() + 1;
     }
 
     private int getTotalStates() {
@@ -69,6 +70,7 @@ public class KLambdaState extends State {
         // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
         INDArray oneHotVector = Nd4j.create(features);
         oneHotVector.put(0, Math.floorDiv(this.getIndex(), this.getMaxLambda() + 1), 1);
+        //oneHotVector.put(0, this.getIndex(), 1);
         return oneHotVector;
     }
 
