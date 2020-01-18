@@ -46,7 +46,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void learn(double tbviDelta, double reward, State state, Action action) {
-        if (tbviDelta > 1E-10) {
+        if (!Double.isNaN(tbviDelta)) {
             for (Feature f : this.functionApproximationManager.getFeatures()) {
                 double updatingValue = f.isActive(state, action, this) ? this.alpha * tbviDelta : 0.0;
                 if (updatingValue != 0.0)

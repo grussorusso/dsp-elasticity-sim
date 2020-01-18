@@ -80,6 +80,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     protected State tbviIteration(State s, Action a) {
         double oldQ = computeQ(s, a);
         double newQ = evaluateNewQ(s, a);
+
         double delta = newQ - oldQ;
 
         learn(delta, newQ, s, a);
