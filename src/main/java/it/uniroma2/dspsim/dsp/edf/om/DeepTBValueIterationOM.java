@@ -62,7 +62,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         this.memoryBatch = 32;
 
         // TODO configure
-        tbvi(600000, 512);
+        tbvi(100000, 512);
 
         dumpQOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
@@ -124,11 +124,11 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber * 2)
-                                .nOut(this.inputLayerNodesNumber / 2)
+                                .nOut(this.inputLayerNodesNumber)
                                 .activation(Activation.RELU)
                                 .build(),
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .nIn(this.inputLayerNodesNumber / 2)
+                                .nIn(this.inputLayerNodesNumber)
                                 .nOut(this.outputLayerNodesNumber)
                                 .activation(Activation.IDENTITY)
                                 .build()

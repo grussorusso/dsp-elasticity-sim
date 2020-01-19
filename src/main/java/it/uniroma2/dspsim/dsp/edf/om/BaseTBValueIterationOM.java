@@ -37,7 +37,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         this.rng = new Random();
     }
 
-    protected void tbvi(long millis, long trajectoryLength) {
+    protected void tbvi(long iterations, long trajectoryLength) {
         ActionSelectionPolicy epsGreedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.EPSILON_GREEDY, this);
         ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilon(0.1);
         ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilonDecaySteps(-1);
@@ -49,7 +49,16 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         // trajectory counter
         long trajectoriesComputed = 0;
 
-        while (millis > 0) {
+        // elapsed millis
+        long elapsedMillis = 0L;
+
+        // iteration counter
+        long iterationCompleted = 0L;
+
+        while (iterationCompleted < iterations) {
+            if (iterationCompleted % 1000 == 0)
+                System.out.println("TBVI: " + iterationCompleted + " iteration completed");
+
             long startIteration = System.currentTimeMillis();
 
             if (trajectoryLength > 0 && tl % trajectoryLength == 0)
@@ -69,9 +78,12 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
             tl++;
 
-            millis -= (System.currentTimeMillis() - startIteration);
+            elapsedMillis += (System.currentTimeMillis() - startIteration);
+
+            iterationCompleted++;
         }
 
+        System.out.println("Elapsed time: " + elapsedMillis / 1000 + " seconds");
         System.out.println("Trajectory length: " + trajectoryLength);
         System.out.println("Trajectories computed: " + trajectoriesComputed);
         System.out.println("Samples: " + trajectoriesComputed * trajectoryLength);
