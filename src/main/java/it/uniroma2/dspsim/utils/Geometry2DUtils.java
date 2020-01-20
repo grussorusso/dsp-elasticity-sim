@@ -16,10 +16,12 @@ public class Geometry2DUtils {
      * @return interval number
      */
     public static int mapInIntervals(int intervalsNum, double minValue, double maxValue, double value) {
-        if (value < minValue) return 0;
+        if (value <= minValue) return 0;
         if (value >= maxValue) return intervalsNum - 1;
 
         // subtract 1 to start counting from 0;
-        return (int) Math.ceil((intervalsNum / (maxValue - minValue)) * (value - minValue)) - 1;
+        int interval = (int) Math.ceil((intervalsNum / (maxValue - minValue)) * (value - minValue)) - 1;
+
+        return Math.max(interval, 0);
     }
 }
