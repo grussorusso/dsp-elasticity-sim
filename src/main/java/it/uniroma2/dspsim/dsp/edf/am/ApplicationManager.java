@@ -1,8 +1,8 @@
-package it.uniroma2.dspsim.dsp.edf;
+package it.uniroma2.dspsim.dsp.edf.am;
 
 import it.uniroma2.dspsim.dsp.Application;
 
-public class ApplicationManager {
+public abstract class ApplicationManager {
 
 	protected Application application;
 

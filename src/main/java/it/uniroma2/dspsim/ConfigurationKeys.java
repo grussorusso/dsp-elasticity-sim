@@ -42,6 +42,11 @@ public abstract class ConfigurationKeys {
 	public static final String SLO_LATENCY_KEY = "dsp.slo.latency";
 
 	/**
+	 * Type of ApplicationManager to use.
+	 */
+	public static final String AM_TYPE_KEY = "edf.am.type";
+
+	/**
 	 * Type of OperatorManager to use.
 	 */
 	public static final String OM_TYPE_KEY = "edf.om.type";

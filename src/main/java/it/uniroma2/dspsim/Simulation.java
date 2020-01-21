@@ -4,7 +4,7 @@ import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.ApplicationBuilder;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
-import it.uniroma2.dspsim.dsp.edf.ApplicationManager;
+import it.uniroma2.dspsim.dsp.edf.am.ApplicationManager;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
@@ -48,7 +48,7 @@ public class Simulation {
 	private static final String STEP_SAMPLER_ID = "Step-sampler";
 
 	private InputRateFileReader inputRateFileReader;
-	private ApplicationManager applicationManager;
+	private Application app;
 
 	private Logger logger = LoggerFactory.getLogger(Simulation.class);
 
@@ -56,9 +56,9 @@ public class Simulation {
 	private double wReconf;
 	private double wRes;
 
-	public Simulation (InputRateFileReader inputRateFileReader, ApplicationManager applicationManager) {
+	public Simulation (InputRateFileReader inputRateFileReader, Application application) {
 		this.inputRateFileReader = inputRateFileReader;
-		this.applicationManager = applicationManager;
+		this.app = application;
 
 		Configuration conf = Configuration.getInstance();
 		this.LATENCY_SLO = conf.getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.100);
@@ -115,7 +115,6 @@ public class Simulation {
 
 		logger.warn("Starting simulation");
 
-		Application app = applicationManager.getApplication();
 		EDF edf = new EDF(app);
 		MonitoringInfo monitoringInfo = new MonitoringInfo();
 
@@ -258,9 +257,7 @@ public class Simulation {
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
 			Application app = ApplicationBuilder.singleOperatorApplication();
-			ApplicationManager am = new ApplicationManager(app);
-
-			Simulation simulation = new Simulation(inputRateFileReader, am);
+			Simulation simulation = new Simulation(inputRateFileReader, app);
 
 			Statistics.getInstance().registerMetric(new TimeMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME));
 			Statistics.getInstance().registerMetric(new MemoryMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY));
