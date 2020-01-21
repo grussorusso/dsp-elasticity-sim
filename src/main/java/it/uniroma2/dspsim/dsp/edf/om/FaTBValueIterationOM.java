@@ -20,7 +20,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 public class FaTBValueIterationOM extends BaseTBValueIterationOM {
 
-    private FunctionApproximationManager functionApproximationManager;
+    protected FunctionApproximationManager functionApproximationManager;
 
     private double alpha;
 
@@ -31,7 +31,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         this.alpha = 0.1;
 
         // TODO configure
-        tbvi(600000, 512);
+        tbvi(300000, 512);
     }
 
     @Override
@@ -132,7 +132,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
     }
 
 
-    public Tiling buildTiling(TilingType type, TilingShape shape, double[] xRange, double[] yRange, double[] zRange) {
+    private Tiling buildTiling(TilingType type, TilingShape shape, double[] xRange, double[] yRange, double[] zRange) {
         return new TilingBuilder()
                 .setShape(shape)
                 .setXRange(xRange)

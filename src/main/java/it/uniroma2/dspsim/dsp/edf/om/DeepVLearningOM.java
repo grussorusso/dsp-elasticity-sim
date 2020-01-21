@@ -51,7 +51,7 @@ public class DeepVLearningOM extends DeepLearningOM {
         // unknown cost
         double cU = reward - computeActionCost(action) - StateUtils.computeDeploymentCostNormalized(pdState, this);
         Action greedyAction = this.greedyASP.selectAction(currentState);
-        double newQ = getQ(currentState, greedyAction).getDouble(0);
+        double newQ = getQ(currentState, greedyAction);
         newQ = gamma * newQ + cU;
 
         INDArray v = getV(pdState);
@@ -72,11 +72,10 @@ public class DeepVLearningOM extends DeepLearningOM {
         return this.network.output(input);
     }
 
-    private INDArray getQ(State state, Action action) {
+    private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
-        INDArray v = getV(postDecisionState);
-        v.put(0, 0, v.getDouble(0) + computeActionCost(action) + StateUtils.computeDeploymentCostNormalized(postDecisionState, this));
-        return v;
+        double v = getV(postDecisionState).getDouble(0);
+        return v + computeActionCost(action) + StateUtils.computeDeploymentCostNormalized(postDecisionState, this);
     }
 
     private double computeActionCost(Action action) {
@@ -139,7 +138,6 @@ public class DeepVLearningOM extends DeepLearningOM {
     @Override
     public double evaluateAction(State s, Action a) {
         // return network Q-function prediction associated to action a in state s
-        INDArray networkOutput = getQ(s, a);
-        return networkOutput.getDouble(0);
+        return getQ(s, a);
     }
 }

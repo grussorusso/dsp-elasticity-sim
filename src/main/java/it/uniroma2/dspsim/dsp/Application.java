@@ -137,4 +137,35 @@ public class Application {
 		}
 		return length;
     }
+
+	/**
+	 * Compute operator deployment as array representing the number of instances in each node type
+	 * @param operator target operator
+	 * @return deployment
+	 */
+	public int[] computeOperatorDeployment(Operator operator) {
+		int[] deployment = new int[ComputingInfrastructure.getInfrastructure().getNodeTypes().length];
+		List<NodeType> opInstances = operator.getInstances();
+		for (int i = 0; i < opInstances.size(); i++) {
+			deployment[opInstances.get(i).getIndex()]++;
+		}
+		return deployment;
+	}
+
+	/**
+	 * Return sum of operator replicas for each node type
+	 * @return
+	 */
+	public int[] computeGlobalDeployment() {
+		int[] globalDeployment = new int[ComputingInfrastructure.getInfrastructure().getNodeTypes().length];
+
+		for (Operator operator : operators) {
+			int[] opDeployment = computeOperatorDeployment(operator);
+			for (int j = 0; j < opDeployment.length; j++) {
+				globalDeployment[j] += opDeployment[j];
+			}
+		}
+
+		return globalDeployment;
+    }
 }

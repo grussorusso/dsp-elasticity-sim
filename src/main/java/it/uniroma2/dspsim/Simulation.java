@@ -8,6 +8,7 @@ import it.uniroma2.dspsim.dsp.edf.ApplicationManager;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.*;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
@@ -44,6 +45,8 @@ public class Simulation {
 
 	private static final String STAT_SIMULATION_TIME = "Simulation Time";
 	private static final String STAT_SIMULATION_MEMORY = "Simulation Memory";
+
+	protected static final String STAT_AVG_DEPLOYMENT = "Avg Deployment in resources of type - ";
 
 	private static final String STEP_SAMPLER_ID = "Step-sampler";
 
@@ -104,6 +107,11 @@ public class Simulation {
 		StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
 		incrementalAvgMetric.addSampler(stepSampler);
 		statistics.registerMetric(incrementalAvgMetric);
+
+		// avg deployment
+		for (int i = 0; i < ComputingInfrastructure.getInfrastructure().getNodeTypes().length; i++) {
+			statistics.registerMetricIfNotExists(new IncrementalAvgMetric(buildMetricName(STAT_AVG_DEPLOYMENT + i)));
+		}
 	}
 
 	private String buildMetricName(String name) {
@@ -156,6 +164,12 @@ public class Simulation {
 
 			// update application avg cost
 			Statistics.getInstance().updateMetric(buildMetricName(STAT_APPLICATION_COST_AVG), iterationCost);
+
+			// update avg deployment
+			int[] globalDeployment = app.computeGlobalDeployment();
+			for (int i = 0; i < globalDeployment.length; i++) {
+				Statistics.getInstance().updateMetric(buildMetricName(STAT_AVG_DEPLOYMENT + i), globalDeployment[i]);
+			}
 
 			// metrics sampling
 			Statistics.getInstance().sampleAll(time);

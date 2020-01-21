@@ -73,6 +73,7 @@ public abstract class ConfigurationKeys {
 	 */
 	public static final String QL_OM_ALPHA_KEY = "edf.ql.om.alpha";
 	public static final String QL_OM_ALPHA_DECAY_KEY = "edf.ql.om.alpha.decay";
+	public static final String QL_OM_ALPHA_MIN_VALUE_KEY = "edf.ql.om.alpha.min.value";
 	public static final String QL_OM_ALPHA_DECAY_STEPS_KEY = "edf.ql.om.alpha.decay.steps";
 
 	/**
@@ -80,6 +81,7 @@ public abstract class ConfigurationKeys {
 	 */
 	public static final String DL_OM_GAMMA_KEY = "edf.dl.om.gamma";
 	public static final String DL_OM_GAMMA_DECAY_KEY = "edf.dl.om.gamma.decay";
+	public static final String DL_OM_GAMMA_MIN_VALUE_KEY = "edf.dl.om.gamma.min.value";
 	public static final String DL_OM_GAMMA_DECAY_STEPS_KEY = "edf.dl.om.gamma.decay.steps";
 	public static final String DL_OM_ND4j_RANDOM_SEED_KET = "edf.dl.om.nd4j.random.seed";
 	public static final String DL_OM_ENABLE_NETWORK_UI_KEY = "edf.dl.om.enable.network.ui";
@@ -103,6 +105,7 @@ public abstract class ConfigurationKeys {
 	public static final String ASP_EG_EPSILON_KEY = "asp.eg.epsilon";
 	/** epsilon decay param. */
 	public static final String ASP_EG_EPSILON_DECAY_KEY = "asp.eg.epsilon.decay";
+	public static final String ASP_EG_EPSILON_MIN_VALUE_KEY = "asp.eg.epsilon.min.value";
 	public static final String ASP_EG_EPSILON_DECAY_STEPS_KEY = "asp.eg.om.epsilon.decay.steps";
 	/** epsilon random action selection seed. */
 	public static final String ASP_EG_RANDOM_SEED_KEY = "asp.eg.epsilon.random.seed";
