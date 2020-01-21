@@ -12,7 +12,11 @@ public abstract class OperatorManager {
 	}
 
 
-	abstract public Reconfiguration pickReconfiguration (OMMonitoringInfo monitoringInfo);
+	abstract protected Reconfiguration pickReconfiguration (OMMonitoringInfo monitoringInfo);
+
+	public OMRequest newReconfigurationRequest (OMMonitoringInfo monitoringInfo) {
+			return new OMRequest(pickReconfiguration(monitoringInfo));
+	}
 
 	public Operator getOperator() {
 		return operator;

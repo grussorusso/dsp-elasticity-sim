@@ -115,13 +115,23 @@ public class EDF {
 		}
 
 		/* Let each OM make a decision. */
-		Map<Operator, Reconfiguration> reconfigurations = new HashMap<>();
+		Map<OperatorManager, OMRequest> omRequests = new HashMap<>();
 		for (Operator op : application.getOperators()) {
-			Reconfiguration rcf = operatorManagers.get(op).pickReconfiguration(omMonitoringInfo.get(op));
-			reconfigurations.put(op, rcf);
+			OMMonitoringInfo operatorMonitoringInfo = omMonitoringInfo.get(op);
+			OperatorManager om = operatorManagers.get(op);
+			OMRequest req = om.newReconfigurationRequest(operatorMonitoringInfo);
+			omRequests.put(om, req);
 		}
 
 		// TODO let the AM filter reconfigurations
+		Map<Operator, Reconfiguration> reconfigurations = new HashMap<>();
+		for (OperatorManager om : omRequests.keySet()) {
+			OMRequest req = omRequests.get(om);
+			if (req.isEmpty())
+				continue;
+			Reconfiguration rcf = req.getScoredReconfigurations()[0].getReconfiguration();
+			reconfigurations.put(om.getOperator(), rcf);
+		}
 
 		return reconfigurations;
 	}
