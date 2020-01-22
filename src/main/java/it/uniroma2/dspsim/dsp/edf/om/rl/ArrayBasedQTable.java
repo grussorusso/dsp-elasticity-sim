@@ -10,7 +10,8 @@ public class ArrayBasedQTable implements QTable {
 	private double arr[];
 	private int maxActionHash;
 
-	public ArrayBasedQTable(double initializationValue, int size, int maxActionHash) {
+	public ArrayBasedQTable(double initializationValue, int maxStateHash, int maxActionHash) {
+		int size = (1+maxActionHash)*(1+maxStateHash);
 		arr = new double[size];
 		for (int i = 0; i<size; i++) {
 			arr[i] = initializationValue;
