@@ -81,7 +81,7 @@ public abstract class RewardBasedOM extends OperatorManager {
     }
 
     @Override
-    public Reconfiguration pickReconfiguration(OMMonitoringInfo monitoringInfo) {
+    public OMRequest pickReconfigurationRequest(OMMonitoringInfo monitoringInfo) {
         // compute new state
         State currentState = computeNewState(monitoringInfo);
 
@@ -104,8 +104,7 @@ public abstract class RewardBasedOM extends OperatorManager {
         // update state
         lastState = currentState;
 
-        // construct reconfiguration from action
-        return action2reconfiguration(lastChosenAction);
+        return new OMRequest(action2reconfiguration(lastChosenAction));
     }
 
     protected State computeNewState(OMMonitoringInfo monitoringInfo) {

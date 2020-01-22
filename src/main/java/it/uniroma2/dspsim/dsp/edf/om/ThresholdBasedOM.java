@@ -32,18 +32,23 @@ public class ThresholdBasedOM extends OperatorManager {
 	}
 
 	@Override
-	public Reconfiguration pickReconfiguration(OMMonitoringInfo monitoringInfo) {
+	public OMRequest pickReconfigurationRequest(OMMonitoringInfo monitoringInfo) {
 		final double u = monitoringInfo.getCpuUtilization();
 		final double p = operator.getInstances().size();
 
+		Reconfiguration rcf;
+
 		if (u > scaleOutThreshold && p < operator.getMaxParallelism()) {
 			/* scale-out */
-			return Reconfiguration.scaleOut(defaultNodeType);
+			rcf = Reconfiguration.scaleOut(defaultNodeType);
 		} else if (p > 1 && u*p/(p-1) < 0.75 * scaleOutThreshold) {
 			/* scale-in */
-			return Reconfiguration.scaleIn(defaultNodeType);
+			rcf = Reconfiguration.scaleIn(defaultNodeType);
+		} else {
+			rcf = Reconfiguration.doNothing();
 		}
 
-		return Reconfiguration.doNothing();
+
+		return new OMRequest(rcf);
 	}
 }

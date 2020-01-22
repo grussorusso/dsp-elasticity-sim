@@ -10,7 +10,7 @@ public class DoNothingOM extends OperatorManager {
 	}
 
 	@Override
-	public Reconfiguration pickReconfiguration(OMMonitoringInfo monitoringInfo) {
-		return Reconfiguration.doNothing();
+	public OMRequest pickReconfigurationRequest(OMMonitoringInfo monitoringInfo) {
+		return new OMRequest(Reconfiguration.doNothing());
 	}
 }

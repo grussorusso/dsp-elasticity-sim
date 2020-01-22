@@ -119,7 +119,7 @@ public class EDF {
 		for (Operator op : application.getOperators()) {
 			OMMonitoringInfo operatorMonitoringInfo = omMonitoringInfo.get(op);
 			OperatorManager om = operatorManagers.get(op);
-			OMRequest req = om.newReconfigurationRequest(operatorMonitoringInfo);
+			OMRequest req = om.pickReconfigurationRequest(operatorMonitoringInfo);
 			omRequests.put(om, req);
 		}
 
@@ -129,7 +129,7 @@ public class EDF {
 			OMRequest req = omRequests.get(om);
 			if (req.isEmpty())
 				continue;
-			Reconfiguration rcf = req.getScoredReconfigurations()[0].getReconfiguration();
+			Reconfiguration rcf = req.getScoredReconfigurations().get(0).getReconfiguration();
 			reconfigurations.put(om.getOperator(), rcf);
 		}
 

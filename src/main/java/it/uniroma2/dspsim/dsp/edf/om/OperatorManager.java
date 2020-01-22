@@ -1,7 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.Reconfiguration;
 
 public abstract class OperatorManager {
 
@@ -12,11 +11,7 @@ public abstract class OperatorManager {
 	}
 
 
-	abstract protected Reconfiguration pickReconfiguration (OMMonitoringInfo monitoringInfo);
-
-	public OMRequest newReconfigurationRequest (OMMonitoringInfo monitoringInfo) {
-			return new OMRequest(pickReconfiguration(monitoringInfo));
-	}
+	abstract public OMRequest pickReconfigurationRequest(OMMonitoringInfo monitoringInfo);
 
 	public Operator getOperator() {
 		return operator;
