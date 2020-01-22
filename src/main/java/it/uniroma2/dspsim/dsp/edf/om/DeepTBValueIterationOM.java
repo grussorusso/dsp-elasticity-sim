@@ -60,7 +60,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         }
 
         // TODO configure
-        this.memoryBatch = 16;
+        this.memoryBatch = 32;
 
         // TODO configure
         tbvi(100000, 512);

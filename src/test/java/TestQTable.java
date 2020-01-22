@@ -1,5 +1,6 @@
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
+import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
@@ -13,14 +14,26 @@ import org.junit.Test;
 public class TestQTable {
 
     @Test
-    public void GuavaTableAsQTableHashingTest() {
-        ComputingInfrastructure.initDefaultInfrastructure(3);
-        Operator operator = new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0),5);
+    public void qTableHashingTest() {
+        //guavaTableAdQTableHashingTest(3, 5);
+        //guavaTableAdQTableHashingTest(5, 10);
+        //guavaTableAdQTableHashingTest(10, 5);
+        guavaTableAdQTableHashingTest(10, 10);
+
+        //doubleMatrixAsQTableHashingTest(3, 5);
+        //doubleMatrixAsQTableHashingTest(5, 10);
+        //doubleMatrixAsQTableHashingTest(10, 5);
+        //doubleMatrixAsQTableHashingTest(10, 10);
+    }
+
+    private void doubleMatrixAsQTableHashingTest(int nodesNumber, int opMaxParallelism) {
+        ComputingInfrastructure.initDefaultInfrastructure(nodesNumber);
+        Operator operator = new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0),opMaxParallelism);
 
         DoubleMatrix<Integer, Integer> qTable = new DoubleMatrix<>(0.0);
 
-        fillTableWithValue(qTable, 0.0, operator);
-        fillTableWithValue(qTable, 1.0, operator);
+        fillMatrixWithValue(qTable, 0.0, operator);
+        fillMatrixWithValue(qTable, 1.0, operator);
 
         for (Integer x : qTable.getRowLabels()) {
             for (Integer y : qTable.getColLabels(x)) {
@@ -30,7 +43,45 @@ public class TestQTable {
         }
     }
 
-    private void fillTableWithValue(DoubleMatrix<Integer, Integer> table, double value, Operator operator) {
+
+    private void guavaTableAdQTableHashingTest(int nodesNumber, int opMaxParallelism) {
+        ComputingInfrastructure.initDefaultInfrastructure(nodesNumber);
+        Operator operator = new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0), opMaxParallelism);
+
+        GuavaBasedQTable qTable = new GuavaBasedQTable(0.0);
+
+        fillTableWithValue(qTable, 0.0, operator);
+        fillTableWithValue(qTable, 1.0, operator);
+
+        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), 30);
+
+        while (stateIterator.hasNext()) {
+            State state = stateIterator.next();
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action action = actionIterator.next();
+                Assert.assertEquals(1.0, qTable.getQ(state, action), 0.0);
+                System.out.println(qTable.getQ(state, action));
+            }
+        }
+    }
+
+    private void fillTableWithValue(GuavaBasedQTable table, double value, Operator operator) {
+        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), 30);
+
+        while (stateIterator.hasNext()) {
+            State state = stateIterator.next();
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action action = actionIterator.next();
+                table.setQ(state, action, value);
+            }
+        }
+    }
+
+    private void fillMatrixWithValue(DoubleMatrix<Integer, Integer> table, double value, Operator operator) {
         StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
                 ComputingInfrastructure.getInfrastructure(), 30);
 

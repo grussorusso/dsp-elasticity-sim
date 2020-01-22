@@ -64,7 +64,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         // TODO configure
         this.memorySize = 512;
         // memory batch
-        this.memoryBatch = 32;
+        this.memoryBatch = 16;
 
         // gamma
         this.gamma = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_KEY, 0.99);

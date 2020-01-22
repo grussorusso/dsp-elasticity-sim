@@ -22,7 +22,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
 
     protected FunctionApproximationManager functionApproximationManager;
 
-    private double alpha;
+    protected double alpha;
 
     public FaTBValueIterationOM(Operator operator) {
         super(operator);

@@ -97,11 +97,15 @@ public abstract class State {
 
     @Override
     public int hashCode() {
-        int result = 1;
-        result = 31 * result + lambda;
-        result = 31 * result + maxLambda;
-        result = 31 * result + MathUtils.toBase10(actualDeployment, maxParallelism + 1);
-        return result;
+        int h = 0;
+        for (int i = 0; i < this.actualDeployment.length; ++i){
+            ++h;
+            h *= 1 << (this.actualDeployment[i] + 1);
+        }
+        h >>= 1; //h/2
+
+        h = h * (this.maxLambda + 1) + this.lambda;
+        return h;
     }
 
     public abstract INDArray arrayRepresentation(int features) throws IllegalArgumentException;

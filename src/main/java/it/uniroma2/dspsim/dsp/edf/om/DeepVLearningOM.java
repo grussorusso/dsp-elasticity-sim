@@ -117,11 +117,11 @@ public class DeepVLearningOM extends DeepLearningOM {
                                 .build(),
                         new DenseLayer.Builder()
                                 .nIn(this.inputLayerNodesNumber * 2)
-                                .nOut(this.inputLayerNodesNumber / 2)
+                                .nOut(this.inputLayerNodesNumber)
                                 .activation(Activation.RELU)
                                 .build(),
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .nIn(this.inputLayerNodesNumber / 2)
+                                .nIn(this.inputLayerNodesNumber)
                                 .nOut(this.outputLayerNodesNumber)
                                 .activation(Activation.IDENTITY)
                                 .build()

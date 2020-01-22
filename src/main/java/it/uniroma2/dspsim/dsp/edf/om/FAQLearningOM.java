@@ -27,7 +27,7 @@ public class FAQLearningOM extends ReinforcementLearningOM {
 
     protected FunctionApproximationManager functionApproximationManager;
 
-    private double alpha;
+    protected double alpha;
     private double alphaDecay;
     private double alphaMinValue;
     private int alphaDecaySteps;
