@@ -70,7 +70,7 @@ public class TestQTable {
             }
         }
 
-        ArrayBasedQTable qTable = new ArrayBasedQTable(0.0, (1+maxActionHash)*(1+maxStateHash), maxActionHash);
+        ArrayBasedQTable qTable = new ArrayBasedQTable(0.0, maxStateHash, maxActionHash);
 
         fillTableWithValue(qTable, 0.0, operator);
         fillTableWithValue(qTable, 1.0, operator);
