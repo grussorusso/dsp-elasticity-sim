@@ -21,6 +21,7 @@ public class QLearningOM extends ReinforcementLearningOM {
 
     private double alpha;
     private double alphaDecay;
+    private double alphaMinValue;
     private int alphaDecaySteps;
     private int alphaDecayStepsCounter;
 
@@ -37,8 +38,9 @@ public class QLearningOM extends ReinforcementLearningOM {
 
         this.qTable = new GuavaBasedQTable(0.0);
 
-        this.alpha = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.2);
-        this.alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.9);
+        this.alpha = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 1.0);
+        this.alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.98);
+        this.alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
         this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
         this.alphaDecayStepsCounter = 0;
 
@@ -87,8 +89,13 @@ public class QLearningOM extends ReinforcementLearningOM {
         if (this.alphaDecaySteps > 0) {
             this.alphaDecayStepsCounter++;
             if (this.alphaDecayStepsCounter >= this.alphaDecaySteps) {
-                this.alphaDecayStepsCounter = 0;
-                this.alpha = this.alphaDecay * this.alpha;
+                if (this.alpha >= this.alphaMinValue) {
+                    this.alphaDecayStepsCounter = 0;
+                    this.alpha = this.alphaDecay * this.alpha;
+                    if (this.alpha < this.alphaMinValue) {
+                        this.alpha = this.alphaMinValue;
+                    }
+                }
             }
         }
     }

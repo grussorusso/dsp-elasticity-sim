@@ -8,20 +8,18 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyTy
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
-public class HybridRewardBasedOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
+public abstract class HybridRewardBasedOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
 
-    private DeepTBValueIterationOM deepTBValueIterationOM;
-    private DeepVLearningOM deepVLearningOM;
+    private BaseTBValueIterationOM offLineOM;
+    private ReinforcementLearningOM onLineOM;
 
     public HybridRewardBasedOM(Operator operator) {
         super(operator);
 
-        this.deepTBValueIterationOM = new DeepTBValueIterationOM(operator);
-        this.deepVLearningOM = new DeepVLearningOM(operator);
+        this.offLineOM = buildOffLineOM(operator);
+        this.onLineOM = buildOnLineOM(operator);
 
-        // overwrite deep-v-learning neural network with deep-tb-vi one
-        this.deepVLearningOM.networkConf = this.deepTBValueIterationOM.network.getLayerWiseConfigurations();
-        this.deepVLearningOM.network = this.deepTBValueIterationOM.network;
+        transferKnowledge();
 
         // recall init action selection policy
         // to overwrite initial action selection policy with deep-v-learning configured one
@@ -30,38 +28,61 @@ public class HybridRewardBasedOM extends RewardBasedOM implements ActionSelectio
 
     @Override
     protected ActionSelectionPolicy initActionSelectionPolicy() {
-        if (this.deepVLearningOM == null) {
+        if (this.onLineOM == null) {
             return ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.EPSILON_GREEDY, this);
         } else {
-            return this.deepVLearningOM.getActionSelectionPolicy();
+            return this.onLineOM.getActionSelectionPolicy();
         }
     }
 
     @Override
     protected void useReward(double reward, State lastState, Action lastChosenAction, State currentState, OMMonitoringInfo monitoringInfo) {
         // delegate reward collection to deep-v-learning om
-        this.deepVLearningOM.useReward(reward, lastState, lastChosenAction, currentState, monitoringInfo);
+        this.onLineOM.useReward(reward, lastState, lastChosenAction, currentState, monitoringInfo);
     }
 
     @Override
     public boolean validateAction(State s, Action a) {
-        if (this.deepVLearningOM == null) {
+        if (this.onLineOM == null) {
             return s.validateAction(a);
         } else {
-            return this.deepVLearningOM.validateAction(s, a);
+            return this.onLineOM.validateAction(s, a);
         }
     }
 
     @Override
     public double evaluateAction(State s, Action a) {
-        if (this.deepVLearningOM == null) {
-            if (this.deepTBValueIterationOM == null ) {
+        if (this.onLineOM == null) {
+            if (this.offLineOM == null ) {
                 return 0.0;
             } else {
-                return this.deepTBValueIterationOM.evaluateAction(s, a);
+                return this.offLineOM.evaluateAction(s, a);
             }
         } else {
-            return this.deepVLearningOM.evaluateAction(s, a);
+            return this.onLineOM.evaluateAction(s, a);
         }
+    }
+
+    /**
+     * ABSTRACT METHODS
+     */
+
+    protected abstract BaseTBValueIterationOM buildOffLineOM(Operator operator);
+    protected abstract ReinforcementLearningOM buildOnLineOM(Operator operator);
+
+    /**
+     * Implement this method to transfer knowledge from off-line om to on-line om
+     */
+    protected abstract void transferKnowledge();
+
+    /**
+     * GETTERS
+     */
+    public BaseTBValueIterationOM getOffLineOM() {
+        return offLineOM;
+    }
+
+    public ReinforcementLearningOM getOnLineOM() {
+        return onLineOM;
     }
 }

@@ -28,7 +28,14 @@ public class Action extends AbstractAction {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getDelta(), getResTypeIndex(), getIndex());
+        if (this.delta == 0)
+            return 0;
+        int h = 1 + 2 * this.resTypeIndex;
+
+        if (this.delta < 0)
+            h++;
+
+        return h;
     }
 
     public int getIndex() {

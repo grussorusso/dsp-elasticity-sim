@@ -16,6 +16,7 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
 
     private double epsilon;
     private double epsilonDecay;
+    private double epsilonMinValue;
     private int epsilonDecaySteps;
     private int epsilonDecayStepsCounter;
 
@@ -40,10 +41,13 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
         ));
 
         // init epsilon
-        this.epsilon = configuration.getDouble(ConfigurationKeys.ASP_EG_EPSILON_KEY, 0.05);
+        this.epsilon = configuration.getDouble(ConfigurationKeys.ASP_EG_EPSILON_KEY, 1.0);
 
         // init epsilon decay
         this.epsilonDecay = configuration.getDouble(ConfigurationKeys.ASP_EG_EPSILON_DECAY_KEY, 0.9);
+
+        // init epsilon min value
+        this.epsilonMinValue = configuration.getDouble(ConfigurationKeys.ASP_EG_EPSILON_MIN_VALUE_KEY, 0.01);
 
         // init epsilon decay steps numbers
         this.epsilonDecaySteps = configuration.getInteger(ConfigurationKeys.ASP_EG_EPSILON_DECAY_STEPS_KEY, -1);
@@ -77,8 +81,13 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
         if (this.epsilonDecaySteps > 0) {
             this.epsilonDecayStepsCounter++;
             if (this.epsilonDecayStepsCounter >= this.epsilonDecaySteps) {
-                this.epsilonDecayStepsCounter = 0;
-                this.epsilon = this.epsilonDecay * this.epsilon;
+                if (this.epsilon >= this.epsilonMinValue) {
+                    this.epsilonDecayStepsCounter = 0;
+                    this.epsilon = this.epsilonDecay * this.epsilon;
+                    if (this.epsilon < this.epsilonMinValue) {
+                        this.epsilon = this.epsilonMinValue;
+                    }
+                }
             }
         }
     }

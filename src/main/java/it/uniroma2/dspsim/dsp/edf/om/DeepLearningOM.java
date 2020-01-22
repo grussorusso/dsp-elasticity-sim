@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.ui.api.UIServer;
@@ -41,6 +42,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
     protected double gamma;
     protected double gammaDecay;
+    protected double gammaMinValue;
     protected int gammaDecaySteps;
     protected int gammaDecayStepsCounter;
 
@@ -62,12 +64,14 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         // TODO configure
         this.memorySize = 512;
         // memory batch
-        this.memoryBatch = 32;
+        this.memoryBatch = 16;
 
         // gamma
-        this.gamma = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_KEY, 0.9);
+        this.gamma = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_KEY, 0.99);
         // gamma decay
         this.gammaDecay = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_DECAY_KEY, 0.9);
+        // gamma min value
+        this.gammaMinValue = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_MIN_VALUE_KEY, 0.01);
         // gamma decay steps
         this.gammaDecaySteps = configuration.getInteger(ConfigurationKeys.DL_OM_GAMMA_DECAY_STEPS_KEY, -1);
         // gamma decay steps counter (init)
@@ -124,8 +128,14 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         if (this.gammaDecaySteps > 0) {
             this.gammaDecayStepsCounter++;
             if (this.gammaDecayStepsCounter >= this.gammaDecaySteps) {
-                this.gammaDecayStepsCounter = 0;
-                this.gamma = this.gammaDecay * this.gamma;
+                if (this.gamma >= this.gammaMinValue) {
+                    this.gammaDecayStepsCounter = 0;
+                    this.gamma = this.gammaDecay * this.gamma;
+                    if (this.gamma < this.gammaMinValue) {
+                        this.gamma = this.gammaMinValue;
+                    }
+                }
+
             }
         }
     }
@@ -150,7 +160,8 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             DataSet tempMemory = new DataSet(this.training, this.labels);
             tempMemory.shuffle();
             List<DataSet> batches = tempMemory.batchBy(this.memoryBatch);
-            this.network.fit(batches.get(0));
+            ListDataSetIterator iterator = new ListDataSetIterator<>(batches);
+            this.network.fit(iterator);
         //}
     }
 

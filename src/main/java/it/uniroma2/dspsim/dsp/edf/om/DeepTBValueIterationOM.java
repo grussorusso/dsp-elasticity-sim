@@ -14,6 +14,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.deeplearning4j.api.storage.StatsStorage;
+import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -220,8 +221,9 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         DataSet memory = new DataSet(this.training, this.labels);
         memory.shuffle();
         List<DataSet> batches = memory.batchBy(this.memoryBatch);
+        ListDataSetIterator iterator = new ListDataSetIterator<>(batches);
         // train network
-        this.network.fit(batches.get(0));
+        this.network.fit(iterator);
     }
 
     private double computeActionCost(Action action) {
