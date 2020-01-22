@@ -17,16 +17,6 @@ public class DoNothingAM extends ApplicationManager {
 
 	public Map<Operator, Reconfiguration> planReconfigurations(Map<OperatorManager, OMRequest> omRequestMap)
 	{
-		Map<Operator, Reconfiguration> reconfigurations = new HashMap<>(omRequestMap.size());
-
-		for (OperatorManager om : omRequestMap.keySet()) {
-			OMRequest req = omRequestMap.get(om);
-			if (req.isEmpty())
-				continue;
-			Reconfiguration rcf = req.getScoredReconfigurations().get(0).getReconfiguration();
-			reconfigurations.put(om.getOperator(), rcf);
-		}
-
-		return reconfigurations;
+		return acceptAll(omRequestMap);
 	}
 }

@@ -41,4 +41,9 @@ public class ActionIterator implements Iterator<Action> {
 
         return new Action(actionIndex, delta, resTypeIndex);
     }
+
+    static public Action getDoNothingAction()
+    {
+        return new Action(0, 0, 0);
+    }
 }

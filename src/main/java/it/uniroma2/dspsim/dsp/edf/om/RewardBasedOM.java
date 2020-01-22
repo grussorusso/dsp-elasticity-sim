@@ -6,9 +6,12 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.Statistics;
@@ -104,7 +107,27 @@ public abstract class RewardBasedOM extends OperatorManager {
         // update state
         lastState = currentState;
 
-        return new OMRequest(action2reconfiguration(lastChosenAction));
+
+        /*
+         * Provide information to the AM.
+         */
+        double actionScore = 0.0;
+        double noReconfigurationScore = 0.0;
+        if (this instanceof ActionSelectionPolicyCallback) {
+            /* V(pds) */
+            actionScore = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, lastChosenAction);
+            actionScore -= (lastChosenAction.getDelta() == 0)? 0.0 : this.getwReconf();
+            actionScore -= this.getwResources()*StateUtils.computeDeploymentCostNormalized(StateUtils.computePostDecisionState(currentState, lastChosenAction, this), this);
+            Action nop = ActionIterator.getDoNothingAction();
+            if (nop.equals(lastChosenAction)) {
+                noReconfigurationScore = actionScore;
+            } else {
+                noReconfigurationScore  = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, nop);
+                noReconfigurationScore -= this.getwResources()*StateUtils.computeDeploymentCostNormalized(StateUtils.computePostDecisionState(currentState, nop, this), this);
+            }
+        }
+
+        return new OMRequest(action2reconfiguration(lastChosenAction), actionScore, noReconfigurationScore);
     }
 
     protected State computeNewState(OMMonitoringInfo monitoringInfo) {
