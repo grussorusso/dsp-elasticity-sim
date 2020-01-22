@@ -30,12 +30,12 @@ public class EDF {
 
 		Configuration conf = Configuration.getInstance();
 
+		applicationManager = newApplicationManager(conf);
+
 		operatorManagers = new HashMap<>(numOperators);
 		for (Operator op : operators) {
 			operatorManagers.put(op, newOperatorManager(op, conf));
 		}
-
-		applicationManager = newApplicationManager(conf);
 	}
 
 	private ApplicationManager newApplicationManager(Configuration conf) {
@@ -123,15 +123,8 @@ public class EDF {
 			omRequests.put(om, req);
 		}
 
-		// TODO let the AM filter reconfigurations
-		Map<Operator, Reconfiguration> reconfigurations = new HashMap<>();
-		for (OperatorManager om : omRequests.keySet()) {
-			OMRequest req = omRequests.get(om);
-			if (req.isEmpty())
-				continue;
-			Reconfiguration rcf = req.getScoredReconfigurations().get(0).getReconfiguration();
-			reconfigurations.put(om.getOperator(), rcf);
-		}
+		// Let the AM filter reconfigurations
+		Map<Operator, Reconfiguration> reconfigurations = applicationManager.planReconfigurations(omRequests);
 
 		return reconfigurations;
 	}
