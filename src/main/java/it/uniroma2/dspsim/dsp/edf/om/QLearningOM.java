@@ -25,10 +25,14 @@ public class QLearningOM extends ReinforcementLearningOM {
     private int alphaDecaySteps;
     private int alphaDecayStepsCounter;
 
+    private double gamma;
+
     private ActionSelectionPolicy greedyActionSelection;
 
     private static final String STAT_BELLMAN_ERROR_AVG = "Q-Learning Bellman Error Avg";
     private static final String STAT_BELLMAN_ERROR_SUM = "Q-Learning Bellman Error Sum";
+
+
 
     public QLearningOM(Operator operator) {
         super(operator);
@@ -43,6 +47,8 @@ public class QLearningOM extends ReinforcementLearningOM {
         this.alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
         this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
         this.alphaDecayStepsCounter = 0;
+
+        this.gamma = 0.99;
 
         this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.GREEDY,
@@ -72,7 +78,7 @@ public class QLearningOM extends ReinforcementLearningOM {
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
         final double oldQ  = qTable.getQ(oldState, action);
         final double newQ = (1.0 - alpha) * oldQ +
-                alpha * (reward + qTable.getQ(currentState, greedyActionSelection.selectAction(currentState)));
+                alpha * (reward + this.gamma * qTable.getQ(currentState, greedyActionSelection.selectAction(currentState)));
 
         final double bellmanError = Math.abs(newQ - oldQ);
 

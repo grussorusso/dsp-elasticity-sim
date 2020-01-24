@@ -56,6 +56,7 @@ public class Operator {
 			throw new RuntimeException("Cannot use more resource types than replicas...");
 
 		double currentSpeedup = Double.POSITIVE_INFINITY;
+		//TODO configure worst case or avg case
 		for (NodeType nt : usedNodeTypes)
 			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
 
@@ -67,6 +68,7 @@ public class Operator {
 			throw new RuntimeException("Cannot use more resource types than replicas...");
 
 		double currentSpeedup = Double.POSITIVE_INFINITY;
+		//TODO configure worst case or avg case
 		for (NodeType nt : usedNodeTypes)
 			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
 
