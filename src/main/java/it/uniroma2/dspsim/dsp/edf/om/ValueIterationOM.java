@@ -39,8 +39,13 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
     public ValueIterationOM(Operator operator) {
         super(operator);
 
-        // TODO configure
-        valueIteration(0, 60000, 1E-5);
+        Configuration configuration = Configuration.getInstance();
+
+        int maxIterations = configuration.getInteger(ConfigurationKeys.VI_MAX_ITERATIONS_KEY, 0);
+        long maxTimeMillis = configuration.getLong(ConfigurationKeys.VI_MAX_TIME_SECONDS_KEY, 60L) * 1000;
+        double theta = configuration.getDouble(ConfigurationKeys.VI_THETA_KEY, 1E-5);
+
+        valueIteration(maxIterations, maxTimeMillis, theta);
 
         dumpQOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),

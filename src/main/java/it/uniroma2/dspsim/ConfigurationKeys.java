@@ -74,12 +74,36 @@ public abstract class ConfigurationKeys {
 	public static final String RL_OM_STATE_REPRESENTATION_KEY = "edf.rl.om.state.representation";
 
 	/**
+	 * Dynamic Programming params
+	 */
+	public static final String DP_GAMMA_KEY = "edf.dp.gamma";
+
+	/**
+	 * VI operator manager params
+	 */
+	public static final String VI_MAX_ITERATIONS_KEY = "edf.vi.max.iterations";
+	public static final String VI_MAX_TIME_SECONDS_KEY = "edf.vi.max.time.seconds";
+	public static final String VI_THETA_KEY = "edf.vi.theta";
+
+	/**
+	 * TBVI operator manager params
+	 */
+	public static final String TBVI_EXEC_ITERATIONS_KEY = "edf.tbvi.exec.iterations";
+	public static final String TBVI_EXEC_SECONDS_KEY = "edf.tbvi.exec.seconds";
+	public static final String TBVI_TRAJECTORY_LENGTH_KEY = "edf.tbvi.trajectory.length";
+	/** Function Approximation **/
+	public static final String TBVI_FA_ALPHA_KEY = "edf.tbvi.fa.alpha";
+	/** Deep TBVI **/
+	public static final String TBVI_DEEP_MEMORY_BATCH_KEY = "edf.tbvi.deep.memory.batch";
+
+	/**
 	 * Q-learning operator manager params.
 	 */
 	public static final String QL_OM_ALPHA_KEY = "edf.ql.om.alpha";
 	public static final String QL_OM_ALPHA_DECAY_KEY = "edf.ql.om.alpha.decay";
 	public static final String QL_OM_ALPHA_MIN_VALUE_KEY = "edf.ql.om.alpha.min.value";
 	public static final String QL_OM_ALPHA_DECAY_STEPS_KEY = "edf.ql.om.alpha.decay.steps";
+	public static final String QL_OM_GAMMA_KEY = "edf.ql.om.gamma";
 
 	/**
 	 * Deep-learning operator manager params.
@@ -90,6 +114,8 @@ public abstract class ConfigurationKeys {
 	public static final String DL_OM_GAMMA_DECAY_STEPS_KEY = "edf.dl.om.gamma.decay.steps";
 	public static final String DL_OM_ND4j_RANDOM_SEED_KET = "edf.dl.om.nd4j.random.seed";
 	public static final String DL_OM_ENABLE_NETWORK_UI_KEY = "edf.dl.om.enable.network.ui";
+	public static final String DL_OM_SAMPLES_MEMORY_SIZE_KEY = "edf.dl.samples.memory.size";
+	public static final String DL_OM_SAMPLES_MEMORY_BATCH_KEY = "edf.dl.samples.memory.batch";
 
 	/**
 	 * Type of ActionSelectionPolicy (ASP) to use

@@ -27,11 +27,9 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
     public FaTBValueIterationOM(Operator operator) {
         super(operator);
 
-        // TODO configure
-        this.alpha = 0.1;
+        this.alpha = Configuration.getInstance().getDouble(ConfigurationKeys.TBVI_FA_ALPHA_KEY, 0.1);
 
-        // TODO configure
-        tbvi(300000, 512);
+        tbvi(this.tbviIterations, this.tbviMillis,this.tbviTrajectoryLength);
     }
 
     @Override

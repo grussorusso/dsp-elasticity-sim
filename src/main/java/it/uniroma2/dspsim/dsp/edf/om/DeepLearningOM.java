@@ -7,6 +7,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.BaseDatasetIterator;
 import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
@@ -40,9 +41,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     protected MultiLayerConfiguration networkConf;
     protected MultiLayerNetwork network;
 
-    protected double gamma;
-    protected double gammaDecay;
-    protected double gammaMinValue;
+    protected VariableParameter gamma;
     protected int gammaDecaySteps;
     protected int gammaDecayStepsCounter;
 
@@ -61,17 +60,19 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         Configuration configuration = Configuration.getInstance();
 
         // memory size
-        // TODO configure
-        this.memorySize = 512;
+        this.memorySize = configuration.getInteger(ConfigurationKeys.DL_OM_SAMPLES_MEMORY_SIZE_KEY, 512);
         // memory batch
-        this.memoryBatch = 16;
+        this.memoryBatch = configuration.getInteger(ConfigurationKeys.DL_OM_SAMPLES_MEMORY_BATCH_KEY, 16);
 
-        // gamma
-        this.gamma = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_KEY, 0.99);
+        // gamma initial value
+        double gammaInitValue = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_KEY, 0.99);
         // gamma decay
-        this.gammaDecay = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_DECAY_KEY, 0.9);
+        double gammaDecay = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_DECAY_KEY, 0.9);
         // gamma min value
-        this.gammaMinValue = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_MIN_VALUE_KEY, 0.01);
+        double gammaMinValue = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_MIN_VALUE_KEY, 0.01);
+
+        this.gamma = new VariableParameter(gammaInitValue, gammaMinValue, 1.0, gammaDecay);
+
         // gamma decay steps
         this.gammaDecaySteps = configuration.getInteger(ConfigurationKeys.DL_OM_GAMMA_DECAY_STEPS_KEY, -1);
         // gamma decay steps counter (init)
@@ -128,14 +129,8 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         if (this.gammaDecaySteps > 0) {
             this.gammaDecayStepsCounter++;
             if (this.gammaDecayStepsCounter >= this.gammaDecaySteps) {
-                if (this.gamma >= this.gammaMinValue) {
-                    this.gammaDecayStepsCounter = 0;
-                    this.gamma = this.gammaDecay * this.gamma;
-                    if (this.gamma < this.gammaMinValue) {
-                        this.gamma = this.gammaMinValue;
-                    }
-                }
-
+                this.gamma.update();
+                this.gammaDecayStepsCounter = 0;
             }
         }
     }

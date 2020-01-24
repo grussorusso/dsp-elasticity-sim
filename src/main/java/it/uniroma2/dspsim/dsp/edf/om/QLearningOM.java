@@ -15,13 +15,12 @@ import it.uniroma2.dspsim.stats.metrics.AvgMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
+import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 
 public class QLearningOM extends ReinforcementLearningOM {
     private QTable qTable;
 
-    private double alpha;
-    private double alphaDecay;
-    private double alphaMinValue;
+    private VariableParameter alpha;
     private int alphaDecaySteps;
     private int alphaDecayStepsCounter;
 
@@ -42,13 +41,16 @@ public class QLearningOM extends ReinforcementLearningOM {
 
         this.qTable = new GuavaBasedQTable(0.0);
 
-        this.alpha = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 1.0);
-        this.alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.98);
-        this.alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
+        double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 1.0);
+        double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.98);
+        double alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
+
+        this.alpha = new VariableParameter(alphaInitValue, alphaMinValue, 1.0, alphaDecay);
+
         this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
         this.alphaDecayStepsCounter = 0;
 
-        this.gamma = 0.99;
+        this.gamma = configuration.getDouble(ConfigurationKeys.QL_OM_GAMMA_KEY,0.99);
 
         this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.GREEDY,
@@ -77,8 +79,8 @@ public class QLearningOM extends ReinforcementLearningOM {
     @Override
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
         final double oldQ  = qTable.getQ(oldState, action);
-        final double newQ = (1.0 - alpha) * oldQ +
-                alpha * (reward + this.gamma * qTable.getQ(currentState, greedyActionSelection.selectAction(currentState)));
+        final double newQ = (1.0 - alpha.getValue()) * oldQ + alpha.getValue() * (reward +
+                        this.gamma * qTable.getQ(currentState, greedyActionSelection.selectAction(currentState)));
 
         final double bellmanError = Math.abs(newQ - oldQ);
 
@@ -95,13 +97,8 @@ public class QLearningOM extends ReinforcementLearningOM {
         if (this.alphaDecaySteps > 0) {
             this.alphaDecayStepsCounter++;
             if (this.alphaDecayStepsCounter >= this.alphaDecaySteps) {
-                if (this.alpha >= this.alphaMinValue) {
-                    this.alphaDecayStepsCounter = 0;
-                    this.alpha = this.alphaDecay * this.alpha;
-                    if (this.alpha < this.alphaMinValue) {
-                        this.alpha = this.alphaMinValue;
-                    }
-                }
+                this.alpha.update();
+                this.alphaDecayStepsCounter = 0;
             }
         }
     }
