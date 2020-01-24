@@ -1,12 +1,35 @@
 package it.uniroma2.dspsim.dsp;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
+import it.uniroma2.dspsim.dsp.load_balancing.LoadBalancer;
+import it.uniroma2.dspsim.dsp.load_balancing.LoadBalancerFactory;
+import it.uniroma2.dspsim.dsp.load_balancing.LoadBalancerType;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.utils.Tuple2;
 
 import java.util.*;
 
 public class Operator {
+
+	// case considered while
+	// computing utilization or response time
+	private enum SpeedupCase{
+		AVG,
+		WORST;
+
+		public static SpeedupCase fromString(String str) {
+			if (str.equalsIgnoreCase("avg")) {
+				return AVG;
+			} else if (str.equalsIgnoreCase("worst")) {
+				return WORST;
+			} else {
+				throw new IllegalArgumentException("Not valid speedup case type " + str);
+			}
+		}
+	}
 
 	private String name;
 	private int maxParallelism;
@@ -21,6 +44,9 @@ public class Operator {
 
 	private double sloRespTime;
 
+	private LoadBalancer loadBalancer;
+	private SpeedupCase speedupCase;
+
 	public Operator(String name, OperatorQueueModel queueModel, int maxParallelism) {
 		this.name = name;
 
@@ -28,6 +54,15 @@ public class Operator {
 		instances = new ArrayList<>(maxParallelism);
 
 		this.queueModel = queueModel;
+
+		// init operator load balancer policy
+		this.loadBalancer = LoadBalancerFactory.getLoadBalancer(
+				LoadBalancerType.fromString(Configuration.getInstance().getString(
+						ConfigurationKeys.OPERATOR_LOAD_BALANCER_TYPE_KEY, "rr")));
+
+		// get speedup case considered while computing utilization or response time
+		this.speedupCase = SpeedupCase.fromString(Configuration.getInstance().getString(
+				ConfigurationKeys.OPERATOR_SPEEDUP_CASE_CONSIDERED_KEY, "worst"));
 
 		/* Add initial replica */
 		NodeType defaultType = ComputingInfrastructure.getInfrastructure().getNodeTypes()[0];
@@ -55,10 +90,7 @@ public class Operator {
 		if (usedNodeTypes.size() > parallelism)
 			throw new RuntimeException("Cannot use more resource types than replicas...");
 
-		double currentSpeedup = Double.POSITIVE_INFINITY;
-		//TODO configure worst case or avg case
-		for (NodeType nt : usedNodeTypes)
-			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
+		double currentSpeedup = computeSpeedup(inputRate, usedNodeTypes);
 
 		return queueModel.utilization(inputRate, instances.size(), currentSpeedup);
 	}
@@ -67,13 +99,39 @@ public class Operator {
 		if (usedNodeTypes.size() > parallelism)
 			throw new RuntimeException("Cannot use more resource types than replicas...");
 
-		double currentSpeedup = Double.POSITIVE_INFINITY;
-		//TODO configure worst case or avg case
-		for (NodeType nt : usedNodeTypes)
-			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
+		double currentSpeedup = computeSpeedup(inputRate, usedNodeTypes);
 
 		return queueModel.responseTime(inputRate, instances.size(), currentSpeedup);
 	}
+
+	private double computeSpeedup(double inputRate, Set<NodeType> usedNodeTypes) {
+		double currentSpeedup = Double.POSITIVE_INFINITY;
+		switch (this.speedupCase) {
+			case AVG:
+				double totSpeedup = 0.0;
+				for (NodeType nt : usedNodeTypes) {
+					totSpeedup += nt.getCpuSpeedup();
+				}
+				currentSpeedup = totSpeedup / (double) usedNodeTypes.size();
+				break;
+			default:
+				for (NodeType nt : usedNodeTypes)
+					currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
+				break;
+		}
+		return currentSpeedup;
+	}
+
+	/*
+	private double computeSpeedup(double inputRate) {
+		List<Tuple2<NodeType, Double>> balancedInputRates = this.loadBalancer.balance(inputRate, this.instances);
+		double currentSpeedup = Double.POSITIVE_INFINITY;
+
+		for (Tuple2<NodeType, Double> bir : balancedInputRates) {
+
+		}
+	}
+	*/
 
 	/**
 	 * Applies a reconfiguration.

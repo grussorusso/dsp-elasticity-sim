@@ -31,9 +31,14 @@ public abstract class ConfigurationKeys {
 	public static final String NODE_TYPES_NUMBER_KEY = "node.types.number";
 
 	/**
-	 * Operator max parallelism.
+	 * Operator.
 	 */
+	/** Max Parallelism **/
 	public static final String OPERATOR_MAX_PARALLELISM_KEY = "operator.max.parallelism";
+	/** Speedup considered while computing response time or utilization **/
+	public static final String OPERATOR_SPEEDUP_CASE_CONSIDERED_KEY = "operator.speedup.case.considered";
+	/** Load Balancer**/
+	public static final String OPERATOR_LOAD_BALANCER_TYPE_KEY = "operator.load.balancer.type";
 
 	/**
 	 * Constraints.
