@@ -40,7 +40,7 @@ public class DeepQLearningOM extends DeepLearningOM {
         // update old state output in actionIndex position with new estimation
         // we get min(newQ) because we want to minimize cost
         // reward = cost -> minimize Q equals minimize cost
-        oldQ.put(0, action.getIndex(), reward + gamma * (double) newQ.minNumber());
+        oldQ.put(0, action.getIndex(), reward + gamma.getValue() * (double) newQ.minNumber());
 
         // get old state input array
         INDArray trainingInput = buildInput(oldState);

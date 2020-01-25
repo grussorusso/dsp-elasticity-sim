@@ -52,7 +52,7 @@ public class DeepVLearningOM extends DeepLearningOM {
         double cU = reward - computeActionCost(action) - StateUtils.computeDeploymentCostNormalized(pdState, this);
         Action greedyAction = this.greedyASP.selectAction(currentState);
         double newQ = getQ(currentState, greedyAction);
-        newQ = gamma * newQ + cU;
+        newQ = gamma.getValue() * newQ + cU;
 
         INDArray v = getV(pdState);
         v.put(0, 0, newQ);
