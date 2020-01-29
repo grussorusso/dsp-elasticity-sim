@@ -3,7 +3,10 @@ package it.uniroma2.dspsim.stats;
 import it.uniroma2.dspsim.stats.metrics.Metric;
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 public class Statistics {
 
@@ -73,6 +76,18 @@ public class Statistics {
 			return this.metrics.get(id);
 		else
 			throw new IllegalArgumentException("metric id not known");
+	}
+
+	public void dumpSorted()
+	{
+		List<String> lines = new ArrayList<>(metrics.size());
+		for (Metric m : metrics.values())
+			lines.add(m.toString());
+
+		Collections.sort(lines);
+
+		for (String s : lines)
+			System.out.println(s);
 	}
 
 	public void dumpAll()

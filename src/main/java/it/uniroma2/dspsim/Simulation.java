@@ -242,7 +242,7 @@ public class Simulation {
 
 
 		// TODO: make this optional
-		Statistics.getInstance().dumpAll(System.out);
+		Statistics.getInstance().dumpSorted();
 	}
 
 	public static void main (String[] args) {

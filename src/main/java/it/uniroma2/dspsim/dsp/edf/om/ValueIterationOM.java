@@ -115,7 +115,6 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
                     break;
                 }
             }
-            System.out.println(delta);
         }
 
     }
