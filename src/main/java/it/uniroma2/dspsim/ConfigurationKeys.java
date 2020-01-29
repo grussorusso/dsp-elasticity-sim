@@ -36,7 +36,7 @@ public abstract class ConfigurationKeys {
 	/** Max Parallelism **/
 	public static final String OPERATOR_MAX_PARALLELISM_KEY = "operator.max.parallelism";
 	/** Speedup considered while computing response time or utilization **/
-	public static final String OPERATOR_SPEEDUP_CASE_CONSIDERED_KEY = "operator.speedup.case.considered";
+	public static final String OPERATOR_VALUES_COMPUTING_CASE_KEY = "operator.values.computing.case";
 	/** Load Balancer**/
 	public static final String OPERATOR_LOAD_BALANCER_TYPE_KEY = "operator.load.balancer.type";
 

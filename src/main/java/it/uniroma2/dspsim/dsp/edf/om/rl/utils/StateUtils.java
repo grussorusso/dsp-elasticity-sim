@@ -32,7 +32,7 @@ public class StateUtils {
         }
     }
 
-    public static double computeDeploymentCost(State state) {
+    private static double computeDeploymentCost(State state) {
         List<NodeType> operatorInstances = getOperatorInstances(state);
         double deploymentCost = 0.0;
         for (NodeType nt : operatorInstances)
@@ -60,35 +60,14 @@ public class StateUtils {
         return operatorInstances;
     }
 
-    public static List<NodeType> getUsedNodeTypes(State state) {
-        int[] deployment = state.getActualDeployment();
-        List<NodeType> usedNodeTypes = new ArrayList<>();
-        for (int i = 0; i < deployment.length; i++) {
-            if (deployment[i] > 0)
-                usedNodeTypes.add(ComputingInfrastructure.getInfrastructure().getNodeTypes()[i]);
-        }
-        return usedNodeTypes;
-    }
-
-    public static double computeCurrentSpeedup(State state) {
-        double currentSpeedup = Double.POSITIVE_INFINITY;
-        List<NodeType> usedNodeTypes = getUsedNodeTypes(state);
-
-        for (NodeType nt : usedNodeTypes)
-            currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
-
-        return currentSpeedup;
-    }
-
     public static double computeSLOCost(State state, RewardBasedOM om) {
         double cost = 0.0;
 
-        double currentSpeedup = computeCurrentSpeedup(state);
         List<NodeType> operatorInstances = getOperatorInstances(state);
         double inputRate = MathUtils.remapDiscretizedValue(om.getMaxInputRate(), state.getLambda(), om.getInputRateLevels());
 
-        if (om.getOperator().getQueueModel().responseTime(inputRate, operatorInstances.size(), currentSpeedup) > om.getOperator().getSloRespTime())
-            cost += om.getwSLO();
+        if (om.getOperator().responseTime(inputRate, operatorInstances) > om.getOperator().getSloRespTime())
+            cost += 1.0;
 
         return cost;
     }

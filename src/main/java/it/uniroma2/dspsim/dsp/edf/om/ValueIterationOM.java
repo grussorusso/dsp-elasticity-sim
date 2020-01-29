@@ -176,7 +176,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
             // get transition probability from s.lambda to lambda level
             double p = getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation cost
-            double pdCost = StateUtils.computeSLOCost(pds, this);
+            double pdCost = StateUtils.computeSLOCost(pds, this) * this.getwSLO();
 
             cost += p * (pdCost + getGamma() * q);
         }

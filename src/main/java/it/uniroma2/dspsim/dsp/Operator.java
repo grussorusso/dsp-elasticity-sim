@@ -14,19 +14,18 @@ import java.util.*;
 
 public class Operator {
 
-	// case considered while
-	// computing utilization or response time
-	private enum SpeedupCase{
+	// computing case of values like response time and utilization
+	private enum ValuesComputingCase {
 		AVG,
 		WORST;
 
-		public static SpeedupCase fromString(String str) {
+		public static ValuesComputingCase fromString(String str) {
 			if (str.equalsIgnoreCase("avg")) {
 				return AVG;
 			} else if (str.equalsIgnoreCase("worst")) {
 				return WORST;
 			} else {
-				throw new IllegalArgumentException("Not valid speedup case type " + str);
+				throw new IllegalArgumentException("Not valid response time computing type " + str);
 			}
 		}
 	}
@@ -45,7 +44,7 @@ public class Operator {
 	private double sloRespTime;
 
 	private LoadBalancer loadBalancer;
-	private SpeedupCase speedupCase;
+	private ValuesComputingCase valuesComputingCase;
 
 	public Operator(String name, OperatorQueueModel queueModel, int maxParallelism) {
 		this.name = name;
@@ -61,8 +60,8 @@ public class Operator {
 						ConfigurationKeys.OPERATOR_LOAD_BALANCER_TYPE_KEY, "rr")));
 
 		// get speedup case considered while computing utilization or response time
-		this.speedupCase = SpeedupCase.fromString(Configuration.getInstance().getString(
-				ConfigurationKeys.OPERATOR_SPEEDUP_CASE_CONSIDERED_KEY, "worst"));
+		this.valuesComputingCase = ValuesComputingCase.fromString(Configuration.getInstance().getString(
+				ConfigurationKeys.OPERATOR_VALUES_COMPUTING_CASE_KEY, "worst"));
 
 		/* Add initial replica */
 		NodeType defaultType = ComputingInfrastructure.getInfrastructure().getNodeTypes()[0];
@@ -78,60 +77,51 @@ public class Operator {
 	}
 
 	public double utilization(double inputRate) {
-		return utilization(inputRate, instances.size(), new HashSet<NodeType>(instances));
+		return utilization(inputRate, this.instances);
 	}
 
 	public double responseTime(double inputRate) {
-		return responseTime(inputRate, instances.size(), new HashSet<NodeType>(instances));
+		return responseTime(inputRate, this.instances);
 	}
 
 
-	public double utilization(double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
-		if (usedNodeTypes.size() > parallelism)
-			throw new RuntimeException("Cannot use more resource types than replicas...");
+	public double utilization(double inputRate, List<NodeType> operatorInstances) {
+		List<Tuple2<NodeType, Double>> inputRates = loadBalancer.balance(inputRate, operatorInstances);
 
-		double currentSpeedup = computeSpeedup(inputRate, usedNodeTypes);
+		double[] perReplicaUtilization = new double[inputRates.size()];
+		for (int i = 0; i < inputRates.size(); i++) {
+			Tuple2<NodeType, Double> perReplicaRate = inputRates.get(i);
+			perReplicaUtilization[i] = queueModel.utilization(perReplicaRate.getV(), perReplicaRate.getK().getCpuSpeedup());
+		}
 
-		return queueModel.utilization(inputRate, instances.size(), currentSpeedup);
+		return computeValueConsideringCase(perReplicaUtilization);
 	}
 
-	public double responseTime(double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
-		if (usedNodeTypes.size() > parallelism)
-			throw new RuntimeException("Cannot use more resource types than replicas...");
+	public double responseTime(double inputRate, List<NodeType> operatorInstances) {
+		List<Tuple2<NodeType, Double>> inputRates = loadBalancer.balance(inputRate, operatorInstances);
 
-		double currentSpeedup = computeSpeedup(inputRate, usedNodeTypes);
+		double[] perReplicaRespTime = new double[inputRates.size()];
+		for (int i = 0; i < inputRates.size(); i++) {
+			Tuple2<NodeType, Double> perReplicaRate = inputRates.get(i);
+			perReplicaRespTime[i] = queueModel.responseTime(perReplicaRate.getV(), perReplicaRate.getK().getCpuSpeedup());
+		}
 
-		return queueModel.responseTime(inputRate, instances.size(), currentSpeedup);
+		return computeValueConsideringCase(perReplicaRespTime);
 	}
 
-	private double computeSpeedup(double inputRate, Set<NodeType> usedNodeTypes) {
-		double currentSpeedup = Double.POSITIVE_INFINITY;
-		switch (this.speedupCase) {
+	private double computeValueConsideringCase(double[] values) {
+		switch (this.valuesComputingCase) {
 			case AVG:
-				double totSpeedup = 0.0;
-				for (NodeType nt : usedNodeTypes) {
-					totSpeedup += nt.getCpuSpeedup();
-				}
-				currentSpeedup = totSpeedup / (double) usedNodeTypes.size();
-				break;
+				return Arrays.stream(values).sum() / (double) values.length;
 			default:
-				for (NodeType nt : usedNodeTypes)
-					currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
-				break;
-		}
-		return currentSpeedup;
-	}
-
-	/*
-	private double computeSpeedup(double inputRate) {
-		List<Tuple2<NodeType, Double>> balancedInputRates = this.loadBalancer.balance(inputRate, this.instances);
-		double currentSpeedup = Double.POSITIVE_INFINITY;
-
-		for (Tuple2<NodeType, Double> bir : balancedInputRates) {
-
+				OptionalDouble max = Arrays.stream(values).max();
+				if (max.isPresent()) {
+					return max.getAsDouble();
+				} else {
+					throw new RuntimeException("Error while computing response time");
+				}
 		}
 	}
-	*/
 
 	/**
 	 * Applies a reconfiguration.

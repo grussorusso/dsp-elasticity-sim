@@ -252,14 +252,16 @@ public class Simulation {
 		Configuration conf = Configuration.getInstance();
 		conf.parseDefaultConfigurationFile();
 		if (args.length > 0) {
-			try {
-				InputStream is = new FileInputStream(new File(args[0]));
-				conf.parseConfigurationFile(is);
-				is.close();
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
+			for (String arg : args) {
+				try {
+					InputStream is = new FileInputStream(new File(arg));
+					conf.parseConfigurationFile(is);
+					is.close();
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 

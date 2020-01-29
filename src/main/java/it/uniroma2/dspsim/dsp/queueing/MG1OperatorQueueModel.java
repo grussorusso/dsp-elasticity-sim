@@ -12,32 +12,26 @@ public class MG1OperatorQueueModel implements OperatorQueueModel {
 		this.serviceTimeVariance = serviceTimeVariance;
 	}
 
-	public double responseTime(double arrivalRate, int parallelism, double speedup)
+	public double responseTime(double arrivalRate, double speedup)
 	{
-		final double rho = utilization(arrivalRate, parallelism, speedup);
+		final double rho = utilization(arrivalRate, speedup);
 		if (rho >= 1.0) {
 			return Double.POSITIVE_INFINITY;
 		}
 
-		// TODO we assume uniform stream repartition
-		final double ratePerReplica = arrivalRate / parallelism;
-
 		final double st_mean = serviceTimeMean / speedup;
 		final double st_var = serviceTimeVariance / (speedup * speedup);
 		final double es2 = st_var + st_mean * st_mean;
-		final double r = st_mean + ratePerReplica / 2.0 * es2 / (1.0 - rho);
+		final double r = st_mean + arrivalRate / 2.0 * es2 / (1.0 - rho);
 
 		return r;
 
 	}
 
-	public double utilization(double arrivalRate, int parallelism, double speedup)
+	public double utilization(double arrivalRate, double speedup)
 	{
-		// TODO we assume uniform stream repartition
-		final double ratePerReplica = arrivalRate / parallelism;
-
 		final double st_mean = serviceTimeMean / speedup;
-		double rho = ratePerReplica * st_mean;
+		double rho = arrivalRate * st_mean;
 		return rho;
 	}
 

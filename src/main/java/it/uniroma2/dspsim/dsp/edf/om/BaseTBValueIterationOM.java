@@ -199,7 +199,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
             // get transition probability from s.lambda to lambda level
             double p = this.getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation cost
-            double sloCost = StateUtils.computeSLOCost(pds, this);
+            double sloCost = StateUtils.computeSLOCost(pds, this) * this.getwSLO();
 
             cost += p * (sloCost + getGamma() * q);
         }
