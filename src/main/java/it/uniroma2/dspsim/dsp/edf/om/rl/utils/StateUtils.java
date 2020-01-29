@@ -71,4 +71,10 @@ public class StateUtils {
 
         return cost;
     }
+
+    public static double computeRespTime (State state, RewardBasedOM om) {
+        List<NodeType> operatorInstances = getOperatorInstances(state);
+        double inputRate = MathUtils.remapDiscretizedValue(om.getMaxInputRate(), state.getLambda(), om.getInputRateLevels());
+        return om.getOperator().responseTime(inputRate, operatorInstances);
+    }
 }
