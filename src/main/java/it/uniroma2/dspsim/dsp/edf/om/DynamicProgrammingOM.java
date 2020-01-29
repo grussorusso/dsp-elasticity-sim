@@ -33,8 +33,7 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
             e.printStackTrace();
         }
 
-        // TODO configure
-        this.gamma = 0.99;
+        this.gamma = Configuration.getInstance().getDouble(ConfigurationKeys.DP_GAMMA_KEY, 0.99);
 
         buildQ();
     }

@@ -97,7 +97,7 @@ public class TestNeuralNetworkDL4j {
                                 .nOut(7)
                                 .build()
                 )
-                .backprop(true)
+                //.backprop(true)
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(networkConf);

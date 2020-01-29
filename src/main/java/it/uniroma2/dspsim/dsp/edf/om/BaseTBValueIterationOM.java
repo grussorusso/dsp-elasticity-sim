@@ -1,5 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
@@ -13,6 +15,8 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -23,10 +27,20 @@ import java.util.Set;
 
 public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
 
+    private static final String STAT_TBVI_TIME = "OM - TBVI Elapsed Time (seconds)";
+    private static final String STAT_TBVI_TRAJECTORY_LENGTH = "OM - TBVI Trajectory Length";
+    private static final String STAT_TBVI_TRAJECTORIES_COMPUTED = "OM - TBVI Trajectories Computed";
+    private static final String STAT_TBVI_SAMPLES_SEEN = "OM - TBVI Samples Seen";
+
     private Random rng;
 
     protected int statesCount;
     protected int actionsCount;
+
+    // tbvi parameters
+    protected long tbviIterations;
+    protected long tbviMillis;
+    protected long tbviTrajectoryLength;
 
     public BaseTBValueIterationOM(Operator operator) {
         super(operator);
@@ -34,10 +48,16 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         this.actionsCount = computeActionsCount();
         this.statesCount = computeStatesCount();
 
+        Configuration configuration = Configuration.getInstance();
+
+        this.tbviIterations = configuration.getLong(ConfigurationKeys.TBVI_EXEC_ITERATIONS_KEY, 300000L);
+        this.tbviMillis = configuration.getLong(ConfigurationKeys.TBVI_EXEC_SECONDS_KEY, 60L) * 1000;
+        this.tbviTrajectoryLength = configuration.getLong(ConfigurationKeys.TBVI_TRAJECTORY_LENGTH_KEY, 512L);
+
         this.rng = new Random();
     }
 
-    protected void tbvi(long iterations, long trajectoryLength) {
+    protected void tbvi(long iterations, long millis, long trajectoryLength) {
         ActionSelectionPolicy epsGreedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.EPSILON_GREEDY, this);
         ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilon(0.1);
         ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilonDecaySteps(-1);
@@ -55,7 +75,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         // iteration counter
         long iterationCompleted = 0L;
 
-        while (iterationCompleted < iterations) {
+        while ((iterations <= 0L || iterationCompleted < iterations) && (millis <= 0L || elapsedMillis < millis)) {
             if (iterationCompleted % 1000 == 0)
                 System.out.println("TBVI: " + iterationCompleted + " iteration completed");
 
@@ -83,10 +103,8 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
             iterationCompleted++;
         }
 
-        System.out.println("Elapsed time: " + elapsedMillis / 1000 + " seconds");
-        System.out.println("Trajectory length: " + trajectoryLength);
-        System.out.println("Trajectories computed: " + trajectoriesComputed);
-        System.out.println("Samples: " + trajectoriesComputed * trajectoryLength);
+        // store metrics
+        storeTBVIExecutionMetrics(elapsedMillis, trajectoryLength, trajectoriesComputed);
     }
 
     protected State tbviIteration(State s, Action a) {
@@ -181,7 +199,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
             // get transition probability from s.lambda to lambda level
             double p = this.getpMatrix().getValue(s.getLambda(), lambda);
             // compute slo violation cost
-            double sloCost = StateUtils.computeSLOCost(pds, this);
+            double sloCost = StateUtils.computeSLOCost(pds, this) * this.getwSLO();
 
             cost += p * (sloCost + getGamma() * q);
         }
@@ -192,6 +210,29 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     @Override
     public boolean validateAction(State s, Action a) {
         return s.validateAction(a);
+    }
+
+    /**
+     * Store TBVI execution metrics
+     */
+    private void storeTBVIExecutionMetrics(long elapsedMillis, long trajectoryLength, long trajectoriesComputed) {
+        Statistics statistics = Statistics.getInstance();
+
+        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_TBVI_TIME)));
+        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORY_LENGTH)));
+        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORIES_COMPUTED)));
+        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_TBVI_SAMPLES_SEEN)));
+
+        statistics.updateMetric(getOperatorMetricName(STAT_TBVI_TIME), (double) elapsedMillis / (double) 1000);
+        statistics.updateMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORY_LENGTH), (double) trajectoryLength);
+        statistics.updateMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORIES_COMPUTED), (double) trajectoriesComputed);
+        statistics.updateMetric(getOperatorMetricName(STAT_TBVI_SAMPLES_SEEN), (double) (trajectoriesComputed * trajectoryLength));
+
+        // print same results
+        System.out.println("Elapsed time: " + elapsedMillis / 1000 + " seconds");
+        System.out.println("Trajectory length: " + trajectoryLength);
+        System.out.println("Trajectories computed: " + trajectoriesComputed);
+        System.out.println("Samples: " + trajectoriesComputed * trajectoryLength);
     }
 
 

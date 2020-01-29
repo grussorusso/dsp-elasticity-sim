@@ -49,7 +49,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     private int memoryBatch;
 
-    //protected DoubleMatrix<Integer, Integer> qTable;
     protected MultiLayerNetwork network;
 
     public DeepTBValueIterationOM(Operator operator) {
@@ -59,11 +58,9 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             startNetworkUIServer();
         }
 
-        // TODO configure
-        this.memoryBatch = 32;
+        this.memoryBatch = Configuration.getInstance().getInteger(ConfigurationKeys.TBVI_DEEP_MEMORY_BATCH_KEY,32);
 
-        // TODO configure
-        tbvi(100000, 512);
+        tbvi(this.tbviIterations, this.tbviMillis, this.tbviTrajectoryLength);
 
         dumpQOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
@@ -87,9 +84,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         INDArray v = getV(postDecisionState);
         v.put(0, 0, v.getDouble(0) + computeActionCost(action));
         return v;
-        /*
-        return this.qTable.getValue(state.hashCode(), action.hashCode());
-        */
     }
 
     @Override
@@ -104,9 +98,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void buildQ() {
-        /*
-        this.qTable = new DoubleMatrix<>(0.0);
-        */
         this.inputLayerNodesNumber = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
                 ComputingInfrastructure.getInfrastructure(),
                 this.getInputRateLevels()).next().getArrayRepresentationLength();
@@ -197,10 +188,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void learn(double tbviDelta, double newQ, State state, Action action) {
-        /*
-        this.qTable.setValue(state.hashCode(), action.hashCode(), newQ);
-        */
-
         // compute post decision state
         State pds = StateUtils.computePostDecisionState(state, action, this);
 

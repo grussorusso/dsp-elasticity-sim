@@ -22,16 +22,17 @@ import it.uniroma2.dspsim.stats.metrics.AvgMetric;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
+import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 
 public class FAQLearningOM extends ReinforcementLearningOM {
 
     protected FunctionApproximationManager functionApproximationManager;
 
-    protected double alpha;
-    private double alphaDecay;
-    private double alphaMinValue;
+    protected VariableParameter alpha;
     private int alphaDecaySteps;
     private int alphaDecayStepsCounter;
+
+    private double gamma;
 
     private ActionSelectionPolicy greedyActionSelection;
 
@@ -46,11 +47,16 @@ public class FAQLearningOM extends ReinforcementLearningOM {
 
         this.functionApproximationManager = initFunctionApproximationManager();
 
-        this.alpha = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 1.0);
-        this.alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.98);
-        this.alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
+        double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 1.0);
+        double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.98);
+        double alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
+
+        this.alpha = new VariableParameter(alphaInitValue, alphaMinValue, 1.0, alphaDecay);
+
         this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
         this.alphaDecayStepsCounter = 0;
+
+        this.gamma = configuration.getDouble(ConfigurationKeys.QL_OM_GAMMA_KEY, 0.99);
 
         this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.GREEDY,
@@ -79,7 +85,7 @@ public class FAQLearningOM extends ReinforcementLearningOM {
     @Override
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
         final double oldQ  = functionApproximationManager.evaluateQ(oldState, action, this);
-        final double newQ = (reward + functionApproximationManager
+        final double newQ = (reward + this.gamma * functionApproximationManager
                         .evaluateQ(currentState, greedyActionSelection.selectAction(currentState), this));
 
         final double bellmanError = Math.abs(newQ - oldQ);
@@ -97,13 +103,8 @@ public class FAQLearningOM extends ReinforcementLearningOM {
         if (this.alphaDecaySteps > 0) {
             this.alphaDecayStepsCounter++;
             if (this.alphaDecayStepsCounter >= this.alphaDecaySteps) {
-                if (this.alpha >= this.alphaMinValue) {
-                    this.alphaDecayStepsCounter = 0;
-                    this.alpha = this.alphaDecay * this.alpha;
-                    if (this.alpha < this.alphaMinValue) {
-                        this.alpha = this.alphaMinValue;
-                    }
-                }
+                this.alpha.update();
+                this.alphaDecayStepsCounter = 0;
             }
         }
     }
@@ -182,7 +183,7 @@ public class FAQLearningOM extends ReinforcementLearningOM {
     private void updateWeights(double delta, State state, Action action) {
         if (!Double.isNaN(delta)) {
             for (Feature f : this.functionApproximationManager.getFeatures()) {
-                double updatingValue = f.isActive(state, action, this) ? this.alpha * delta : 0.0;
+                double updatingValue = f.isActive(state, action, this) ? this.alpha.getValue() * delta : 0.0;
                 if (updatingValue != 0.0)
                     f.update(updatingValue, state, action, this);
             }

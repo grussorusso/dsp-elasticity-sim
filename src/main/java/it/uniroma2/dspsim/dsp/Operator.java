@@ -1,12 +1,34 @@
 package it.uniroma2.dspsim.dsp;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
+import it.uniroma2.dspsim.dsp.load_balancing.LoadBalancer;
+import it.uniroma2.dspsim.dsp.load_balancing.LoadBalancerFactory;
+import it.uniroma2.dspsim.dsp.load_balancing.LoadBalancerType;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.utils.Tuple2;
 
 import java.util.*;
 
 public class Operator {
+
+	// computing case of values like response time and utilization
+	private enum ValuesComputingCase {
+		AVG,
+		WORST;
+
+		public static ValuesComputingCase fromString(String str) {
+			if (str.equalsIgnoreCase("avg")) {
+				return AVG;
+			} else if (str.equalsIgnoreCase("worst")) {
+				return WORST;
+			} else {
+				throw new IllegalArgumentException("Not valid response time computing type " + str);
+			}
+		}
+	}
 
 	private String name;
 	private int maxParallelism;
@@ -21,6 +43,9 @@ public class Operator {
 
 	private double sloRespTime;
 
+	private LoadBalancer loadBalancer;
+	private ValuesComputingCase valuesComputingCase;
+
 	public Operator(String name, OperatorQueueModel queueModel, int maxParallelism) {
 		this.name = name;
 
@@ -28,6 +53,15 @@ public class Operator {
 		instances = new ArrayList<>(maxParallelism);
 
 		this.queueModel = queueModel;
+
+		// init operator load balancer policy
+		this.loadBalancer = LoadBalancerFactory.getLoadBalancer(
+				LoadBalancerType.fromString(Configuration.getInstance().getString(
+						ConfigurationKeys.OPERATOR_LOAD_BALANCER_TYPE_KEY, "rr")));
+
+		// get speedup case considered while computing utilization or response time
+		this.valuesComputingCase = ValuesComputingCase.fromString(Configuration.getInstance().getString(
+				ConfigurationKeys.OPERATOR_VALUES_COMPUTING_CASE_KEY, "worst"));
 
 		/* Add initial replica */
 		NodeType defaultType = ComputingInfrastructure.getInfrastructure().getNodeTypes()[0];
@@ -43,34 +77,50 @@ public class Operator {
 	}
 
 	public double utilization(double inputRate) {
-		return utilization(inputRate, instances.size(), new HashSet<NodeType>(instances));
+		return utilization(inputRate, this.instances);
 	}
 
 	public double responseTime(double inputRate) {
-		return responseTime(inputRate, instances.size(), new HashSet<NodeType>(instances));
+		return responseTime(inputRate, this.instances);
 	}
 
 
-	public double utilization(double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
-		if (usedNodeTypes.size() > parallelism)
-			throw new RuntimeException("Cannot use more resource types than replicas...");
+	public double utilization(double inputRate, List<NodeType> operatorInstances) {
+		List<Tuple2<NodeType, Double>> inputRates = loadBalancer.balance(inputRate, operatorInstances);
 
-		double currentSpeedup = Double.POSITIVE_INFINITY;
-		for (NodeType nt : usedNodeTypes)
-			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
+		double[] perReplicaUtilization = new double[inputRates.size()];
+		for (int i = 0; i < inputRates.size(); i++) {
+			Tuple2<NodeType, Double> perReplicaRate = inputRates.get(i);
+			perReplicaUtilization[i] = queueModel.utilization(perReplicaRate.getV(), perReplicaRate.getK().getCpuSpeedup());
+		}
 
-		return queueModel.utilization(inputRate, instances.size(), currentSpeedup);
+		return computeValueConsideringCase(perReplicaUtilization);
 	}
 
-	public double responseTime(double inputRate, int parallelism, Set<NodeType> usedNodeTypes) {
-		if (usedNodeTypes.size() > parallelism)
-			throw new RuntimeException("Cannot use more resource types than replicas...");
+	public double responseTime(double inputRate, List<NodeType> operatorInstances) {
+		List<Tuple2<NodeType, Double>> inputRates = loadBalancer.balance(inputRate, operatorInstances);
 
-		double currentSpeedup = Double.POSITIVE_INFINITY;
-		for (NodeType nt : usedNodeTypes)
-			currentSpeedup = Math.min(currentSpeedup, nt.getCpuSpeedup());
+		double[] perReplicaRespTime = new double[inputRates.size()];
+		for (int i = 0; i < inputRates.size(); i++) {
+			Tuple2<NodeType, Double> perReplicaRate = inputRates.get(i);
+			perReplicaRespTime[i] = queueModel.responseTime(perReplicaRate.getV(), perReplicaRate.getK().getCpuSpeedup());
+		}
 
-		return queueModel.responseTime(inputRate, instances.size(), currentSpeedup);
+		return computeValueConsideringCase(perReplicaRespTime);
+	}
+
+	private double computeValueConsideringCase(double[] values) {
+		switch (this.valuesComputingCase) {
+			case AVG:
+				return Arrays.stream(values).sum() / (double) values.length;
+			default:
+				OptionalDouble max = Arrays.stream(values).max();
+				if (max.isPresent()) {
+					return max.getAsDouble();
+				} else {
+					throw new RuntimeException("Error while computing response time");
+				}
+		}
 	}
 
 	/**

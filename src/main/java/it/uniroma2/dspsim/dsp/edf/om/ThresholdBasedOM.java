@@ -26,11 +26,6 @@ public class ThresholdBasedOM extends OperatorManager {
 		this.scaleOutThreshold = Configuration.getInstance().getDouble(ConfigurationKeys.OM_THRESHOLD_KEY, 0.7);
 	}
 
-	public ThresholdBasedOM(Operator operator, double scaleOutThreshold) {
-		this(operator);
-		this.scaleOutThreshold = scaleOutThreshold;
-	}
-
 	@Override
 	public OMRequest pickReconfigurationRequest(OMMonitoringInfo monitoringInfo) {
 		final double u = monitoringInfo.getCpuUtilization();
