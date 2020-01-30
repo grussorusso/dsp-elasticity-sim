@@ -14,9 +14,6 @@ import org.deeplearning4j.datasets.iterator.ExistingDataSetIterator;
 import org.deeplearning4j.datasets.iterator.impl.ListDataSetIterator;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.ui.api.UIServer;
-import org.deeplearning4j.ui.stats.StatsListener;
-import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.ExistingMiniBatchDataSetIterator;
@@ -104,10 +101,12 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
     private void startNetworkUIServer() {
         // http://localhost:9000/train
+        /*
         UIServer uiServer = UIServer.getInstance();
         StatsStorage statsStorage = new InMemoryStatsStorage();
         uiServer.attach(statsStorage);
         this.network.setListeners(new StatsListener(statsStorage));
+        */
     }
 
     private int getTotalActions() {

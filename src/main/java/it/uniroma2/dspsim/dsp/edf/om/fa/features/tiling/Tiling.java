@@ -9,7 +9,6 @@ import it.uniroma2.dspsim.utils.Coordinate3D;
 import it.uniroma2.dspsim.utils.Tuple2;
 import it.uniroma2.dspsim.utils.matrix.Matrix;
 import it.uniroma2.dspsim.utils.matrix.cube.DoubleCube;
-import scala.Int;
 
 import java.util.ArrayList;
 import java.util.List;
