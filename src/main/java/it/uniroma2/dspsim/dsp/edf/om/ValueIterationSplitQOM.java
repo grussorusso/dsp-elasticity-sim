@@ -5,9 +5,12 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.AbstractAction;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
+import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -141,6 +144,7 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 	}
 
 	private double evaluateQrespTime (State s, Action a) {
+		final double MAX_Q_RESPTIME = 100000.0; // TODO
 		double cost = 0.0;
 		// from s,a compute pds
 		State pds = StateUtils.computePostDecisionState(s, a, this);
@@ -157,12 +161,32 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 			double p = getpMatrix().getValue(s.getLambda(), lambda);
 
 			double pdCost = StateUtils.computeRespTime(pds, this);
+			if (Double.isInfinite(pdCost) || Double.isNaN(pdCost)) {
+				pdCost = MAX_Q_RESPTIME;
+			}
 
 			cost += p * (pdCost + getGamma() * q);
 		}
 		return cost;
 	}
 
+	@Override
+	protected OMRequest prepareOMRequest(State currentState, Action chosenAction) {
+		/*
+		 * Provide information to the AM.
+		 */
+		// TODO
+//			actionScore = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, chosenAction);
+//			Action nop = ActionIterator.getDoNothingAction();
+//			if (nop.equals(chosenAction)) {
+//				noReconfigurationScore = actionScore;
+//			} else {
+//				noReconfigurationScore = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, nop);
+//			}
+
+		// TODO
+		return new OMRequest(action2reconfiguration(chosenAction), -1, -1);
+	}
 	/**
 	 * Dump policy on file
 	 */
@@ -176,13 +200,29 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 				file.createNewFile();
 			}
 			PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
-
-			dumpQOnFile(printWriter, this.qTable);
-			dumpQOnFile(printWriter, this.resourcesQ);
-			dumpQOnFile(printWriter, this.reconfigurationQ);
-			dumpQOnFile(printWriter, this.sloQ);
-			dumpQOnFile(printWriter, this.respTimeQ);
-
+			StateIterator stateIterator = new StateIterator(getStateRepresentation(), operator.getMaxParallelism(),
+					ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
+			while (stateIterator.hasNext()) {
+				State s = stateIterator.next();
+				// print state line
+				printWriter.println(s.dump());
+				ActionIterator ait = new ActionIterator();
+				while (ait.hasNext()) {
+					Action a = ait.next();
+					if (s.validateAction(a)) {
+						double v = this.qTable.getQ(s, a);
+						double qres = resourcesQ.getQ(s,a);
+						double qrcf = reconfigurationQ.getQ(s,a);
+						double qslo = sloQ.getQ(s,a);
+						double qresptime = respTimeQ.getQ(s,a);
+						printWriter.print(String.format("%s\t%f\t%f\t%f\t%f\t%f\tR=%f (avg %f)\n",
+								a.dump(), v, qres, qrcf, qslo, qresptime,
+								StateUtils.computeRespTime(StateUtils.computePostDecisionState(s,a,this),this),
+								qresptime*(1-this.getGamma())
+								));
+					}
+				}
+			}
 			printWriter.flush();
 			printWriter.close();
 		} catch (IOException e) {

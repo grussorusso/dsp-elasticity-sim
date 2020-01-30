@@ -7,12 +7,13 @@ import java.util.List;
 
 public class OMRequest {
 
+	// TODO: Crete a hierarchy of ReconfigurationScore classes to replace double[]
 
 	/** Requested reconfiguration, each with a preference score/value. */
-	private List<RequestedReconfiguration> scoredReconfigurations;
+	protected List<RequestedReconfiguration> scoredReconfigurations;
 
 	/** Score given to the no-reconfiguration scenario. */
-	private double noReconfigurationScore;
+	protected double noReconfigurationScore[];
 
 	/** Constructor used by default OM implementations,
 	 * which always request a single reconfiguration.
@@ -20,18 +21,19 @@ public class OMRequest {
 	public OMRequest (Reconfiguration reconfiguration) {
 		scoredReconfigurations = new ArrayList<>(1);
 		scoredReconfigurations.add(new RequestedReconfiguration(reconfiguration));
-		this.noReconfigurationScore = 0.0;
+		this.noReconfigurationScore = new double[]{0.0};
 	}
 
 	public OMRequest (Reconfiguration reconfiguration, double reconfScore, double noReconfScore) {
 		scoredReconfigurations = new ArrayList<>(1);
 		scoredReconfigurations.add(new RequestedReconfiguration(reconfiguration, reconfScore));
-		this.noReconfigurationScore = noReconfScore;
+		this.noReconfigurationScore = new double[]{noReconfScore};
 	}
 
-	public OMRequest () {
-		this.scoredReconfigurations = new ArrayList<>();
-		this.noReconfigurationScore = 0.0;
+	public OMRequest (Reconfiguration reconfiguration, double reconfScore[], double noReconfScore[]) {
+		scoredReconfigurations = new ArrayList<>(1);
+		scoredReconfigurations.add(new RequestedReconfiguration(reconfiguration, reconfScore));
+		this.noReconfigurationScore = reconfScore;
 	}
 
 	public boolean isEmpty() {
@@ -43,18 +45,22 @@ public class OMRequest {
 		return scoredReconfigurations;
 	}
 
-	public double getNoReconfigurationScore() { return noReconfigurationScore; }
+	public double[] getNoReconfigurationScore() { return noReconfigurationScore; }
 
 
 	static public class RequestedReconfiguration {
 		private Reconfiguration reconfiguration;
-		private double score = 0.0;
+		private double score[];
 
 		public RequestedReconfiguration (Reconfiguration reconfiguration) {
-			this(reconfiguration, 0.0);
+			this(reconfiguration, new double[]{0.0});
 		}
 
 		public RequestedReconfiguration (Reconfiguration reconfiguration, double score) {
+			this(reconfiguration, new double[]{score});
+		}
+
+		public RequestedReconfiguration (Reconfiguration reconfiguration, double score[]) {
 			this.reconfiguration = reconfiguration;
 			this.score = score;
 		}
@@ -64,7 +70,7 @@ public class OMRequest {
 			return reconfiguration;
 		}
 
-		public double getScore() {
+		public double[] getScore() {
 			return score;
 		}
 	}

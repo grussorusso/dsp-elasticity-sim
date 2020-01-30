@@ -107,7 +107,10 @@ public abstract class RewardBasedOM extends OperatorManager {
         // update state
         lastState = currentState;
 
+        return prepareOMRequest(currentState, lastChosenAction);
+    }
 
+    protected OMRequest prepareOMRequest(State currentState, Action chosenAction) {
         /*
          * Provide information to the AM.
          */
@@ -115,19 +118,16 @@ public abstract class RewardBasedOM extends OperatorManager {
         double noReconfigurationScore = 0.0;
         if (this instanceof ActionSelectionPolicyCallback) {
             /* V(pds) */
-            actionScore = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, lastChosenAction);
-            actionScore -= (lastChosenAction.getDelta() == 0)? 0.0 : this.getwReconf();
-            actionScore -= this.getwResources()*StateUtils.computeDeploymentCostNormalized(StateUtils.computePostDecisionState(currentState, lastChosenAction, this), this);
+            actionScore = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, chosenAction);
             Action nop = ActionIterator.getDoNothingAction();
-            if (nop.equals(lastChosenAction)) {
+            if (nop.equals(chosenAction)) {
                 noReconfigurationScore = actionScore;
             } else {
-                noReconfigurationScore  = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, nop);
-                noReconfigurationScore -= this.getwResources()*StateUtils.computeDeploymentCostNormalized(StateUtils.computePostDecisionState(currentState, nop, this), this);
+                noReconfigurationScore = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, nop);
             }
         }
 
-        return new OMRequest(action2reconfiguration(lastChosenAction), actionScore, noReconfigurationScore);
+        return new OMRequest(action2reconfiguration(chosenAction), actionScore, noReconfigurationScore);
     }
 
     protected State computeNewState(OMMonitoringInfo monitoringInfo) {

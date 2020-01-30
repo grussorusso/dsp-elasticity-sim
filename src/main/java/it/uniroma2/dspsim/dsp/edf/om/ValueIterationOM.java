@@ -215,7 +215,21 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
                 file.createNewFile();
             }
             PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
-            dumpQOnFile(printWriter, this.qTable);
+            StateIterator stateIterator = new StateIterator(getStateRepresentation(), operator.getMaxParallelism(),
+                    ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
+            while (stateIterator.hasNext()) {
+                State s = stateIterator.next();
+                // print state line
+                printWriter.println(s.dump());
+                ActionIterator ait = new ActionIterator();
+                while (ait.hasNext()) {
+                    Action a = ait.next();
+                    double v = this.qTable.getQ(s, a);
+                    if (s.validateAction(a)) {
+                        printWriter.print(String.format("%s\t%f\n", a.dump(), v));
+                    }
+                }
+            }
             printWriter.flush();
             printWriter.close();
         } catch (IOException e) {
@@ -223,22 +237,4 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         }
     }
 
-
-    protected void dumpQOnFile(PrintWriter printWriter, QTable dumpedQ) {
-        StateIterator stateIterator = new StateIterator(getStateRepresentation(), operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
-        while (stateIterator.hasNext()) {
-            State s = stateIterator.next();
-            // print state line
-            printWriter.println(s.dump());
-            ActionIterator ait = new ActionIterator();
-            while (ait.hasNext()) {
-                Action a = ait.next();
-                double v = dumpedQ.getQ(s, a);
-                if (s.validateAction(a)) {
-                    printWriter.print(String.format("%s\t%f\n", a.dump(), v));
-                }
-            }
-        }
-    }
 }
