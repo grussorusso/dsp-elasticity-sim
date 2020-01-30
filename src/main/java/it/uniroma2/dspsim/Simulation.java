@@ -8,7 +8,6 @@ import it.uniroma2.dspsim.dsp.edf.ApplicationManager;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.*;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
@@ -265,8 +264,9 @@ public class Simulation {
 			}
 		}
 
-		ComputingInfrastructure
-				.initDefaultInfrastructure(conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
+		ComputingInfrastructure.initCustomInfrastructure(
+				new double[]{0.2, 1.5, 0.8, 0.4, 1.2, 0.3, 1.3, 0.5, 1.15, 1,},
+				conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
 
 		try {
 			final String inputFile = conf
@@ -279,7 +279,7 @@ public class Simulation {
 			Simulation simulation = new Simulation(inputRateFileReader, am);
 
 			Statistics.getInstance().registerMetric(new TimeMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME));
-			Statistics.getInstance().registerMetric(new MemoryMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY));
+			Statistics.getInstance().registerMetric(new AvgMemoryMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY));
 			// run simulation
 			simulation.run();
 
