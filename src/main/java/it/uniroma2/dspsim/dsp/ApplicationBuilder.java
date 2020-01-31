@@ -17,6 +17,8 @@ public class ApplicationBuilder {
 			return buildForkJoinApplication();
 		} else if (appName.equalsIgnoreCase("debs2019")) {
 			return buildDEBS2019Application();
+		} else if (appName.equalsIgnoreCase("simple-tandem")) {
+			return simpleTandemApplication();
 		}
 
 		throw new RuntimeException("Invalid application: " + appName);
@@ -34,6 +36,28 @@ public class ApplicationBuilder {
 		Operator op = new Operator("filter",
 				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
 		app.addOperator(op);
+
+		computeOperatorsSlo(app);
+
+		return app;
+	}
+
+	static public Application simpleTandemApplication() {
+		Application app = new Application();
+
+		final double mu = 10.0;
+		final double serviceTimeMean = 1/mu;
+		final double serviceTimeVariance = 1.0/mu*1.0/mu;
+
+		final int maxParallelism = Configuration.getInstance()
+				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
+		Operator op1 = new Operator("op1",
+				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
+		Operator op2 = new Operator("op2",
+				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
+		app.addOperator(op1);
+		app.addOperator(op2);
+		app.addEdge(op1, op2);
 
 		computeOperatorsSlo(app);
 

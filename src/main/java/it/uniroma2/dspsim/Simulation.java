@@ -131,6 +131,8 @@ public class Simulation {
 			double iterationCost = 0.0;
 
 			double responseTime = app.endToEndLatency(inputRate);
+			logger.info("Input Rate: {}", inputRate);
+			logger.info("Response time: {}", responseTime);
 			if (responseTime > LATENCY_SLO) {
 				Statistics.getInstance().updateMetric(buildMetricName(STAT_LATENCY_VIOLATIONS), 1);
 
@@ -196,6 +198,8 @@ public class Simulation {
 			Reconfiguration rcf = reconfigurations.get(op);
 			if (!rcf.isReconfiguration())
 				continue;
+
+			logger.info("{} reconfiguration: {}", op.getName(), rcf);
 
 			op.reconfigure(rcf);
 			appReconfigured = true;
@@ -263,7 +267,7 @@ public class Simulation {
 		}
 
 		ComputingInfrastructure.initCustomInfrastructure(
-				new double[]{0.2, 1.5, 0.8, 0.4, 1.2, 0.3, 1.3, 0.5, 1.15, 1},
+				new double[]{1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5},
 				conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
 
 		try {

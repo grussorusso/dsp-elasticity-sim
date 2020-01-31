@@ -8,7 +8,6 @@ import it.uniroma2.dspsim.utils.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
-import java.util.Objects;
 
 public abstract class State {
 

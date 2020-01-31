@@ -2,10 +2,14 @@ package it.uniroma2.dspsim.dsp;
 
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class Application {
+
+	static private Logger logger = LoggerFactory.getLogger(Application.class);
 
 	private List<Operator> operators = new ArrayList<>();
 	private List<ArrayList<Operator>> sourceSinkPaths;
@@ -98,6 +102,7 @@ public class Application {
 
 		for (Operator op : path) {
 			double operatorRespTime = op.responseTime(inputRate);
+			logger.info("Operator {} : response time {}", op.getName(), operatorRespTime);
 			latency += operatorRespTime;
 		}
 

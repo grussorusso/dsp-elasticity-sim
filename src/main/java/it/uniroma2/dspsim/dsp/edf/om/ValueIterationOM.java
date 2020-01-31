@@ -71,15 +71,20 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         statistics.registerMetric(opCpuMetric);
 
         // global metrics
-        AvgMemoryMetric avgMemoryMetric = new AvgMemoryMetric(STAT_VI_MEMORY_USAGE);
-        avgMemoryMetric.addSampler(stepSampler);
-        statistics.registerMetric(avgMemoryMetric);
-        TimeMetric timeMetric = new TimeMetric(STAT_VI_STEP_TIME);
-        timeMetric.addSampler(stepSampler);
-        statistics.registerMetric(timeMetric);
-        CpuMetric CpuMetric = new CpuMetric(STAT_VI_CPU_USAGE);
-        CpuMetric.addSampler(stepSampler);
-        statistics.registerMetric(CpuMetric);
+        // TODO: added try catch to avoid crash when they exist
+        try {
+            AvgMemoryMetric avgMemoryMetric = new AvgMemoryMetric(STAT_VI_MEMORY_USAGE);
+            avgMemoryMetric.addSampler(stepSampler);
+            statistics.registerMetric(avgMemoryMetric);
+            TimeMetric timeMetric = new TimeMetric(STAT_VI_STEP_TIME);
+            timeMetric.addSampler(stepSampler);
+            statistics.registerMetric(timeMetric);
+            CpuMetric CpuMetric = new CpuMetric(STAT_VI_CPU_USAGE);
+            CpuMetric.addSampler(stepSampler);
+            statistics.registerMetric(CpuMetric);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /**

@@ -43,6 +43,8 @@ public class ComputingInfrastructure {
 		infrastructure.nodeTypes = new NodeType[numOfResTypes];
 
 		double[] cpuSpeedupsAvailable = Arrays.stream(cpuSpeedups, 0, numOfResTypes).sorted().toArray();
+		System.out.println("Speedup: " + cpuSpeedupsAvailable[0]);
+
 
 		for (int i = 0; i < cpuSpeedupsAvailable.length; i++) {
 			infrastructure.nodeTypes[i] = new NodeType(i, String.format("Res-%d", i),
