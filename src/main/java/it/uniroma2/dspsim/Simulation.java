@@ -273,7 +273,7 @@ public class Simulation {
 					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
-			Application app = ApplicationBuilder.singleOperatorApplication();
+			Application app = ApplicationBuilder.defaultApplication();
 			ApplicationManager am = new ApplicationManager(app);
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);
