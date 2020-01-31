@@ -41,8 +41,8 @@ public class Simulation {
 	private static final String STAT_RESOURCES_COST_AVG = "Resources Cost Avg";
 	private static final String STAT_APPLICATION_COST_AVG = "Application Avg Cost";
 
-	private static final String STAT_SIMULATION_TIME = "it.uniroma2.dspsim.Simulation Time";
-	private static final String STAT_SIMULATION_MEMORY = "it.uniroma2.dspsim.Simulation Memory";
+	private static final String STAT_SIMULATION_TIME = "Simulation Time";
+	private static final String STAT_SIMULATION_MEMORY = "Simulation Memory";
 
 	protected static final String STAT_AVG_DEPLOYMENT = "Avg Deployment in resources of type - ";
 

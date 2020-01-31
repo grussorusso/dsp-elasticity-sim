@@ -61,30 +61,14 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
         // per operator metrics
         AvgMemoryMetric opAvgMemoryMetric = new AvgMemoryMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE));
-        //opMemoryMetric.addSampler(stepSampler);
+        opAvgMemoryMetric.addSampler(stepSampler);
         statistics.registerMetric(opAvgMemoryMetric);
         TimeMetric opTimeMetric = new TimeMetric(getOperatorMetricName(STAT_VI_STEP_TIME));
-        //opTimeMetric.addSampler(stepSampler);
+        opTimeMetric.addSampler(stepSampler);
         statistics.registerMetric(opTimeMetric);
         CpuMetric opCpuMetric = new CpuMetric(getOperatorMetricName(STAT_VI_CPU_USAGE));
-        //opCpuMetric.addSampler(stepSampler);
+        opCpuMetric.addSampler(stepSampler);
         statistics.registerMetric(opCpuMetric);
-
-        // global metrics
-        // TODO: added try catch to avoid crash when they exist
-        try {
-            AvgMemoryMetric avgMemoryMetric = new AvgMemoryMetric(STAT_VI_MEMORY_USAGE);
-            avgMemoryMetric.addSampler(stepSampler);
-            statistics.registerMetric(avgMemoryMetric);
-            TimeMetric timeMetric = new TimeMetric(STAT_VI_STEP_TIME);
-            timeMetric.addSampler(stepSampler);
-            statistics.registerMetric(timeMetric);
-            CpuMetric CpuMetric = new CpuMetric(STAT_VI_CPU_USAGE);
-            CpuMetric.addSampler(stepSampler);
-            statistics.registerMetric(CpuMetric);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
     }
 
     /**
@@ -107,9 +91,6 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_STEP_TIME), 0);
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE), 0);
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_CPU_USAGE), 0);
-            Statistics.getInstance().updateMetric(STAT_VI_STEP_TIME, 0);
-            Statistics.getInstance().updateMetric(STAT_VI_MEMORY_USAGE, 0);
-            Statistics.getInstance().updateMetric(STAT_VI_CPU_USAGE, 0);
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);
