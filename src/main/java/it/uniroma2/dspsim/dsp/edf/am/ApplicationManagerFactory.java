@@ -12,7 +12,7 @@ public class ApplicationManagerFactory {
         switch (appManagerType) {
             case DO_NOTHING:
                 return new DoNothingAM(app);
-            case PDS_BASED:
+            case SPLITQ_BASED:
                 return new SplitQBasedAM(app);
             default:
                 // throw "Not valid om type" exception
