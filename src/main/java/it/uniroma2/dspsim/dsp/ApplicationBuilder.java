@@ -8,6 +8,20 @@ import java.util.Random;
 
 public class ApplicationBuilder {
 
+	static public Application buildApplication()
+	{
+		String appName = Configuration.getInstance().getString(ConfigurationKeys.APPLICATION, "single-operator");
+		if (appName.equalsIgnoreCase("single-operator")) {
+			return singleOperatorApplication();
+		} else if (appName.equalsIgnoreCase("fork-join")) {
+			return buildForkJoinApplication();
+		} else if (appName.equalsIgnoreCase("debs2019")) {
+			return buildDEBS2019Application();
+		}
+
+		throw new RuntimeException("Invalid application: " + appName);
+	}
+
 	static public Application singleOperatorApplication() {
 		Application app = new Application();
 
@@ -20,26 +34,6 @@ public class ApplicationBuilder {
 		Operator op = new Operator("filter",
 				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
 		app.addOperator(op);
-
-		computeOperatorsSlo(app);
-
-		return app;
-	}
-
-	static public Application defaultApplication()
-	{
-		Application app = new Application();
-
-		final int maxParallelism = Configuration.getInstance()
-				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);;
-		Operator op1 = new Operator("filter",
-				new MG1OperatorQueueModel(1/100.0, 0.0), maxParallelism);
-		app.addOperator(op1);
-		Operator op2 = new Operator("rank",
-				new MG1OperatorQueueModel(1/50.0, 0.0), maxParallelism);
-		app.addOperator(op2);
-
-		app.addEdge(op1, op2);
 
 		computeOperatorsSlo(app);
 
@@ -75,7 +69,7 @@ public class ApplicationBuilder {
 		return app;
 	}
 
-	static public Application buildPaperApplication ()
+	static public Application buildDEBS2019Application()
 	{
 		Application app = new Application();
 
@@ -121,6 +115,7 @@ public class ApplicationBuilder {
 		return app;
 	}
 
+	@Deprecated
 	private static double computeVariance(double mu, Random rng) {
 		return 0.0;
 	}

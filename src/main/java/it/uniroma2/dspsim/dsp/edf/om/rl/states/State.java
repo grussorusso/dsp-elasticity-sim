@@ -77,7 +77,7 @@ public abstract class State {
             if (i < this.actualDeployment.length - 1)
                 str.append(", ");
         }
-        str.append(String.format("]\t%d/%d", this.lambda, this.maxLambda));
+        str.append(String.format("] %d/%d", this.lambda, this.maxLambda));
         return str.toString();
     }
 

@@ -1,12 +1,9 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete;
 
-import com.google.common.base.Objects;
-import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.utils.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 

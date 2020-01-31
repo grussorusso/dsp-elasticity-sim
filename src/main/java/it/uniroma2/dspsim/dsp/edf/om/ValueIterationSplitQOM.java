@@ -216,8 +216,6 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 					ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
 			while (stateIterator.hasNext()) {
 				State s = stateIterator.next();
-				// print state line
-				printWriter.println(s.dump());
 				ActionIterator ait = new ActionIterator();
 				while (ait.hasNext()) {
 					Action a = ait.next();
@@ -227,7 +225,8 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 						double qrcf = reconfigurationQ.getQ(s,a);
 						double qslo = sloQ.getQ(s,a);
 						double qresptime = respTimeQ.getQ(s,a);
-						printWriter.print(String.format("%s\t%f\t%f\t%f\t%f\t%f\tR=%f (avg %f)\n",
+						printWriter.print(String.format("%s+%s\t%f\t%f\t%f\t%f\t%f\tR=%f (avg %f)\n",
+								s.dump(),
 								a.dump(), v, qres, qrcf, qslo, qresptime,
 								StateUtils.computeRespTime(StateUtils.computePostDecisionState(s,a,this),this),
 								qresptime*(1-this.getGamma())

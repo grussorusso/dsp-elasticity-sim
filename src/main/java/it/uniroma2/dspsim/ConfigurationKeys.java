@@ -41,8 +41,10 @@ public abstract class ConfigurationKeys {
 	public static final String OPERATOR_LOAD_BALANCER_TYPE_KEY = "operator.load.balancer.type";
 
 	/**
-	 * Constraints.
+	 * Application.
 	 */
+	/** Application topology to use. */
+	public static final String APPLICATION = "dsp.app.type";
 	/** Current SLO in terms of application latency (seconds). */
 	public static final String SLO_LATENCY_KEY = "dsp.slo.latency";
 

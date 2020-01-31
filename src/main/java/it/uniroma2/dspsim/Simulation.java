@@ -4,11 +4,9 @@ import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.ApplicationBuilder;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
-import it.uniroma2.dspsim.dsp.edf.am.ApplicationManager;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.*;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
@@ -272,7 +270,7 @@ public class Simulation {
 					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
-			Application app = ApplicationBuilder.singleOperatorApplication();
+			Application app = ApplicationBuilder.buildApplication();
 			Simulation simulation = new Simulation(inputRateFileReader, app);
 
 			Statistics.getInstance().registerMetric(new TimeMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME));

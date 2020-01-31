@@ -15,7 +15,7 @@ public class TestApplication {
 	@Test
 	public void testPaths()
 	{
-		Application app = ApplicationBuilder.defaultApplication();
+		Application app = ApplicationBuilder.buildApplication();
 		System.out.println(app.getAllPaths());
 
 		app = ApplicationBuilder.buildForkJoinApplication();
