@@ -1,11 +1,13 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.AbstractAction;
+import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
+import it.uniroma2.dspsim.dsp.edf.om.request.ReconfigurationScore;
+import it.uniroma2.dspsim.dsp.edf.om.request.RewardBasedOMRequest;
+import it.uniroma2.dspsim.dsp.edf.om.request.SplitQReconfigurationScore;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
@@ -61,7 +63,7 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 			double newQslo = evaluateQslo(state, action);
 			sloQ.setQ(state, action, newQslo);
 
-			double newQ = newQreconfiguration + newQresources + newQslo;
+			double newQ = getwReconf()*newQreconfiguration + getwResources()*newQresources + getwSLO()*newQslo;
 			qTable.setQ(state, action, newQ);
 
 			delta = Math.max(delta, Math.abs(newQ - oldQ));
@@ -74,11 +76,12 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		return delta;
 	}
 
+	// Note: this is not weighted
 	private double evaluateQresources (State s, Action a) {
 		double cost = 0.0;
 		State pds = StateUtils.computePostDecisionState(s, a, this);
 		// compute deployment cost using pds wighted on wRes
-		cost += StateUtils.computeDeploymentCostNormalized(pds, this) * this.getwResources();
+		cost += StateUtils.computeDeploymentCostNormalized(pds, this);
 		// for each lambda level with p != 0 in s.getLambda() row
 		Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
 		for (int lambda : possibleLambdas) {
@@ -96,11 +99,12 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		return cost;
 	}
 
+	// Note: this is not weighted
 	private double evaluateQreconfiguration (State s, Action a) {
 		double cost = 0.0;
 		// compute reconfiguration cost
 		if (a.getDelta() != 0)
-			cost += this.getwReconf();
+			cost += 1.0;
 		// from s,a compute pds
 		State pds = StateUtils.computePostDecisionState(s, a, this);
 		// for each lambda level with p != 0 in s.getLambda() row
@@ -120,6 +124,7 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		return cost;
 	}
 
+	// Note: this is not weighted
 	private double evaluateQslo (State s, Action a) {
 		double cost = 0.0;
 		// from s,a compute pds
@@ -136,7 +141,7 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 			// get transition probability from s.lambda to lambda level
 			double p = getpMatrix().getValue(s.getLambda(), lambda);
 			// compute slo violation cost
-			double pdCost = StateUtils.computeSLOCost(pds, this)*getwSLO();
+			double pdCost = StateUtils.computeSLOCost(pds, this);
 
 			cost += p * (pdCost + getGamma() * q);
 		}
@@ -175,17 +180,24 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		/*
 		 * Provide information to the AM.
 		 */
-		// TODO
-//			actionScore = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, chosenAction);
-//			Action nop = ActionIterator.getDoNothingAction();
-//			if (nop.equals(chosenAction)) {
-//				noReconfigurationScore = actionScore;
-//			} else {
-//				noReconfigurationScore = ((ActionSelectionPolicyCallback) this).evaluateAction(currentState, nop);
-//			}
+		double qRes = evaluateQresources(currentState, chosenAction);
+		double qRcf = evaluateQreconfiguration(currentState, chosenAction);
+		double qResp = evaluateQrespTime(currentState, chosenAction);
+		ReconfigurationScore score = new SplitQReconfigurationScore(qRes,qRcf,qResp);
 
-		// TODO
-		return new OMRequest(action2reconfiguration(chosenAction), -1, -1);
+
+		Action nop = ActionIterator.getDoNothingAction();
+		ReconfigurationScore scoreNop;
+		if (nop.equals(chosenAction)) {
+			scoreNop = score;
+		} else {
+			double qResNop = evaluateQresources(currentState, nop);
+			double qRcfNop = evaluateQreconfiguration(currentState, nop);
+			double qRespNop = evaluateQrespTime(currentState, nop);
+			scoreNop = new SplitQReconfigurationScore(qResNop, qRcfNop, qRespNop);
+		}
+
+		return new RewardBasedOMRequest(action2reconfiguration(chosenAction), score, scoreNop);
 	}
 	/**
 	 * Dump policy on file

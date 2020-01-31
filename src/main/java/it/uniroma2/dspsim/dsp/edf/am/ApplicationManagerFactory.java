@@ -1,8 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.am;
 
 import it.uniroma2.dspsim.dsp.Application;
-import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.*;
 
 public class ApplicationManagerFactory {
 
@@ -15,7 +13,7 @@ public class ApplicationManagerFactory {
             case DO_NOTHING:
                 return new DoNothingAM(app);
             case PDS_BASED:
-                return new PDSBasedAM(app);
+                return new SplitQBasedAM(app);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not supported application manager type: " + appManagerType.toString());

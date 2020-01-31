@@ -4,6 +4,10 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
+import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
+import it.uniroma2.dspsim.dsp.edf.om.request.QBasedReconfigurationScore;
+import it.uniroma2.dspsim.dsp.edf.om.request.ReconfigurationScore;
+import it.uniroma2.dspsim.dsp.edf.om.request.RewardBasedOMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
@@ -11,14 +15,12 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
 import it.uniroma2.dspsim.stats.metrics.IncrementalAvgMetric;
 import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
-import it.uniroma2.dspsim.stats.samplers.StepSampler;
 import it.uniroma2.dspsim.utils.MathUtils;
 
 public abstract class RewardBasedOM extends OperatorManager {
@@ -127,7 +129,8 @@ public abstract class RewardBasedOM extends OperatorManager {
             }
         }
 
-        return new OMRequest(action2reconfiguration(chosenAction), actionScore, noReconfigurationScore);
+        return new RewardBasedOMRequest(action2reconfiguration(chosenAction),
+                new QBasedReconfigurationScore(actionScore), new QBasedReconfigurationScore(noReconfigurationScore));
     }
 
     protected State computeNewState(OMMonitoringInfo monitoringInfo) {

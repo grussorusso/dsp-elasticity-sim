@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.am.ApplicationManagerFactory;
 import it.uniroma2.dspsim.dsp.edf.am.ApplicationManagerType;
 import it.uniroma2.dspsim.dsp.edf.om.*;
 import it.uniroma2.dspsim.dsp.edf.om.factory.OperatorManagerFactory;
+import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
 
 import java.util.*;
 
