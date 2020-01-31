@@ -17,7 +17,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.CpuMetric;
-import it.uniroma2.dspsim.stats.metrics.MemoryMetric;
+import it.uniroma2.dspsim.stats.metrics.AvgMemoryMetric;
 import it.uniroma2.dspsim.stats.metrics.TimeMetric;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
 
@@ -60,9 +60,9 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         StepSampler stepSampler = new StepSampler("VI Step Sampler", 1);
 
         // per operator metrics
-        MemoryMetric opMemoryMetric = new MemoryMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE));
+        AvgMemoryMetric opAvgMemoryMetric = new AvgMemoryMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE));
         //opMemoryMetric.addSampler(stepSampler);
-        statistics.registerMetric(opMemoryMetric);
+        statistics.registerMetric(opAvgMemoryMetric);
         TimeMetric opTimeMetric = new TimeMetric(getOperatorMetricName(STAT_VI_STEP_TIME));
         //opTimeMetric.addSampler(stepSampler);
         statistics.registerMetric(opTimeMetric);
@@ -71,9 +71,9 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         statistics.registerMetric(opCpuMetric);
 
         // global metrics
-        MemoryMetric memoryMetric = new MemoryMetric(STAT_VI_MEMORY_USAGE);
-        memoryMetric.addSampler(stepSampler);
-        statistics.registerMetric(memoryMetric);
+        AvgMemoryMetric avgMemoryMetric = new AvgMemoryMetric(STAT_VI_MEMORY_USAGE);
+        avgMemoryMetric.addSampler(stepSampler);
+        statistics.registerMetric(avgMemoryMetric);
         TimeMetric timeMetric = new TimeMetric(STAT_VI_STEP_TIME);
         timeMetric.addSampler(stepSampler);
         statistics.registerMetric(timeMetric);

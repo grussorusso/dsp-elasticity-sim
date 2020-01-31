@@ -7,7 +7,6 @@ import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.utils.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import scala.reflect.macros.Infrastructure;
 
 import java.util.Arrays;
 import java.util.Objects;

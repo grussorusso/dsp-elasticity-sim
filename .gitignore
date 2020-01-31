@@ -3,4 +3,6 @@ out/
 target/
 .idea/
 simLog.log
-test_results/
+test_results
+classes
+src/main/resources/META-INF

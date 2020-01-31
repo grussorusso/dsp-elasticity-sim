@@ -41,8 +41,8 @@ public class Simulation {
 	private static final String STAT_RESOURCES_COST_AVG = "Resources Cost Avg";
 	private static final String STAT_APPLICATION_COST_AVG = "Application Avg Cost";
 
-	private static final String STAT_SIMULATION_TIME = "Simulation Time";
-	private static final String STAT_SIMULATION_MEMORY = "Simulation Memory";
+	private static final String STAT_SIMULATION_TIME = "it.uniroma2.dspsim.Simulation Time";
+	private static final String STAT_SIMULATION_MEMORY = "it.uniroma2.dspsim.Simulation Memory";
 
 	protected static final String STAT_AVG_DEPLOYMENT = "Avg Deployment in resources of type - ";
 
@@ -262,8 +262,9 @@ public class Simulation {
 			}
 		}
 
-		ComputingInfrastructure
-				.initDefaultInfrastructure(conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
+		ComputingInfrastructure.initCustomInfrastructure(
+				new double[]{0.2, 1.5, 0.8, 0.4, 1.2, 0.3, 1.3, 0.5, 1.15, 1},
+				conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
 
 		try {
 			final String inputFile = conf
@@ -274,7 +275,7 @@ public class Simulation {
 			Simulation simulation = new Simulation(inputRateFileReader, app);
 
 			Statistics.getInstance().registerMetric(new TimeMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME));
-			Statistics.getInstance().registerMetric(new MemoryMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY));
+			Statistics.getInstance().registerMetric(new AvgMemoryMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY));
 			// run simulation
 			simulation.run();
 

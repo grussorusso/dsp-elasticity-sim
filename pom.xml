@@ -44,13 +44,6 @@
             <artifactId>deeplearning4j-core</artifactId>
             <version>0.9.1</version>
         </dependency>
-
-        <!-- deeplearning4j UI visualization-->
-        <dependency>
-            <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-ui_2.11</artifactId>
-            <version>0.9.1</version>
-        </dependency>
     </dependencies>
 
 

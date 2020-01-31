@@ -7,14 +7,11 @@ import java.lang.management.ManagementFactory;
 
 
 public class CpuMetric extends Metric {
-    private double cpu;
-
     private double cpuAvg;
     private long count;
 
     public CpuMetric(String id) {
         super(id);
-        this.cpu = 0L;
         this.cpuAvg = 0.0;
         this.count = 0L;
     }
@@ -27,20 +24,19 @@ public class CpuMetric extends Metric {
     @Override
     public void update(Double realValue) {
         OperatingSystemMXBean osInfo = ManagementFactory.getPlatformMXBean(OperatingSystemMXBean.class);
-        this.cpu = osInfo.getProcessCpuLoad();
 
         this.count++;
 
-        this.cpuAvg += ((this.cpu - this.cpuAvg) / this.count);
+        this.cpuAvg += ((osInfo.getProcessCpuLoad() - this.cpuAvg) / (double) this.count);
     }
 
     @Override
     public String dumpValue() {
-        return String.format("%s %s", Double.toString(cpu) , Double.toString(cpuAvg));
+        return String.format("%s", Double.toString((double) getValue()));
     }
 
     @Override
     public Number getValue() {
-        return cpu;
+        return this.cpuAvg;
     }
 }
