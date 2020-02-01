@@ -4,13 +4,15 @@ public class SplitQReconfigurationScore extends ReconfigurationScore {
 
 	private double qResources;
 	private double qReconfiguration;
-	private double qRespTime;
+	private double avgFutureRespTime;
+	private double immediateRespTime;
 
-	public SplitQReconfigurationScore(double qRes, double qRcf, double qRespTime)
+	public SplitQReconfigurationScore(double qRes, double qRcf, double immediateRespTime, double avgFutureRespTime)
 	{
 		this.qResources = qRes;
 		this.qReconfiguration = qRcf;
-		this.qRespTime = qRespTime;
+		this.avgFutureRespTime = avgFutureRespTime;
+		this.immediateRespTime = immediateRespTime;
 	}
 
 	public double getqResources() {
@@ -21,12 +23,16 @@ public class SplitQReconfigurationScore extends ReconfigurationScore {
 		return qReconfiguration;
 	}
 
-	public double getqRespTime() {
-		return qRespTime;
+	public double getAvgFutureRespTime() {
+		return avgFutureRespTime;
+	}
+
+	public double getImmediateRespTime() {
+		return immediateRespTime;
 	}
 
 	@Override
 	public String toString() {
-		return String.format("%.3f-%.3f-%.3f", qResources,qReconfiguration,qRespTime);
+		return String.format("%.3f-%.3f-%.4f-%.4f", qResources,qReconfiguration, immediateRespTime, avgFutureRespTime);
 	}
 }

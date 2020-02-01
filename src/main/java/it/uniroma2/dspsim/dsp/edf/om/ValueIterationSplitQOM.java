@@ -183,7 +183,11 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		double qRes = evaluateQresources(currentState, chosenAction);
 		double qRcf = evaluateQreconfiguration(currentState, chosenAction);
 		double qResp = evaluateQrespTime(currentState, chosenAction);
-		ReconfigurationScore score = new SplitQReconfigurationScore(qRes,qRcf,qResp);
+
+		State pds = StateUtils.computePostDecisionState(currentState, chosenAction, this);
+		double nextRespTime = StateUtils.computeRespTime(pds, this);
+		double avgFutureRespTime = (qResp-nextRespTime)/getGamma()*(1.0-getGamma());
+		ReconfigurationScore score = new SplitQReconfigurationScore(qRes,qRcf,nextRespTime,avgFutureRespTime);
 
 
 		Action nop = ActionIterator.getDoNothingAction();
@@ -194,7 +198,11 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 			double qResNop = evaluateQresources(currentState, nop);
 			double qRcfNop = evaluateQreconfiguration(currentState, nop);
 			double qRespNop = evaluateQrespTime(currentState, nop);
-			scoreNop = new SplitQReconfigurationScore(qResNop, qRcfNop, qRespNop);
+
+			nextRespTime = StateUtils.computeRespTime(currentState, this);
+			avgFutureRespTime = (qRespNop-nextRespTime)/getGamma()*(1.0-getGamma());
+
+			scoreNop = new SplitQReconfigurationScore(qResNop, qRcfNop, nextRespTime, avgFutureRespTime);
 		}
 
 		return new RewardBasedOMRequest(action2reconfiguration(chosenAction), score, scoreNop);
@@ -225,12 +233,13 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 						double qrcf = reconfigurationQ.getQ(s,a);
 						double qslo = sloQ.getQ(s,a);
 						double qresptime = respTimeQ.getQ(s,a);
+						State pds = StateUtils.computePostDecisionState(s, a, this);
+						double nextRespTime = StateUtils.computeRespTime(pds, this);
+						double avgFutureRespTime = (qresptime-nextRespTime)/getGamma()*(1.0-getGamma());
 						printWriter.print(String.format("%s+%s\t%f\t%f\t%f\t%f\t%f\tR=%f (avg %f)\n",
 								s.dump(),
 								a.dump(), v, qres, qrcf, qslo, qresptime,
-								StateUtils.computeRespTime(StateUtils.computePostDecisionState(s,a,this),this),
-								qresptime*(1-this.getGamma())
-								));
+								nextRespTime, avgFutureRespTime));
 					}
 				}
 			}
