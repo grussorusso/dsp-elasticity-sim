@@ -21,7 +21,7 @@ public class EDF {
 	private ApplicationManager applicationManager;
 	private Map<Operator, OperatorManager> operatorManagers;
 
-	public EDF (Application application)
+	public EDF (Application application, double sloLatency)
 	{
 		this.application = application;
 
@@ -32,6 +32,7 @@ public class EDF {
 		Configuration conf = Configuration.getInstance();
 
 		applicationManager = newApplicationManager(conf);
+		applicationManager.setSloLatency(sloLatency);
 
 		operatorManagers = new HashMap<>(numOperators);
 		for (Operator op : operators) {

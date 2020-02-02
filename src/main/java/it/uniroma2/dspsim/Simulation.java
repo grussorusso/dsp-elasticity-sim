@@ -121,7 +121,7 @@ public class Simulation {
 
 		logger.warn("Starting simulation");
 
-		EDF edf = new EDF(app);
+		EDF edf = new EDF(app, LATENCY_SLO);
 		MonitoringInfo monitoringInfo = new MonitoringInfo();
 
 		while (inputRateFileReader.hasNext() && (stopTime <= 0 || time <= stopTime)) {

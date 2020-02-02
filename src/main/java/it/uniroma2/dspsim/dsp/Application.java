@@ -101,8 +101,31 @@ public class Application {
 		double latency = 0.0;
 
 		for (Operator op : path) {
+			// TODO: Shouldn't we compute the inputRate for each operator based on selectivity?
 			double operatorRespTime = op.responseTime(inputRate);
 			logger.info("Operator {} : response time {}", op.getName(), operatorRespTime);
+			latency += operatorRespTime;
+		}
+
+
+		return latency;
+	}
+
+	public double endToEndLatency (Map<Operator, Double> opRespTime) {
+		double latency = 0.0;
+
+		for (ArrayList<Operator> path : sourceSinkPaths) {
+			latency = Math.max(latency, endToEndLatency(opRespTime, path));
+		}
+
+		return latency;
+	}
+
+	private double endToEndLatency (Map<Operator, Double> opRespTime, ArrayList<Operator> path) {
+		double latency = 0.0;
+
+		for (Operator op : path) {
+			double operatorRespTime = opRespTime.get(op);
 			latency += operatorRespTime;
 		}
 

@@ -33,6 +33,6 @@ public class SplitQReconfigurationScore extends ReconfigurationScore {
 
 	@Override
 	public String toString() {
-		return String.format("%.3f-%.3f-%.4f-%.4f", qResources,qReconfiguration, immediateRespTime, avgFutureRespTime);
+		return String.format("res=%.2f,rcf=%.2f,r=%.3f,avgR=%.3f", qResources,qReconfiguration, immediateRespTime, avgFutureRespTime);
 	}
 }

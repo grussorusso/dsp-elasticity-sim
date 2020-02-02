@@ -12,7 +12,7 @@ public class LoggingUtils {
 	static public void configureLogging() {
 		ConfigurationBuilder<BuiltConfiguration> cb = ConfigurationBuilderFactory.newConfigurationBuilder();
 		LayoutComponentBuilder standard = cb.newLayout("PatternLayout");
-		standard.addAttribute("pattern", "%d [%t] %-5level: %msg%n%throwable");
+		standard.addAttribute("pattern", "%d [%t][%-5level] %C{1} - %msg%n%throwable");
 
 		AppenderComponentBuilder console = cb.newAppender("stdout", "Console");
 		console.add(standard);

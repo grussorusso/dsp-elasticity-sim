@@ -12,8 +12,9 @@ import java.util.Map;
 public abstract class ApplicationManager {
 
 	protected Application application;
+	protected double sloLatency;
 
-	public ApplicationManager (Application application) {
+	public ApplicationManager(Application application) {
 		this.application = application;
 	}
 
@@ -22,14 +23,13 @@ public abstract class ApplicationManager {
 	}
 
 
-	public Map<Operator, Reconfiguration> planReconfigurations(Map<OperatorManager, OMRequest> omRequestMap)
-	{
+	public Map<Operator, Reconfiguration> planReconfigurations(Map<OperatorManager, OMRequest> omRequestMap) {
 		return plan(omRequestMap);
 	}
 
-	abstract protected Map<Operator, Reconfiguration> plan (Map<OperatorManager, OMRequest> omRequestMap);
+	abstract protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap);
 
-	protected Map<Operator, Reconfiguration> acceptAll (Map<OperatorManager, OMRequest> omRequestMap) {
+	protected Map<Operator, Reconfiguration> acceptAll(Map<OperatorManager, OMRequest> omRequestMap) {
 		Map<Operator, Reconfiguration> reconfigurations = new HashMap<>(omRequestMap.size());
 
 		for (OperatorManager om : omRequestMap.keySet()) {
@@ -43,4 +43,7 @@ public abstract class ApplicationManager {
 		return reconfigurations;
 	}
 
+	public void setSloLatency(double sloLatency) {
+		this.sloLatency = sloLatency;
+	}
 }

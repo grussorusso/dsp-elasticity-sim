@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 public class SplitQBasedAM extends ApplicationManager {
@@ -85,7 +86,7 @@ public class SplitQBasedAM extends ApplicationManager {
 		JointActionIterator iterator = new JointActionIterator(N, omRcfCount);
 		while (iterator.hasNext()) {
 			int a[] = iterator.next();
-			double q = evaluateGlobalQ(a, scoredRcfs);
+			double q = evaluateGlobalQ(a, managers, scoredRcfs);
 			logger.info("Q({}) = {}", a , q);
 			if (bestQ == null || q < bestQ) {
 				bestAction = a.clone();
@@ -100,23 +101,25 @@ public class SplitQBasedAM extends ApplicationManager {
 		return acceptAll(omRequestMap); // TODO
 	}
 
-	private double evaluateGlobalQ(int[] a, ArrayList<Tuple2<Reconfiguration, SplitQReconfigurationScore>>[] scoredRcfs) {
+	private double evaluateGlobalQ(int[] a, ArrayList<OperatorManager> oms,
+								   ArrayList<Tuple2<Reconfiguration, SplitQReconfigurationScore>>[] scoredRcfs) {
 		int N = a.length;
 
 		/* Q_resources */
 		double Qres = 0.0;
 		for (int i=0; i<N; i++) {
-			Qres += scoredRcfs[i].get(a[0]).getV().getqResources();
+			Qres += scoredRcfs[i].get(a[i]).getV().getqResources();
 		}
+		Qres /= N; /* normalized based on number of operator */
 
 		/* Q_rcf */
 		double futureQrcf = 0.0;
 		boolean isRcfJoint = false;
 		for (int i=0; i<N; i++) {
-			Reconfiguration rcf = scoredRcfs[i].get(a[0]).getK();
-			double omFutureQRcf = scoredRcfs[i].get(a[0]).getV().getqReconfiguration();
+			Reconfiguration rcf = scoredRcfs[i].get(a[i]).getK();
+			double omFutureQRcf = scoredRcfs[i].get(a[i]).getV().getqReconfiguration();
 			if (rcf.isReconfiguration()) {
-				omFutureQRcf -= -1.0; // we must subtract immediate cost
+				omFutureQRcf -= 1.0; // we must subtract immediate cost
 				isRcfJoint = true;
 			}
 			futureQrcf = Math.max(futureQrcf, omFutureQRcf);
@@ -125,14 +128,20 @@ public class SplitQBasedAM extends ApplicationManager {
 		double qRcf = futureQrcf + immediateRcfCost;
 
 		/* Q_slo */
-		// TODO: get gamma from conf
-		final double gamma = 0.99;
+		Map<Operator,Double> opResponseTime = new HashMap<>();
+		Map<Operator,Double> opFutureResponseTime = new HashMap<>();
+		for (int i=0; i<N; i++) {
+			double immediateRespTime = scoredRcfs[i].get(a[i]).getV().getImmediateRespTime();
+			double futureAvgRespTime = scoredRcfs[i].get(a[i]).getV().getAvgFutureRespTime();
+			Operator op = oms.get(i).getOperator();
+			opResponseTime.put(op, immediateRespTime);
+			opFutureResponseTime.put(op, futureAvgRespTime);
+		}
 
-		Collection<ArrayList<Operator>> paths = application.getAllPaths();
-		// TODO: we need a mapping from Operator to its scores...
+		boolean immediateSLOViolation = isAppSLOViolated(opResponseTime);
+		boolean futureSLOViolation = isAppSLOViolated(opFutureResponseTime);
 
-		boolean immediateSLOViolation = false; // TODO
-		boolean futureSLOViolation = false; // TODO
+		final double gamma = 0.99;// TODO: get gamma from conf
 		double Qslo = 0.0;
 		if (immediateSLOViolation)
 			Qslo += 1.0;
@@ -141,7 +150,12 @@ public class SplitQBasedAM extends ApplicationManager {
 
 		// TODO: get weights from conf
 		final double w=0.33;
+		logger.info("Q({}): res={}, rcf={}, slo={}", a, Qres, qRcf, Qslo);
 		return w*Qres + w*qRcf + w*Qslo;
+	}
+
+	private boolean isAppSLOViolated(Map<Operator, Double> opResponseTime) {
+		return application.endToEndLatency(opResponseTime)  > sloLatency;
 	}
 
 
