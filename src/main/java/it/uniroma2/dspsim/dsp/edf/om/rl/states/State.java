@@ -66,6 +66,11 @@ public abstract class State {
         return MathUtils.normalizeValue(this.lambda, this.maxLambda);
     }
 
+    @Override
+    public String toString() {
+        return dump();
+    }
+
     /**
      * Dump state
      */

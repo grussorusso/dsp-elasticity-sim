@@ -116,19 +116,7 @@ public class EDF {
 			opInfo.setCpuUtilization(u);
 		}
 
-		/* Let each OM make a decision. */
-		Map<OperatorManager, OMRequest> omRequests = new HashMap<>();
-		for (Operator op : application.getOperators()) {
-			OMMonitoringInfo operatorMonitoringInfo = omMonitoringInfo.get(op);
-			OperatorManager om = operatorManagers.get(op);
-			OMRequest req = om.pickReconfigurationRequest(operatorMonitoringInfo);
-			omRequests.put(om, req);
-		}
-
-		// Let the AM filter reconfigurations
-		Map<Operator, Reconfiguration> reconfigurations = applicationManager.planReconfigurations(omRequests);
-
-		return reconfigurations;
+		return applicationManager.planReconfigurations(omMonitoringInfo, operatorManagers);
 	}
 
 }

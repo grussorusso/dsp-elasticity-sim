@@ -50,6 +50,11 @@ public class Action extends AbstractAction {
         return resTypeIndex;
     }
 
+    @Override
+    public String toString() {
+        return dump();
+    }
+
     /**
      * Dump action
      */

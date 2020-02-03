@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.am;
 import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
+import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
 import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
 
@@ -23,8 +24,19 @@ public abstract class ApplicationManager {
 	}
 
 
-	public Map<Operator, Reconfiguration> planReconfigurations(Map<OperatorManager, OMRequest> omRequestMap) {
-		return plan(omRequestMap);
+	public Map<Operator, Reconfiguration> planReconfigurations(Map<Operator, OMMonitoringInfo> omMonitoringInfo,
+															   Map<Operator, OperatorManager> operatorManagers) {
+
+		/* Let each OM make a decision. */
+		Map<OperatorManager, OMRequest> omRequests = new HashMap<>();
+		for (Operator op : application.getOperators()) {
+			OMMonitoringInfo operatorMonitoringInfo = omMonitoringInfo.get(op);
+			OperatorManager om = operatorManagers.get(op);
+			OMRequest req = om.pickReconfigurationRequest(operatorMonitoringInfo);
+			omRequests.put(om, req);
+		}
+
+		return plan(omRequests);
 	}
 
 	abstract protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap);
