@@ -81,7 +81,7 @@ public class SplitQBasedAM extends ApplicationManager {
 		 * Enumerate possible joint actions.
 		 * a = <i_1, i_2, i_3, ..., i_N>, where i_j=0 means no reconfiguration
 		 */
-		int bestAction[];
+		int bestAction[] = new int[0]; /* just to initialize it... */
 		Double bestQ = null;
 		JointActionIterator iterator = new JointActionIterator(N, omRcfCount);
 		while (iterator.hasNext()) {
@@ -94,11 +94,21 @@ public class SplitQBasedAM extends ApplicationManager {
 			}
 		}
 
+		logger.info("Accepted: {}", bestAction);
+
 		/*
 		 * Accept reconfigurations based on best action.
 		 */
-		// TODO
-		return acceptAll(omRequestMap); // TODO
+		Map<Operator, Reconfiguration> acceptedReconfs = new HashMap<>();
+		for (i=0; i<N; i++) {
+			Reconfiguration rcf = scoredRcfs[i].get(bestAction[i]).getK();
+			if (!rcf.isReconfiguration()) {
+				continue;
+			}
+			acceptedReconfs.put(managers.get(i).getOperator(), rcf);
+		}
+
+		return acceptedReconfs;
 	}
 
 	private double evaluateGlobalQ(int[] a, ArrayList<OperatorManager> oms,
@@ -125,7 +135,8 @@ public class SplitQBasedAM extends ApplicationManager {
 			futureQrcf = Math.max(futureQrcf, omFutureQRcf);
 		}
 		double immediateRcfCost = isRcfJoint? 1.0 : 0.0;
-		double qRcf = futureQrcf + immediateRcfCost;
+		//double qRcf = futureQrcf + immediateRcfCost;
+		double qRcf = immediateRcfCost; // ignore future Rcf
 
 		/* Q_slo */
 		Map<Operator,Double> opResponseTime = new HashMap<>();

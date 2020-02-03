@@ -7,8 +7,6 @@ import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
-
 public class KLambdaState extends State {
     // k usage
     private int[] k;

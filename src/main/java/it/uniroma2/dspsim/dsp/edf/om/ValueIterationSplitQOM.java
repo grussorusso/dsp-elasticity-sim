@@ -27,7 +27,11 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 	private QTable sloQ;
 
 	// TODO: a VTable would we enough
+	private QTable voidPolicyRespTimeQ;
+
 	private QTable respTimeQ;
+
+	static final double MAX_Q_RESPTIME = 100000.0; // TODO
 
 	public ValueIterationSplitQOM(Operator operator) {
 		super(operator);
@@ -42,6 +46,8 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		this.sloQ = new GuavaBasedQTable(0.0);
 
 		this.respTimeQ = new GuavaBasedQTable(0.0);
+
+		this.voidPolicyRespTimeQ = new GuavaBasedQTable(0.0);
 	}
 
 		@Override
@@ -68,13 +74,41 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 
 			delta = Math.max(delta, Math.abs(newQ - oldQ));
 
-
 			double newQrespTime = evaluateQrespTime(state, action);
 			respTimeQ.setQ(state, action, newQrespTime);
+
+			/* Void policy Q */
+			Action nop = ActionIterator.getDoNothingAction();
+			double respTimeQ = evaluateVoidPolicyQRespTime(state);
+			voidPolicyRespTimeQ.setQ(state, nop, respTimeQ);
+
 		}
 
 		return delta;
 	}
+
+	private double evaluateVoidPolicyQRespTime(State s) {
+		double cost = 0.0;
+		State pds = s;
+		Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
+		for (int lambda : possibleLambdas) {
+			// change pds.lambda to lambda
+			pds.setLambda(lambda); // this is now the next state
+			Action greedyAction = ActionIterator.getDoNothingAction();
+			double q = respTimeQ.getQ(pds, greedyAction);
+			// get transition probability from s.lambda to lambda level
+			double p = getpMatrix().getValue(s.getLambda(), lambda);
+
+			double pdCost = StateUtils.computeRespTime(pds, this);
+			if (Double.isInfinite(pdCost) || Double.isNaN(pdCost)) {
+				pdCost = MAX_Q_RESPTIME;
+			}
+
+			cost += p * (pdCost + getGamma() * q);
+		}
+		return cost;
+	}
+
 
 	// Note: this is not weighted
 	private double evaluateQresources (State s, Action a) {
@@ -149,7 +183,6 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 	}
 
 	private double evaluateQrespTime (State s, Action a) {
-		final double MAX_Q_RESPTIME = 100000.0; // TODO
 		double cost = 0.0;
 		// from s,a compute pds
 		State pds = StateUtils.computePostDecisionState(s, a, this);
@@ -180,9 +213,9 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		/*
 		 * Provide information to the AM.
 		 */
-		double qRes = evaluateQresources(currentState, chosenAction);
-		double qRcf = evaluateQreconfiguration(currentState, chosenAction);
-		double qResp = evaluateQrespTime(currentState, chosenAction);
+		double qRes = resourcesQ.getQ(currentState, chosenAction);
+		double qRcf = reconfigurationQ.getQ(currentState, chosenAction);
+		double qResp = respTimeQ.getQ(currentState, chosenAction);
 
 		State pds = StateUtils.computePostDecisionState(currentState, chosenAction, this);
 		double nextRespTime = StateUtils.computeRespTime(pds, this);
@@ -195,9 +228,9 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		if (nop.equals(chosenAction)) {
 			scoreNop = score;
 		} else {
-			double qResNop = evaluateQresources(currentState, nop);
-			double qRcfNop = evaluateQreconfiguration(currentState, nop);
-			double qRespNop = evaluateQrespTime(currentState, nop);
+			double qResNop = resourcesQ.getQ(currentState, nop);
+			double qRcfNop = reconfigurationQ.getQ(currentState, nop);
+			double qRespNop = voidPolicyRespTimeQ.getQ(currentState, nop);
 
 			nextRespTime = StateUtils.computeRespTime(currentState, this);
 			avgFutureRespTime = (qRespNop-nextRespTime)/getGamma()*(1.0-getGamma());
@@ -236,10 +269,13 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 						State pds = StateUtils.computePostDecisionState(s, a, this);
 						double nextRespTime = StateUtils.computeRespTime(pds, this);
 						double avgFutureRespTime = (qresptime-nextRespTime)/getGamma()*(1.0-getGamma());
-						printWriter.print(String.format("%s+%s\t%f\t%f\t%f\t%f\t%f\tR=%f (avg %f)\n",
-								s.dump(),
-								a.dump(), v, qres, qrcf, qslo, qresptime,
-								nextRespTime, avgFutureRespTime));
+						double nextRespTimeVoid = StateUtils.computeRespTime(s, this);
+						double avgFutureRespTimeVoid = (voidPolicyRespTimeQ.getQ(s,ActionIterator.getDoNothingAction())-nextRespTimeVoid)/getGamma()*(1.0-getGamma());
+						printWriter.print(String.format("%s+%s\t%f\t%f\t%f\t%f\tR=%f+%f, %f+%f\n",
+								s.dump(), a.dump(),
+								v, qres, qrcf, qslo,
+								nextRespTime, avgFutureRespTime,
+								nextRespTimeVoid, avgFutureRespTimeVoid));
 					}
 				}
 			}
