@@ -82,29 +82,28 @@ public class ApplicationBuilder {
 	{
 		Application app = new Application();
 
-		double[] mus = new double[]{250.0, 300.0, 190.0, 120.0, 90.0, 1200.0};
-		//double[] sigmas = new double[] {0.001, 0.1, 0.05, 0.3, 0.4, 0.001};
-		double[] sigmas = new double[] {1,1,1,1,1,1};
+		double[] mus = new double[]{1000.0, 400.0, 310.0, 460.0, 180.0, 1200.0};
+        double[] serviceTimeVariances = new double[] {0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001};
 
 		final int maxParallelism = Configuration.getInstance()
 				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
 		Operator op1 = new Operator("splitter",
-				new MG1OperatorQueueModel(1/mus[0], sigmas[0]), maxParallelism);
+				new MG1OperatorQueueModel(1/mus[0], serviceTimeVariances[0]), maxParallelism);
 		app.addOperator(op1);
 		Operator op2 = new Operator("parallel1",
-				new MG1OperatorQueueModel(1/mus[1], sigmas[1]), maxParallelism);
+				new MG1OperatorQueueModel(1/mus[1], serviceTimeVariances[1]), maxParallelism);
 		app.addOperator(op2);
 		Operator op3 = new Operator("parallel2",
-				new MG1OperatorQueueModel(1/mus[2], sigmas[2]), maxParallelism);
+				new MG1OperatorQueueModel(1/mus[2], serviceTimeVariances[2]), maxParallelism);
 		app.addOperator(op3);
 		Operator op4 = new Operator("parallel3-1",
-				new MG1OperatorQueueModel(1/mus[3], sigmas[3]), maxParallelism);
+				new MG1OperatorQueueModel(1/mus[3], serviceTimeVariances[3]), maxParallelism);
 		app.addOperator(op4);
 		Operator op5 = new Operator("parallel3-2",
-				new MG1OperatorQueueModel(1/mus[4], sigmas[4]), maxParallelism);
+				new MG1OperatorQueueModel(1/mus[4], serviceTimeVariances[4]), maxParallelism);
 		app.addOperator(op5);
 		Operator op6 = new Operator("join",
-				new MG1OperatorQueueModel(1/mus[5], sigmas[5]), maxParallelism);
+				new MG1OperatorQueueModel(1/mus[5], serviceTimeVariances[5]), maxParallelism);
 		app.addOperator(op6);
 
 		app.addEdge(op1, op2);
@@ -116,6 +115,7 @@ public class ApplicationBuilder {
 		app.addEdge(op5, op6);
 
 		computeBalancedOperatorSLO(app);
+		//computeOperatorsSlo(app);
 
 		return app;
 	}
@@ -129,7 +129,8 @@ public class ApplicationBuilder {
 
 	protected static void computeBalancedOperatorSLO(Application app) {
 		double rSLO = Configuration.getInstance().getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.065);
-		double inputRate = Configuration.getInstance().getInteger(ConfigurationKeys.RL_OM_MAX_INPUT_RATE_KEY, 600);
+		//double inputRate = Configuration.getInstance().getInteger(ConfigurationKeys.RL_OM_MAX_INPUT_RATE_KEY, 600);
+		double inputRate = 300;
 
 		Map<String, Double> opSLOMap = optimizeSLODivisionOnPaths(app, rSLO, inputRate);
 
@@ -192,6 +193,9 @@ public class ApplicationBuilder {
 			}
 		}
 
+		for (String opName : opParallelismMap.keySet())
+			System.out.println(String.format("%s\t->\t%d", opName, opParallelismMap.get(opName)));
+
 		return operatorSLOMap;
 	}
 
@@ -232,6 +236,14 @@ public class ApplicationBuilder {
 				operatorParallelismMap.put(bottleneckOperatorIndex, operatorParallelismMap.get(bottleneckOperatorIndex) + 1);
 				changed = true;
 			} else {
+                StringBuilder pathStr = new StringBuilder("Error in path: ");
+                for (int j = 0; j < path.size(); j++) {
+                    pathStr.append(path.get(j).getName());
+                    if (j < path.size() - 1) {
+                        pathStr.append(" -> ");
+                    }
+                }
+                System.out.println(pathStr);
 				System.out.println("Parallelism Map:");
 				for (String opName : operatorParallelismMap.keySet())
 					System.out.println(String.format("%s\t->\t%d", opName, operatorParallelismMap.get(opName)));

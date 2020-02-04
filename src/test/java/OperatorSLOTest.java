@@ -14,8 +14,8 @@ public class OperatorSLOTest {
         public static Application buildTestApplication(boolean balanced) {
             Application app = new Application();
 
-            double[] mus = new double[]{250.0, 300.0, 190.0, 120.0, 90.0, 1200.0};
-            double[] sigmas = new double[] {1,1,1,1,1,1};
+            double[] mus = new double[]{1000.0, 400.0, 310.0, 460.0, 180.0, 1200.0};
+            double[] sigmas = new double[] {0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001};
 
             final int maxParallelism = 5;
             Operator op1 = new Operator("splitter",
