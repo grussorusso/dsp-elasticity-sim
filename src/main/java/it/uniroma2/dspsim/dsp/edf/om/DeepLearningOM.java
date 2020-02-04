@@ -139,7 +139,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             this.training = input;
             this.labels = label;
         } else {
-            if (this.training.length() >= this.memorySize) {
+            if (this.training.rows() >= this.memorySize) {
                 //drop first memory element
                 this.training = this.training.get(NDArrayIndex.interval(1, this.training.length()));
                 this.labels = this.labels.get(NDArrayIndex.interval(1, this.labels.length()));
