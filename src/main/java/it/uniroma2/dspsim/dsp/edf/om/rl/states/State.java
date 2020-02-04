@@ -1,9 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.states;
 
-import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
-import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.utils.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -15,6 +12,11 @@ public abstract class State {
     private int [] actualDeployment;
     private int lambda;
     private int maxLambda;
+
+    public int getMaxParallelism() {
+        return maxParallelism;
+    }
+
     protected int maxParallelism;
 
     protected State(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {

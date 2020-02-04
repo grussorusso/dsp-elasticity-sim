@@ -5,12 +5,13 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+
 public class JointStateIterator {
 
-	private StateIterator s1;
-	private State state1;
-	private StateIterator s2;
-	private State state2;
+	private State[] states;
+	private StateIterator[] stateIterators;
 
 	private int maxParallelism[];
 	private ComputingInfrastructure infrastructure;
@@ -18,35 +19,54 @@ public class JointStateIterator {
 
 	public JointStateIterator (int nOperators, int maxParallelism[], ComputingInfrastructure infrastructure, int lambdaLevels)
 	{
-		if (nOperators != 2) {
-			throw new RuntimeException("JointStateIterator only supports 2 operators");
-		}
-
 		this.maxParallelism = maxParallelism;
 		this.infrastructure = infrastructure;
 		this.lambdaLevels = lambdaLevels;
 
-		s1 = new StateIterator(StateType.K_LAMBDA, maxParallelism[0], infrastructure, lambdaLevels);
-		s2 = new StateIterator(StateType.K_LAMBDA, maxParallelism[1], infrastructure, lambdaLevels);
-		state2 = s2.next();
+		this.stateIterators = new StateIterator[nOperators];
+		this.states = new State[nOperators];
+
+		for (int i = 0; i<nOperators; i++) {
+			stateIterators[i] = new StateIterator(StateType.K_LAMBDA, maxParallelism[i], infrastructure, lambdaLevels);
+		}
+		for (int i = 1; i<nOperators; i++) {
+			// 0 is skipped
+			states[i] = stateIterators[i].next();
+		}
 	}
 
 	public boolean hasNext()
 	{
-		return s1.hasNext() || s2.hasNext();
+		for (StateIterator si : stateIterators) {
+			if (si.hasNext())
+				return true;
+		}
+
+		return false;
 	}
 
 
+	private void resetIterator (int i) {
+		stateIterators[i] = new StateIterator(StateType.K_LAMBDA, maxParallelism[i], infrastructure, lambdaLevels);
+		states[i] = stateIterators[i].next();
+	}
+
 	public JointState next()
 	{
-		if (!s1.hasNext()) {
-			s1 = new StateIterator(StateType.K_LAMBDA, maxParallelism[0], infrastructure, lambdaLevels);
-			state2 = s2.next();
+		int i = 0;
+		boolean done = false;
+
+		while (!done && i < states.length) {
+			if (stateIterators[i].hasNext()) {
+				states[i] = stateIterators[i].next();
+				done = true;
+			} else {
+				resetIterator(i);
+				i++;
+			}
 		}
 
-		state1 = s1.next();
-
-		return new JointState (state1, state2);
+		return new JointState (states.clone());
 	}
 
 

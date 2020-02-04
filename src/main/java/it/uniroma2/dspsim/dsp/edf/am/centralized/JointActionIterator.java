@@ -1,42 +1,60 @@
 package it.uniroma2.dspsim.dsp.edf.am.centralized;
 
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 
 public class JointActionIterator {
 
-	private ActionIterator ai1;
-	private Action a1;
-	private ActionIterator ai2;
-	private Action a2;
+	private ActionIterator[] iterators;
+	private Action[] actions;
 
 	public JointActionIterator(int nOperators)
 	{
-		if (nOperators != 2) {
-			throw new RuntimeException("JointActionIterator only supports 2 operators");
-		}
+		iterators = new ActionIterator[nOperators];
+		actions = new Action[nOperators];
 
-		ai1 = new ActionIterator();
-		ai2 = new ActionIterator();
-		a2 = ai2.next();
+		for (int i = 0; i<nOperators; i++) {
+			iterators[i] = new ActionIterator();
+		}
+		for (int i = 1; i<nOperators; i++) {
+			// 0 is skipped
+			actions[i] = iterators[i].next();
+		}
+	}
+
+	private void resetIterator (int i) {
+		iterators[i] = new ActionIterator();
+		actions[i] = iterators[i].next();
 	}
 
 	public boolean hasNext()
 	{
-		return ai1.hasNext() || ai2.hasNext();
+		for (ActionIterator i : iterators) {
+			if (i.hasNext())
+				return true;
+		}
+		return false;
 	}
 
 
 	public JointAction next()
 	{
-		if (!ai1.hasNext()) {
-			ai1 = new ActionIterator();
-			a2 = ai2.next();
+		int i = 0;
+		boolean done = false;
+
+		while (!done && i < actions.length) {
+			if (iterators[i].hasNext()) {
+				actions[i] = iterators[i].next();
+				done = true;
+			} else {
+				resetIterator(i);
+				i++;
+			}
 		}
 
-		a1 = ai1.next();
-
-		return new JointAction (a1, a2);
+		return new JointAction (actions.clone());
 	}
 
 

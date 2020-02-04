@@ -66,12 +66,10 @@ public class CentralizedAM extends ApplicationManager {
 
 		logger.info("Using wRcf={}, wRes={}, wSLO={}, gamma={}", wReconf, wResources, wSLO, gamma);
 
-		if (this.nOperators != 2) {
-			throw new RuntimeException("CentralizedAM currently supports 2 operators only");
-		}
-		if (application.getOperators().get(0).getSelectivity() > 1.01 ||
-			application.getOperators().get(0).getSelectivity() < 0.99) {
-			throw new RuntimeException("CentralizedAM currently does not support selectivity != 1");
+		for (Operator op : application.getOperators()) {
+			if (op.getSelectivity() > 1.01 || op.getSelectivity() < 0.99) {
+				throw new RuntimeException("CentralizedAM currently does not support selectivity != 1");
+			}
 		}
 
 		this.maxParallelism = new int[nOperators];
@@ -214,23 +212,24 @@ public class CentralizedAM extends ApplicationManager {
 	}
 
 	private JointState computePDS(JointState s, JointAction a) {
-		// TODO: 3+ operators
-		State pds1 = StateUtils.computePostDecisionState(s.states[0], a.actions[0], StateType.K_LAMBDA, inputRateLevels, maxParallelism[0]);
-		State pds2 = StateUtils.computePostDecisionState(s.states[1], a.actions[1], StateType.K_LAMBDA, inputRateLevels, maxParallelism[1]);
-		return new JointState(pds1, pds2);
+		State pds[] = new State[nOperators];
+		for (int i = 0; i<nOperators; i++)
+			pds[i] = StateUtils.computePostDecisionState(s.states[i], a.actions[i], StateType.K_LAMBDA, inputRateLevels, maxParallelism[i]);
+
+		return new JointState(pds);
 	}
 
 	@Override
 	public Map<Operator, Reconfiguration> planReconfigurations(Map<Operator, OMMonitoringInfo> omMonitoringInfo,
 															   Map<Operator, OperatorManager> operatorManagers) {
-
 		// Compute current state
-		// TODO: 3+ operators
-		Operator op1 = application.getOperators().get(0);
-		Operator op2 = application.getOperators().get(1);
-		State s1 = StateUtils.computeCurrentState(omMonitoringInfo.get(op1), op1, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
-		State s2 = StateUtils.computeCurrentState(omMonitoringInfo.get(op2), op2, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
-		JointState currentState = new JointState(s1,s2);
+		State s[] = new State[nOperators];
+		for (int i = 0; i<nOperators; i++) {
+			Operator op = application.getOperators().get(i);
+			s[i] = StateUtils.computeCurrentState(omMonitoringInfo.get(op), op, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
+			System.err.println(s[i].getMaxParallelism());
+		}
+		JointState currentState = new JointState(s);
 
 		// Pick best global action
 		JointAction a = greedyAction(currentState);
