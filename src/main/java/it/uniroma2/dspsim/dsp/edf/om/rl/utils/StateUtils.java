@@ -1,6 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.utils;
 
 import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
 import it.uniroma2.dspsim.dsp.edf.om.RewardBasedOM;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
@@ -90,4 +91,18 @@ public class StateUtils {
         double inputRate = MathUtils.remapDiscretizedValue(maxInputRate, state.getLambda(), inputRateLevels);
         return op.responseTime(inputRate, operatorInstances);
     }
+
+    static public State computeCurrentState(OMMonitoringInfo monitoringInfo, Operator op, int maxInputRate, int inputRateLevels, StateType stateType) {
+        // read actual deployment
+        final int[] deployment = new int[ComputingInfrastructure.getInfrastructure().getNodeTypes().length];
+        for (NodeType nt : op.getInstances()) {
+            deployment[nt.getIndex()] += 1;
+        }
+        // get input rate level
+        final int inputRateLevel = MathUtils.discretizeValue(maxInputRate, monitoringInfo.getInputRate(), inputRateLevels);
+        // build new state
+        return StateFactory.createState(stateType, -1, deployment, inputRateLevel,
+                inputRateLevels - 1, op.getMaxParallelism());
+    }
+
 }

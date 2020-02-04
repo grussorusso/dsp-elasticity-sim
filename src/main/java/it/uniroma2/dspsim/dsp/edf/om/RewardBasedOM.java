@@ -6,7 +6,6 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.request.QBasedReconfigurationScore;
-import it.uniroma2.dspsim.dsp.edf.om.request.ReconfigurationScore;
 import it.uniroma2.dspsim.dsp.edf.om.request.RewardBasedOMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
@@ -15,6 +14,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.Statistics;
@@ -88,7 +88,7 @@ public abstract class RewardBasedOM extends OperatorManager {
     @Override
     public OMRequest pickReconfigurationRequest(OMMonitoringInfo monitoringInfo) {
         // compute new state
-        State currentState = computeNewState(monitoringInfo);
+        State currentState = StateUtils.computeCurrentState(monitoringInfo, operator, maxInputRate, inputRateLevels, stateRepresentation);
 
         // learning step
         if (lastChosenAction != null) {
@@ -133,19 +133,6 @@ public abstract class RewardBasedOM extends OperatorManager {
                 new QBasedReconfigurationScore(actionScore), new QBasedReconfigurationScore(noReconfigurationScore));
     }
 
-    protected State computeNewState(OMMonitoringInfo monitoringInfo) {
-        // read actual deployment
-        final int[] deployment = new int[ComputingInfrastructure.getInfrastructure().getNodeTypes().length];
-        for (NodeType nt : operator.getInstances()) {
-            deployment[nt.getIndex()] += 1;
-        }
-        // get input rate level
-        final int inputRateLevel = MathUtils.discretizeValue(maxInputRate, monitoringInfo.getInputRate(), inputRateLevels);
-        // build new state
-        return StateFactory.createState(stateRepresentation, -1, deployment, inputRateLevel,
-                this.inputRateLevels - 1, this.operator.getMaxParallelism());
-    }
-
     protected double computeCost(Action action, State currentState, double inputRate) {
         double cost = 0.0;
 
@@ -164,7 +151,7 @@ public abstract class RewardBasedOM extends OperatorManager {
         return cost;
     }
 
-    protected Reconfiguration action2reconfiguration(Action action) {
+    static public Reconfiguration action2reconfiguration(Action action) {
         int delta = action.getDelta();
 
         if (delta > 1 || delta < -1) throw new RuntimeException("Unsupported action!");

@@ -8,6 +8,7 @@ import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.am.ApplicationManager;
 import it.uniroma2.dspsim.dsp.edf.am.ApplicationManagerFactory;
 import it.uniroma2.dspsim.dsp.edf.am.ApplicationManagerType;
+import it.uniroma2.dspsim.dsp.edf.am.centralized.CentralizedAM;
 import it.uniroma2.dspsim.dsp.edf.om.*;
 import it.uniroma2.dspsim.dsp.edf.om.factory.OperatorManagerFactory;
 import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
@@ -33,9 +34,11 @@ public class EDF {
 
 		applicationManager = newApplicationManager(conf, sloLatency);
 
-		operatorManagers = new HashMap<>(numOperators);
-		for (Operator op : operators) {
-			operatorManagers.put(op, newOperatorManager(op, conf));
+		if (!(applicationManager instanceof CentralizedAM)) {
+			operatorManagers = new HashMap<>(numOperators);
+			for (Operator op : operators) {
+				operatorManagers.put(op, newOperatorManager(op, conf));
+			}
 		}
 	}
 
@@ -60,7 +63,7 @@ public class EDF {
 
 	public Map<Operator, Reconfiguration> pickReconfigurations (MonitoringInfo monitoringInfo) {
 		Map<Operator, OMMonitoringInfo> omMonitoringInfo = new HashMap<>();
-		for (Operator op : operatorManagers.keySet()) {
+		for (Operator op : application.getOperators()) {
 			omMonitoringInfo.put(op, new OMMonitoringInfo());
 			omMonitoringInfo.get(op).setInputRate(0.0);
 		}

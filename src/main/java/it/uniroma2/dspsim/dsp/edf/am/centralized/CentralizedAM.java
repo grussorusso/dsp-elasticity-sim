@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import static it.uniroma2.dspsim.dsp.edf.om.RewardBasedOM.action2reconfiguration;
 
 
 /**
@@ -244,13 +245,24 @@ public class CentralizedAM extends ApplicationManager {
 	public Map<Operator, Reconfiguration> planReconfigurations(Map<Operator, OMMonitoringInfo> omMonitoringInfo,
 															   Map<Operator, OperatorManager> operatorManagers) {
 
-		// TODO: build current state
+		// Compute current state
+		Operator op1 = application.getOperators().get(0);
+		Operator op2 = application.getOperators().get(1);
+		State s1 = StateUtils.computeCurrentState(omMonitoringInfo.get(op1), op1, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
+		State s2 = StateUtils.computeCurrentState(omMonitoringInfo.get(op2), op2, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
+		JointState currentState = new JointState(s1,s2);
 
-		// TODO: pick best global action
+		// Pick best global action
+		JointAction a = greedyAction(currentState);
 
-		// TODO: build map op->reconf based on global action
+		// Build map op->reconf based on global action
+		Map<Operator, Reconfiguration> opReconfs = new HashMap<>(nOperators);
+		for (int i = 0; i<nOperators; i++) {
+			Reconfiguration rcf = action2reconfiguration(a.actions[i]);
+			opReconfs.put(application.getOperators().get(i), rcf);
+		}
 
-		return null;
+		return opReconfs;
 	}
 
 	@Override
