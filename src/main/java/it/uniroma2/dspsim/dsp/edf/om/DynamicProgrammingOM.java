@@ -28,7 +28,7 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
                 .getString(ConfigurationKeys.TRAINING_INPUT_FILE_PATH_KEY, "/Users/simone/Documents/Tesi/profile_last_month.dat");
 
         try {
-            this.pMatrix = buildPMatrix(this.trainingInputRateFilePath);
+            this.pMatrix = buildPMatrix(this.trainingInputRateFilePath, this.getMaxInputRate(), this.getInputRateLevels());
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -38,10 +38,10 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
         buildQ();
     }
 
-    private DoubleMatrix<Integer, Integer> buildPMatrix(String inputRateFilePath) throws IOException {
+    static public DoubleMatrix<Integer, Integer> buildPMatrix(String inputRateFilePath, int maxInputRate, int inputRateLevels) throws IOException {
         InputRateFileReader inputRateFileReader = new InputRateFileReader(inputRateFilePath);
 
-        IntegerMatrix<Integer, Integer> transitionMatrix = computeTransitionMatrix(inputRateFileReader);
+        IntegerMatrix<Integer, Integer> transitionMatrix = computeTransitionMatrix(inputRateFileReader, maxInputRate, inputRateLevels);
 
         DoubleMatrix<Integer, Integer> pMatrix = new DoubleMatrix<>(0.0);
 
@@ -55,12 +55,13 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
         return pMatrix;
     }
 
-    private IntegerMatrix<Integer, Integer> computeTransitionMatrix(InputRateFileReader inputRateFileReader) throws IOException {
+    static private IntegerMatrix<Integer, Integer> computeTransitionMatrix(InputRateFileReader inputRateFileReader, int maxInputRate,
+                                                                           int inputRateLevels) throws IOException {
         IntegerMatrix<Integer, Integer> transitionMatrix = new IntegerMatrix<>(0);
         if (inputRateFileReader.hasNext()) {
-            int prevInputRateLevel = MathUtils.discretizeValue(this.getMaxInputRate(), inputRateFileReader.next(), this.getInputRateLevels());
+            int prevInputRateLevel = MathUtils.discretizeValue(maxInputRate, inputRateFileReader.next(), inputRateLevels);
             while (inputRateFileReader.hasNext()) {
-                int inputRateLevel = MathUtils.discretizeValue(this.getMaxInputRate(), inputRateFileReader.next(), this.getInputRateLevels());
+                int inputRateLevel = MathUtils.discretizeValue(maxInputRate, inputRateFileReader.next(), inputRateLevels);
                 transitionMatrix.add(prevInputRateLevel, inputRateLevel, 1);
                 prevInputRateLevel = inputRateLevel;
             }

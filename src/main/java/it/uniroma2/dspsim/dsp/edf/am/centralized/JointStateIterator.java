@@ -12,11 +12,11 @@ public class JointStateIterator {
 	private StateIterator s2;
 	private State state2;
 
-	private int maxParallelism;
+	private int maxParallelism[];
 	private ComputingInfrastructure infrastructure;
 	private int lambdaLevels;
 
-	public JointStateIterator (int nOperators, int maxParallelism, ComputingInfrastructure infrastructure, int lambdaLevels)
+	public JointStateIterator (int nOperators, int maxParallelism[], ComputingInfrastructure infrastructure, int lambdaLevels)
 	{
 		if (nOperators != 2) {
 			throw new RuntimeException("JointStateIterator only supports 2 operators");
@@ -26,8 +26,8 @@ public class JointStateIterator {
 		this.infrastructure = infrastructure;
 		this.lambdaLevels = lambdaLevels;
 
-		s1 = new StateIterator(StateType.K_LAMBDA, maxParallelism, infrastructure, lambdaLevels);
-		s2 = new StateIterator(StateType.K_LAMBDA, maxParallelism, infrastructure, lambdaLevels);
+		s1 = new StateIterator(StateType.K_LAMBDA, maxParallelism[0], infrastructure, lambdaLevels);
+		s2 = new StateIterator(StateType.K_LAMBDA, maxParallelism[1], infrastructure, lambdaLevels);
 		state2 = s2.next();
 	}
 
@@ -40,7 +40,7 @@ public class JointStateIterator {
 	public JointState next()
 	{
 		if (!s1.hasNext()) {
-			s1 = new StateIterator(StateType.K_LAMBDA, maxParallelism, infrastructure, lambdaLevels);
+			s1 = new StateIterator(StateType.K_LAMBDA, maxParallelism[0], infrastructure, lambdaLevels);
 			state2 = s2.next();
 		}
 

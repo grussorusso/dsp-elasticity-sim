@@ -11,7 +11,8 @@ public class TestJointStateSpace {
 	public void testJointStateIterator()
 	{
 		ComputingInfrastructure.initDefaultInfrastructure(1);
-		JointStateIterator it = new JointStateIterator(2, 3, ComputingInfrastructure.getInfrastructure(), 3);
+		int maxParallelism[] = {3,3};
+		JointStateIterator it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
 
 		while (it.hasNext()) {
 			System.out.println(it.next());
@@ -22,7 +23,8 @@ public class TestJointStateSpace {
 	public void testJointStateActionIterator()
 	{
 		ComputingInfrastructure.initDefaultInfrastructure(1);
-		JointStateIterator it = new JointStateIterator(2, 3, ComputingInfrastructure.getInfrastructure(), 3);
+		int maxParallelism[] = {3,3};
+		JointStateIterator it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
 
 		while (it.hasNext()) {
 			JointState s = it.next();
@@ -44,7 +46,8 @@ public class TestJointStateSpace {
 		int maxSHash2 = -1;
 
 		ComputingInfrastructure.initDefaultInfrastructure(1);
-		JointStateIterator it = new JointStateIterator(2, 3, ComputingInfrastructure.getInfrastructure(), 3);
+		int maxParallelism[] = {3,3};
+		JointStateIterator it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
 
 		while (it.hasNext()) {
 			JointState s = it.next();
@@ -59,7 +62,7 @@ public class TestJointStateSpace {
 
 		JointQTable qTable = new JointQTable(0.0, maxSHash1, maxSHash2, maxAHash);
 
-		it = new JointStateIterator(2, 3, ComputingInfrastructure.getInfrastructure(), 3);
+		it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
 		while (it.hasNext()) {
 			JointState s = it.next();
 			ait = new JointActionIterator(2);
@@ -71,7 +74,7 @@ public class TestJointStateSpace {
 			}
 		}
 
-		it = new JointStateIterator(2, 3, ComputingInfrastructure.getInfrastructure(), 3);
+		it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
 		while (it.hasNext()) {
 			JointState s = it.next();
 			ait = new JointActionIterator(2);

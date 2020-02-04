@@ -66,6 +66,8 @@ public class Simulation {
 		this.wSLO = conf.getDouble(ConfigurationKeys.RL_OM_SLO_WEIGHT_KEY, 0.33);
 		this.wReconf = conf.getDouble(ConfigurationKeys.RL_OM_RECONFIG_WEIGHT_KEY, 0.33);
 		this.wRes = conf.getDouble(ConfigurationKeys.RL_OM_RESOURCES_WEIGHT_KEY, 0.33);
+
+		logger.info("SLO latency: {}", LATENCY_SLO);
 	}
 
 	public void run() throws IOException {

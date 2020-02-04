@@ -14,12 +14,22 @@ public class JointAction {
 
 	@Override
 	public String toString() {
-		return "JointAction{" +
-				"actions=" + Arrays.toString(actions) +
+		return "{" +
+				Arrays.toString(actions) +
 				'}';
 	}
 
 	public Action[] getActions() {
 		return actions;
+	}
+
+	public boolean isReconfiguration() {
+		for (Action a : actions) {
+			if (a.getDelta() != 0) { // TODO: migration?
+				return true;
+			}
+		}
+
+		return false;
 	}
 }

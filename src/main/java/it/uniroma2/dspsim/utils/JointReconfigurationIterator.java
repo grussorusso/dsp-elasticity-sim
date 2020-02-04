@@ -1,6 +1,6 @@
 package it.uniroma2.dspsim.utils;
 
-public class JointActionIterator {
+public class JointReconfigurationIterator {
 
 	/* Number of OMs. */
 	private int N;
@@ -12,7 +12,7 @@ public class JointActionIterator {
 	private int nJointActions;
 	private int a[];
 
-	public JointActionIterator (int numOM, int omRcfCount[])
+	public JointReconfigurationIterator(int numOM, int omRcfCount[])
 	{
 		this.N = numOM;
 		this.omRcfCount = omRcfCount;

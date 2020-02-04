@@ -77,16 +77,16 @@ public class KLambdaState extends State {
         return k;
     }
 
-    @Override
-    public String dump() {
-        StringBuilder str = new StringBuilder(super.dump());
-        str.append("\t[");
-        for (int i = 0; i < this.k.length; i++) {
-            str.append(String.format("%d", this.k[i]));
-            if (i < this.k.length - 1)
-                str.append(", ");
-        }
-        str.append("]");
-        return str.toString();
-    }
+    //@Override
+    //public String dump() {
+    //    StringBuilder str = new StringBuilder(super.dump());
+    //    str.append("\t[");
+    //    for (int i = 0; i < this.k.length; i++) {
+    //        str.append(String.format("%d", this.k[i]));
+    //        if (i < this.k.length - 1)
+    //            str.append(", ");
+    //    }
+    //    str.append("]");
+    //    return str.toString();
+    //}
 }

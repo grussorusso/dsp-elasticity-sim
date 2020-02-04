@@ -10,8 +10,8 @@ import java.util.Map;
 
 public class DoNothingAM extends ApplicationManager {
 
-	public DoNothingAM(Application application) {
-		super(application);
+	public DoNothingAM(Application application, double sloLatency) {
+		super(application, sloLatency);
 	}
 
 	protected Map<Operator, Reconfiguration> plan (Map<OperatorManager, OMRequest> omRequestMap)

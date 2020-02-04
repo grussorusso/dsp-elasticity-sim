@@ -15,8 +15,9 @@ public abstract class ApplicationManager {
 	protected Application application;
 	protected double sloLatency;
 
-	public ApplicationManager(Application application) {
+	public ApplicationManager(Application application, double sloLatency)  {
 		this.application = application;
+		this.sloLatency = sloLatency;
 	}
 
 	public Application getApplication() {
@@ -55,7 +56,8 @@ public abstract class ApplicationManager {
 		return reconfigurations;
 	}
 
-	public void setSloLatency(double sloLatency) {
-		this.sloLatency = sloLatency;
+	protected boolean isAppSLOViolated(Map<Operator, Double> opResponseTime) {
+		return application.endToEndLatency(opResponseTime)  > sloLatency;
 	}
+
 }

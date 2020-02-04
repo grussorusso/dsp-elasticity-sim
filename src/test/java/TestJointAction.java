@@ -1,4 +1,4 @@
-import it.uniroma2.dspsim.utils.JointActionIterator;
+import it.uniroma2.dspsim.utils.JointReconfigurationIterator;
 import org.junit.Test;
 
 public class TestJointAction {
@@ -16,7 +16,7 @@ public class TestJointAction {
 		}
 		System.out.println("Possible joint actions: " + nJointActions);
 
-		JointActionIterator iterator = new JointActionIterator(N, omRcfCount);
+		JointReconfigurationIterator iterator = new JointReconfigurationIterator(N, omRcfCount);
 		while (iterator.hasNext()) {
 			System.out.println(iterator.next());
 		}

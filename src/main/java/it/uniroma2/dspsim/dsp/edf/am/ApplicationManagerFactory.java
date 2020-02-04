@@ -9,14 +9,14 @@ public class ApplicationManagerFactory {
     private ApplicationManagerFactory() {}
 
     public static ApplicationManager createApplicationManager(
-            ApplicationManagerType appManagerType, Application app) throws IllegalArgumentException {
+            ApplicationManagerType appManagerType, Application app, double sloLatency) throws IllegalArgumentException {
         switch (appManagerType) {
             case DO_NOTHING:
-                return new DoNothingAM(app);
+                return new DoNothingAM(app, sloLatency);
             case SPLITQ_BASED:
-                return new SplitQBasedAM(app);
+                return new SplitQBasedAM(app, sloLatency);
             case CENTRALIZED:
-                return new CentralizedAM(app);
+                return new CentralizedAM(app, sloLatency);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not supported application manager type: " + appManagerType.toString());

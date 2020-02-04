@@ -8,13 +8,12 @@ import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
 import it.uniroma2.dspsim.dsp.edf.om.request.ReconfigurationScore;
 import it.uniroma2.dspsim.dsp.edf.om.request.RewardBasedOMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.request.SplitQReconfigurationScore;
-import it.uniroma2.dspsim.utils.JointActionIterator;
+import it.uniroma2.dspsim.utils.JointReconfigurationIterator;
 import it.uniroma2.dspsim.utils.Tuple2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -22,8 +21,8 @@ public class SplitQBasedAM extends ApplicationManager {
 
 	private Logger logger = LoggerFactory.getLogger(SplitQBasedAM.class);
 
-	public SplitQBasedAM(Application application) {
-		super(application);
+	public SplitQBasedAM(Application application, double sloLatency) {
+		super(application, sloLatency);
 	}
 
 	private RewardBasedOMRequest getRequest (OMRequest request) {
@@ -83,7 +82,7 @@ public class SplitQBasedAM extends ApplicationManager {
 		 */
 		int bestAction[] = new int[0]; /* just to initialize it... */
 		Double bestQ = null;
-		JointActionIterator iterator = new JointActionIterator(N, omRcfCount);
+		JointReconfigurationIterator iterator = new JointReconfigurationIterator(N, omRcfCount);
 		while (iterator.hasNext()) {
 			int a[] = iterator.next();
 			double q = evaluateGlobalQ(a, managers, scoredRcfs);
@@ -163,10 +162,6 @@ public class SplitQBasedAM extends ApplicationManager {
 		final double w=0.33;
 		logger.info("Q({}): res={}, rcf={}, slo={}", a, Qres, qRcf, Qslo);
 		return w*Qres + w*qRcf + w*Qslo;
-	}
-
-	private boolean isAppSLOViolated(Map<Operator, Double> opResponseTime) {
-		return application.endToEndLatency(opResponseTime)  > sloLatency;
 	}
 
 

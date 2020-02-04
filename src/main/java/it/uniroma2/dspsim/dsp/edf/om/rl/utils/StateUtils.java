@@ -1,6 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.utils;
 
-import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
+import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.RewardBasedOM;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
@@ -20,15 +20,20 @@ public class StateUtils {
     private StateUtils() { }
 
     public static State computePostDecisionState(State state, Action action, RewardBasedOM om) {
+        return computePostDecisionState(state, action, om.getStateRepresentation(), om.getInputRateLevels(), om.getOperator().getMaxParallelism());
+    }
+
+    public static State computePostDecisionState(State state, Action action, StateType stateType, int inputRateLevels,
+                                                 int maxParallelism) {
         if (action.getDelta() != 0) {
             int[] pdk = Arrays.copyOf(state.getActualDeployment(), state.getActualDeployment().length);
             int aIndex = action.getResTypeIndex();
             pdk[aIndex] = pdk[aIndex] + action.getDelta();
-            return StateFactory.createState(om.getStateRepresentation(), -1, pdk,
-                    state.getLambda(), om.getInputRateLevels() - 1, om.getOperator().getMaxParallelism());
+            return StateFactory.createState(stateType, -1, pdk,
+                    state.getLambda(), inputRateLevels - 1, maxParallelism);
         } else {
-            return StateFactory.createState(om.getStateRepresentation(), -1, state.getActualDeployment(),
-                    state.getLambda(), om.getInputRateLevels() - 1, om.getOperator().getMaxParallelism());
+            return StateFactory.createState(stateType, -1, state.getActualDeployment(),
+                    state.getLambda(), inputRateLevels - 1, maxParallelism);
         }
     }
 
@@ -42,7 +47,11 @@ public class StateUtils {
     }
 
     public static double computeDeploymentCostNormalized(State state, RewardBasedOM om) {
-        double maxCost = om.getOperator().getMaxParallelism() * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
+        return computeDeploymentCostNormalized(state, om.getOperator().getMaxParallelism());
+    }
+
+    public static double computeDeploymentCostNormalized(State state, int maxParallelism) {
+        double maxCost = maxParallelism * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
         return computeDeploymentCost(state) / maxCost;
     }
 
@@ -73,8 +82,12 @@ public class StateUtils {
     }
 
     public static double computeRespTime (State state, RewardBasedOM om) {
+        return computeRespTime(state, om.getOperator(), om.getMaxInputRate(), om.getInputRateLevels());
+    }
+
+    public static double computeRespTime (State state, Operator op, int maxInputRate, int inputRateLevels) {
         List<NodeType> operatorInstances = getOperatorInstances(state);
-        double inputRate = MathUtils.remapDiscretizedValue(om.getMaxInputRate(), state.getLambda(), om.getInputRateLevels());
-        return om.getOperator().responseTime(inputRate, operatorInstances);
+        double inputRate = MathUtils.remapDiscretizedValue(maxInputRate, state.getLambda(), inputRateLevels);
+        return op.responseTime(inputRate, operatorInstances);
     }
 }

@@ -31,8 +31,7 @@ public class EDF {
 
 		Configuration conf = Configuration.getInstance();
 
-		applicationManager = newApplicationManager(conf);
-		applicationManager.setSloLatency(sloLatency);
+		applicationManager = newApplicationManager(conf, sloLatency);
 
 		operatorManagers = new HashMap<>(numOperators);
 		for (Operator op : operators) {
@@ -40,12 +39,12 @@ public class EDF {
 		}
 	}
 
-	private ApplicationManager newApplicationManager(Configuration conf) {
+	private ApplicationManager newApplicationManager(Configuration conf, double sloLatency) {
 		// get application manager type from configurations
 		final String amType = conf.getString(ConfigurationKeys.AM_TYPE_KEY, "do-nothing");
 		ApplicationManagerType appManagerType = ApplicationManagerType.fromString(amType);
 
-		return ApplicationManagerFactory.createApplicationManager(appManagerType, application);
+		return ApplicationManagerFactory.createApplicationManager(appManagerType, application, sloLatency);
 	}
 
 	protected OperatorManager newOperatorManager (Operator op, Configuration configuration) {

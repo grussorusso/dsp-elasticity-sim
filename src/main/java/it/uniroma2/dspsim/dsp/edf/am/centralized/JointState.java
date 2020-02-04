@@ -24,8 +24,8 @@ public class JointState {
 
 	@Override
 	public String toString() {
-		return "JointState{" +
-				"states=" + Arrays.toString(states) +
+		return "{" +
+				Arrays.toString(states) +
 				'}';
 	}
 
