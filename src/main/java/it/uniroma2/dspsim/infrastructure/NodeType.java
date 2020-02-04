@@ -33,4 +33,7 @@ public class NodeType {
 		return cpuSpeedup;
 	}
 
+	public void setCpuSpeedup(double cpuSpeedup) {
+		this.cpuSpeedup = cpuSpeedup;
+	}
 }
