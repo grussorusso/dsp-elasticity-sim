@@ -88,31 +88,39 @@ public class Operator {
 	public double utilization(double inputRate, List<NodeType> operatorInstances) {
 		List<Tuple2<NodeType, Double>> inputRates = loadBalancer.balance(inputRate, operatorInstances);
 
+		double[] perReplicaInputRate = new double[inputRates.size()];
 		double[] perReplicaUtilization = new double[inputRates.size()];
 		for (int i = 0; i < inputRates.size(); i++) {
 			Tuple2<NodeType, Double> perReplicaRate = inputRates.get(i);
+			perReplicaInputRate[i] = perReplicaRate.getV();
 			perReplicaUtilization[i] = queueModel.utilization(perReplicaRate.getV(), perReplicaRate.getK().getCpuSpeedup());
 		}
 
-		return computeValueConsideringCase(perReplicaUtilization);
+		return computeValueConsideringCase(inputRate, perReplicaInputRate, perReplicaUtilization);
 	}
 
 	public double responseTime(double inputRate, List<NodeType> operatorInstances) {
 		List<Tuple2<NodeType, Double>> inputRates = loadBalancer.balance(inputRate, operatorInstances);
 
+		double[] perReplicaInputRate = new double[inputRates.size()];
 		double[] perReplicaRespTime = new double[inputRates.size()];
 		for (int i = 0; i < inputRates.size(); i++) {
 			Tuple2<NodeType, Double> perReplicaRate = inputRates.get(i);
+			perReplicaInputRate[i] = perReplicaRate.getV();
 			perReplicaRespTime[i] = queueModel.responseTime(perReplicaRate.getV(), perReplicaRate.getK().getCpuSpeedup());
 		}
 
-		return computeValueConsideringCase(perReplicaRespTime);
+		return computeValueConsideringCase(inputRate, perReplicaInputRate, perReplicaRespTime);
 	}
 
-	private double computeValueConsideringCase(double[] values) {
+	private double computeValueConsideringCase(double totalIR, double[] partialIR, double[] values) {
 		switch (this.valuesComputingCase) {
 			case AVG:
-				return Arrays.stream(values).sum() / (double) values.length;
+				double rt = 0.0;
+				for (int i = 0; i < values.length; i++) {
+					rt += (partialIR[i] / totalIR) * values[i];
+				}
+				return rt;
 			default:
 				OptionalDouble max = Arrays.stream(values).max();
 				if (max.isPresent()) {
