@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.utils.matrix;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -57,6 +58,10 @@ public abstract class Matrix<X, Y, V extends Number> implements MatrixOps<X, Y, 
     public Set<Y> getColLabels(X x) {
         return this.table.row(x).keySet();
     }
+
+    public Map<Y, V> getRow(X x) { return this.table.row(x); }
+
+    public Map<X, V> getCol(Y y) { return this.table.column(y); }
 
     public V rowSum(X x) {
         V s = null;

@@ -209,6 +209,8 @@ public class Operator {
 
 	public double getSloRespTime() { return sloRespTime; }
 
+
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
