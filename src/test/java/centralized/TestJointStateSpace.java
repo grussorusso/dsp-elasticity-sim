@@ -41,31 +41,17 @@ public class TestJointStateSpace {
 	@Test
 	public void testJointQTable()
 	{
-		int maxAHash = -1;
-		int maxSHash1 = -1;
-		int maxSHash2 = -1;
-
 		ComputingInfrastructure.initDefaultInfrastructure(1);
 		int maxParallelism[] = {3,3};
-		JointStateIterator it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
+		JointStateIterator it;
+		JointActionIterator ait;
 
+		JointQTable qTable = JointQTable.createQTable(maxParallelism.length, maxParallelism, 3);
+
+		it = new JointStateIterator(maxParallelism.length, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
 		while (it.hasNext()) {
 			JointState s = it.next();
-			maxSHash1 = Math.max(maxSHash1, s.getStates()[0].hashCode());
-			maxSHash2 = Math.max(maxSHash2, s.getStates()[1].hashCode());
-		}
-		JointActionIterator ait = new JointActionIterator(2);
-		while (ait.hasNext()) {
-			JointAction a = ait.next();
-			maxAHash = Math.max(maxAHash, a.getActions()[0].hashCode());
-		}
-
-		JointQTable qTable = new JointQTable(0.0, maxSHash1, maxSHash2, maxAHash);
-
-		it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
-		while (it.hasNext()) {
-			JointState s = it.next();
-			ait = new JointActionIterator(2);
+			ait = new JointActionIterator(maxParallelism.length);
 			while (ait.hasNext()) {
 				JointAction a = ait.next();
 				if (s.validateAction(a)) {
@@ -74,10 +60,10 @@ public class TestJointStateSpace {
 			}
 		}
 
-		it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
+		it = new JointStateIterator(maxParallelism.length, maxParallelism, ComputingInfrastructure.getInfrastructure(), 3);
 		while (it.hasNext()) {
 			JointState s = it.next();
-			ait = new JointActionIterator(2);
+			ait = new JointActionIterator(maxParallelism.length);
 			while (ait.hasNext()) {
 				JointAction a = ait.next();
 				if (s.validateAction(a)) {

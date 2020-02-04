@@ -79,8 +79,7 @@ public class CentralizedAM extends ApplicationManager {
 			maxParallelism[i] = application.getOperators().get(i).getMaxParallelism();
 		}
 
-		 String trainingInputRateFilePath = Configuration.getInstance()
-				.getString(ConfigurationKeys.TRAINING_INPUT_FILE_PATH_KEY, "");
+		 String trainingInputRateFilePath = configuration.getString(ConfigurationKeys.TRAINING_INPUT_FILE_PATH_KEY, "");
 
 		try {
 			this.pMatrix = DynamicProgrammingOM.buildPMatrix(trainingInputRateFilePath, this.maxInputRate, inputRateLevels);
@@ -88,29 +87,8 @@ public class CentralizedAM extends ApplicationManager {
 			e.printStackTrace();
 		}
 
-		allocateQTable();
+		this.qTable = JointQTable.createQTable(nOperators, maxParallelism, inputRateLevels);
 		computePolicy();
-	}
-
-	private void allocateQTable () {
-		int maxAHash = -1;
-		int maxSHash1 = -1;
-		int maxSHash2 = -1;
-
-		JointStateIterator it = new JointStateIterator(2, maxParallelism, ComputingInfrastructure.getInfrastructure(), inputRateLevels);
-
-		while (it.hasNext()) {
-			JointState s = it.next();
-			maxSHash1 = Math.max(maxSHash1, s.getStates()[0].hashCode());
-			maxSHash2 = Math.max(maxSHash2, s.getStates()[1].hashCode());
-		}
-		JointActionIterator ait = new JointActionIterator(2);
-		while (ait.hasNext()) {
-			JointAction a = ait.next();
-			maxAHash = Math.max(maxAHash, a.getActions()[0].hashCode());
-		}
-
-		qTable = new JointQTable(0.0, maxSHash1, maxSHash2, maxAHash);
 	}
 
 	private void computePolicy() {
@@ -236,6 +214,7 @@ public class CentralizedAM extends ApplicationManager {
 	}
 
 	private JointState computePDS(JointState s, JointAction a) {
+		// TODO: 3+ operators
 		State pds1 = StateUtils.computePostDecisionState(s.states[0], a.actions[0], StateType.K_LAMBDA, inputRateLevels, maxParallelism[0]);
 		State pds2 = StateUtils.computePostDecisionState(s.states[1], a.actions[1], StateType.K_LAMBDA, inputRateLevels, maxParallelism[1]);
 		return new JointState(pds1, pds2);
@@ -246,6 +225,7 @@ public class CentralizedAM extends ApplicationManager {
 															   Map<Operator, OperatorManager> operatorManagers) {
 
 		// Compute current state
+		// TODO: 3+ operators
 		Operator op1 = application.getOperators().get(0);
 		Operator op2 = application.getOperators().get(1);
 		State s1 = StateUtils.computeCurrentState(omMonitoringInfo.get(op1), op1, maxInputRate, inputRateLevels, StateType.K_LAMBDA);

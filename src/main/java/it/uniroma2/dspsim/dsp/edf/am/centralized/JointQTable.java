@@ -1,5 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.am.centralized;
 
+import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+
 public class JointQTable {
 
 
@@ -7,7 +9,7 @@ public class JointQTable {
 	private int maxActionHash;
 	private int size1;
 
-	public JointQTable(double initializationValue, int maxStateHash1, int maxStateHash2, int maxActionHash) {
+	private JointQTable(double initializationValue, int maxStateHash1, int maxStateHash2, int maxActionHash) {
 		this.size1 = (1+maxActionHash)*(1+maxStateHash1);
 		int size2 = (1+maxActionHash)*(1+maxStateHash2);
 		int size = Math.multiplyExact(size1,size2);
@@ -17,6 +19,34 @@ public class JointQTable {
 		}
 
 		this.maxActionHash = maxActionHash;
+	}
+
+
+	public static JointQTable createQTable (int nOperators, int maxParallelism[], int inputRateLevels)
+	{
+		//TODO 3+ operators
+		if (nOperators != 2) {
+			throw new RuntimeException("Only 2 operators are supported.");
+		}
+
+		int maxAHash = -1;
+		int maxSHash1 = -1;
+		int maxSHash2 = -1;
+
+		JointStateIterator it = new JointStateIterator(nOperators, maxParallelism, ComputingInfrastructure.getInfrastructure(), inputRateLevels);
+
+		while (it.hasNext()) {
+			JointState s = it.next();
+			maxSHash1 = Math.max(maxSHash1, s.getStates()[0].hashCode());
+			maxSHash2 = Math.max(maxSHash2, s.getStates()[1].hashCode());
+		}
+		JointActionIterator ait = new JointActionIterator(nOperators);
+		while (ait.hasNext()) {
+			JointAction a = ait.next();
+			maxAHash = Math.max(maxAHash, a.getActions()[0].hashCode());
+		}
+
+		return new JointQTable(0.0, maxSHash1, maxSHash2, maxAHash);
 	}
 
 	public double getQ(JointState s, JointAction a) {
