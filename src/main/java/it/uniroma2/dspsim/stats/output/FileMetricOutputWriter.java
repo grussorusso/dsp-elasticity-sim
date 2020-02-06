@@ -2,6 +2,7 @@ package it.uniroma2.dspsim.stats.output;
 
 import it.uniroma2.dspsim.stats.metrics.Metric;
 import it.uniroma2.dspsim.stats.samplers.MetricSampleInfo;
+import org.apache.commons.io.FileUtils;
 
 import java.io.*;
 

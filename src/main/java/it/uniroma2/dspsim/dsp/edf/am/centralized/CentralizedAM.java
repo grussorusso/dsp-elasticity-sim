@@ -10,15 +10,21 @@ import it.uniroma2.dspsim.dsp.edf.om.DynamicProgrammingOM;
 import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
 import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
 import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
+import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -87,6 +93,8 @@ public class CentralizedAM extends ApplicationManager {
 
 		this.qTable = JointQTable.createQTable(nOperators, maxParallelism, inputRateLevels);
 		computePolicy();
+		dumpQ(String.format("%s/centralizedQtable",
+				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
 	}
 
 	private void computePolicy() {
@@ -109,26 +117,46 @@ public class CentralizedAM extends ApplicationManager {
 			}
 			System.err.println(delta);
 		} while (delta > 0.0001);
-
-		dumpQ();
 	}
 
-	private void dumpQ() {
+	private void dumpQ(String filename) {
 
-		JointStateIterator sit = new JointStateIterator(nOperators, maxParallelism,
-				ComputingInfrastructure.getInfrastructure(), inputRateLevels);
-		while (sit.hasNext()) {
-			JointState s = sit.next();
-			if (s.states[0].getLambda() != s.states[1].getLambda()) // TODO
-				continue;
-			JointActionIterator ait = new JointActionIterator(nOperators);
-			while (ait.hasNext()) {
-				JointAction a = ait.next();
-				if (!s.validateAction(a))
-					continue;
-				double q = qTable.getQ(s,a);
-				logger.info("Q({},{}) = {}", s, a, q);
+		// create file
+		File file = new File(filename);
+		try {
+			if (!file.exists()) {
+				file.getParentFile().mkdirs();
+				file.createNewFile();
 			}
+			PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
+			JointStateIterator sit = new JointStateIterator(nOperators, maxParallelism,
+					ComputingInfrastructure.getInfrastructure(), inputRateLevels);
+			while (sit.hasNext()) {
+				JointState s = sit.next();
+
+				// TODO: we ignore states where operators have different lambdas
+				int lambda = s.states[0].getLambda();
+				boolean ok = true;
+				for (int i = 1; i<s.states.length && ok; i++) {
+					if (s.states[i].getLambda() != lambda)
+						ok = false;
+				}
+				if (!ok)
+					continue;
+
+				JointActionIterator ait = new JointActionIterator(nOperators);
+				while (ait.hasNext()) {
+					JointAction a = ait.next();
+					if (!s.validateAction(a))
+						continue;
+					double q = qTable.getQ(s,a);
+					printWriter.println(String.format("Q(%s,%s) = %f", s.toString(), a.toString(), q));
+				}
+			}
+			printWriter.flush();
+			printWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -227,7 +255,6 @@ public class CentralizedAM extends ApplicationManager {
 		for (int i = 0; i<nOperators; i++) {
 			Operator op = application.getOperators().get(i);
 			s[i] = StateUtils.computeCurrentState(omMonitoringInfo.get(op), op, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
-			System.err.println(s[i].getMaxParallelism());
 		}
 		JointState currentState = new JointState(s);
 

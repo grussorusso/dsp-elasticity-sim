@@ -214,9 +214,8 @@ public class Simulation {
 	}
 
 	private void dumpConfigs() {
-		File configCopy = new File(String.format("%s/%s/others/configs",
-				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-				Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, "")));
+		File configCopy = new File(String.format("%s/configs",
+				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
 		if (!configCopy.getParentFile().exists()) {
 			configCopy.getParentFile().mkdirs();
 		}
@@ -230,9 +229,8 @@ public class Simulation {
 	}
 
 	private void dumpStats() {
-		File statsOutput = new File(String.format("%s/%s/others/final_stats",
-				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-				Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, "")));
+		File statsOutput = new File(String.format("%s/final_stats",
+				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
 		if (!statsOutput.getParentFile().exists()) {
 			statsOutput.getParentFile().mkdirs();
 		}

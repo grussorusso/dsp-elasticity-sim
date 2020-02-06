@@ -20,10 +20,8 @@ public class StepSampler extends Sampler {
 
     @Override
     public void addMetricSampleInfo(Metric metric) {
-        //String filename = String.format("%s_step_%d_sampling.csv", metric.getId(), step);
-        String filename = String.format("%s/%s/%s_step_%d_sampling_%s.dat",
+        String filename = String.format("%s/%s_step_%d_sampling_%s.dat",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-                Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
                 metric.getId(), step,
                 Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""));
         MetricSampleInfo metricSampleInfo = new MetricSampleInfo(metric.getId(), filename);

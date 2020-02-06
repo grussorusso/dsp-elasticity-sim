@@ -47,10 +47,8 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
         valueIteration(maxIterations, maxTimeMillis, theta);
 
-        dumpQOnFile(String.format("%s/%s/%s/policy",
-                Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-                Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
-                "others"));
+        dumpQOnFile(String.format("%s/qtable",
+                Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
     }
 
     @Override

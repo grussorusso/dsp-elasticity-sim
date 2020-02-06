@@ -69,7 +69,7 @@ public class ApplicationBuilder {
 	static public Application simpleTreeApplication() {
 		Application app = new Application();
 
-		final double mu = 10.0;
+		final double mu = 350.0;
 		final double serviceTimeMean = 1/mu;
 		final double serviceTimeVariance = 1.0/mu*1.0/mu;
 
@@ -126,13 +126,9 @@ public class ApplicationBuilder {
 	{
 		Application app = new Application();
 
-		double baseMu = 185.0;
 		Random rng = new Random(5678);
-		int maxRandomMu = 200 - 185;
 
-		double[] mus = new double[6];
-		for (int i = 0; i < 6; i ++)
-			mus[i] = baseMu + rng.nextInt(maxRandomMu);
+		double[] mus = {200.0, 300.0, 250.0, 250.0, 250.0, 2000.0};
 
 		final int maxParallelism = Configuration.getInstance()
 				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);;

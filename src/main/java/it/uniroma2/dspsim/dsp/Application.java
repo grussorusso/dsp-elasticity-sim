@@ -103,7 +103,7 @@ public class Application {
 		for (Operator op : path) {
 			// TODO: Shouldn't we compute the inputRate for each operator based on selectivity?
 			double operatorRespTime = op.responseTime(inputRate);
-			logger.info("Operator {} : response time {}", op.getName(), operatorRespTime);
+			//logger.info("Operator {} : response time {}", op.getName(), operatorRespTime);
 			latency += operatorRespTime;
 		}
 
