@@ -21,10 +21,7 @@ import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -91,10 +88,34 @@ public class CentralizedAM extends ApplicationManager {
 			e.printStackTrace();
 		}
 
-		this.qTable = JointQTable.createQTable(nOperators, maxParallelism, inputRateLevels);
-		computePolicy();
+		String qTableFilename = configuration.getString(ConfigurationKeys.AM_CENTRALIZED_PRECOMPUTED_QTABLE_FILE, "");
+		if (qTableFilename == null || qTableFilename.isEmpty()) {
+			this.qTable = JointQTable.createQTable(nOperators, maxParallelism, inputRateLevels);
+			computePolicy();
+			serializeQ(String.format("%s/centralizedQtable.ser",
+					Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
+		} else {
+			try {
+				this.qTable = loadQTable(qTableFilename);
+			} catch (IOException e) {
+				e.printStackTrace();
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
 		dumpQ(String.format("%s/centralizedQtable",
 				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
+	}
+
+	private JointQTable loadQTable(String qTableFilename) throws IOException, ClassNotFoundException {
+		FileInputStream file;
+		file = new FileInputStream(qTableFilename);
+		ObjectInputStream in = new ObjectInputStream(file);
+
+		// TODO: check if the state space is consistent
+		JointQTable table = (JointQTable)in.readObject();
+
+		return table;
 	}
 
 	private void computePolicy() {
@@ -117,6 +138,22 @@ public class CentralizedAM extends ApplicationManager {
 			}
 			System.err.println(delta);
 		} while (delta > 0.0001);
+	}
+
+	private void serializeQ (String filename) {
+
+		FileOutputStream file = null;
+		try {
+			file = new FileOutputStream(filename);
+			ObjectOutputStream out = new ObjectOutputStream(file);
+			out.writeObject(qTable);
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 	}
 
 	private void dumpQ(String filename) {

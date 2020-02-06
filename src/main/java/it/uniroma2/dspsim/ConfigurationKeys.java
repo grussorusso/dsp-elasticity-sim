@@ -53,6 +53,8 @@ public abstract class ConfigurationKeys {
 	 */
 	public static final String AM_TYPE_KEY = "edf.am.type";
 
+	public static final String AM_CENTRALIZED_PRECOMPUTED_QTABLE_FILE = "edf.am.centralized.qfilename";
+
 	/**
 	 * Type of OperatorManager to use.
 	 */

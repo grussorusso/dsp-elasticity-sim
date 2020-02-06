@@ -2,7 +2,9 @@ package it.uniroma2.dspsim.dsp.edf.am.centralized;
 
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 
-public class JointQTable {
+import java.io.Serializable;
+
+public class JointQTable implements Serializable {
 
 
 	private double arr[];
