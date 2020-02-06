@@ -5,6 +5,7 @@ import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -14,36 +15,35 @@ public class OperatorSLOTest {
         public static Application buildTestApplication(boolean balanced) {
             Application app = new Application();
 
-            double[] mus = new double[]{1000.0, 400.0, 310.0, 460.0, 180.0, 1200.0};
-            double[] sigmas = new double[] {0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001};
+            double[] mus = {350.0, 270.0, 180.0, 300.0, 250.0};
+            double[] serviceTimeMeans = new double[mus.length];
+            double[] serviceTimeVariances = new double[mus.length];
 
+            for (int i = 0; i < mus.length; i++) {
+                serviceTimeMeans[i] = 1/mus[i];
+                serviceTimeVariances[i] = 1.0/mus[i]*1.0/mus[i]/2.0;
+            }
             final int maxParallelism = 5;
-            Operator op1 = new Operator("splitter",
-                    new MG1OperatorQueueModel(1/mus[0], sigmas[0]), maxParallelism);
+            Operator op1 = new Operator("filter-1",
+                    new MG1OperatorQueueModel(serviceTimeMeans[0], serviceTimeVariances[0]), maxParallelism);
             app.addOperator(op1);
-            Operator op2 = new Operator("parallel1",
-                    new MG1OperatorQueueModel(1/mus[1], sigmas[1]), maxParallelism);
+            Operator op2 = new Operator("map",
+                    new MG1OperatorQueueModel(serviceTimeMeans[1], serviceTimeVariances[1]), maxParallelism);
             app.addOperator(op2);
-            Operator op3 = new Operator("parallel2",
-                    new MG1OperatorQueueModel(1/mus[2], sigmas[2]), maxParallelism);
+            Operator op3 = new Operator("reduce",
+                    new MG1OperatorQueueModel(serviceTimeMeans[2], serviceTimeVariances[2]), maxParallelism);
             app.addOperator(op3);
-            Operator op4 = new Operator("parallel3-1",
-                    new MG1OperatorQueueModel(1/mus[3], sigmas[3]), maxParallelism);
+            Operator op4 = new Operator("filter-2",
+                    new MG1OperatorQueueModel(serviceTimeMeans[3], serviceTimeVariances[3]), maxParallelism);
             app.addOperator(op4);
-            Operator op5 = new Operator("parallel3-2",
-                    new MG1OperatorQueueModel(1/mus[4], sigmas[4]), maxParallelism);
+            Operator op5 = new Operator("rank",
+                    new MG1OperatorQueueModel(serviceTimeMeans[4], serviceTimeVariances[4]), maxParallelism);
             app.addOperator(op5);
-            Operator op6 = new Operator("join\t",
-                    new MG1OperatorQueueModel(1/mus[5], sigmas[5]), maxParallelism);
-            app.addOperator(op6);
 
             app.addEdge(op1, op2);
-            app.addEdge(op1, op3);
-            app.addEdge(op1, op4);
-            app.addEdge(op4, op5);
-            app.addEdge(op2, op6);
-            app.addEdge(op3, op6);
-            app.addEdge(op5, op6);
+            app.addEdge(op2, op3);
+            app.addEdge(op3, op4);
+            app.addEdge(op3, op5);
 
             if (balanced) computeBalancedOperatorSLO(app); else computeOperatorsSlo(app);
 
@@ -54,7 +54,7 @@ public class OperatorSLOTest {
     @Test
     public void computeOperatorSLOTest() {
         ComputingInfrastructure.initDefaultInfrastructure(3);
-        double SLO = 0.065;
+        double SLO = 0.100;
         Application balancedApplication = ApplicationBuilderTest.buildTestApplication(true);
         Application notBalancedApplication = ApplicationBuilderTest.buildTestApplication(false);
 
