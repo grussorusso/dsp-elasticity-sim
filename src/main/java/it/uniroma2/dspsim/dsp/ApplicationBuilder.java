@@ -63,7 +63,6 @@ public class ApplicationBuilder {
 		app.addEdge(op3, op4);
 		app.addEdge(op3, op5);
 
-		//computeOperatorsSlo(app);
 		computeBalancedOperatorSLO(app);
 
 		return app;

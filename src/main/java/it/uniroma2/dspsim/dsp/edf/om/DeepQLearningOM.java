@@ -96,7 +96,7 @@ public class DeepQLearningOM extends DeepLearningOM {
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                                 .nIn(this.inputLayerNodesNumber)
                                 .nOut(this.outputLayerNodesNumber)
-                                .activation(Activation.SOFTMAX)
+                                .activation(Activation.IDENTITY)
                                 .build()
                 )
                 .pretrain(false)
