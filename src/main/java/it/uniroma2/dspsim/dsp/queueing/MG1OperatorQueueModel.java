@@ -35,4 +35,8 @@ public class MG1OperatorQueueModel implements OperatorQueueModel {
 		return rho;
 	}
 
+	@Override
+	public double getServiceTimeMean() {
+		return this.serviceTimeMean;
+	}
 }

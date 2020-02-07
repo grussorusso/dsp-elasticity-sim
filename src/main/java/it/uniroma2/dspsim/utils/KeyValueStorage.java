@@ -26,6 +26,10 @@ public class KeyValueStorage<K, V> {
         return this.map.values();
     }
 
+    public Collection<K> getKeys() {
+        return this.map.keySet();
+    }
+
     // update value in metadata removing old value and adding new value
     // WARNING: class consistency is left to the developer
     public void updateValue(K key, V newValue) {

@@ -7,6 +7,7 @@ import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.*;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
@@ -77,6 +78,8 @@ public class Simulation {
 	private void registerMetrics () {
 		Statistics statistics = Statistics.getInstance();
 
+		StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
+
 		//SIMPLE METRICS
 		// steps counter metric
 		statistics.registerMetric(new CountMetric(buildMetricName(STAT_STEPS_COUNTER)));
@@ -104,13 +107,14 @@ public class Simulation {
 
 		// incremental avg reward
 		IncrementalAvgMetric incrementalAvgMetric = new IncrementalAvgMetric(buildMetricName(STAT_APPLICATION_COST_AVG));
-		StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
 		incrementalAvgMetric.addSampler(stepSampler);
 		statistics.registerMetric(incrementalAvgMetric);
 
 		// avg deployment
 		for (int i = 0; i < ComputingInfrastructure.getInfrastructure().getNodeTypes().length; i++) {
-			statistics.registerMetricIfNotExists(new IncrementalAvgMetric(buildMetricName(STAT_AVG_DEPLOYMENT + i)));
+			IncrementalAvgMetric avgDeploymentMetric = new IncrementalAvgMetric(buildMetricName(STAT_AVG_DEPLOYMENT + i));
+			//avgDeploymentMetric.addSampler(stepSampler);
+			statistics.registerMetricIfNotExists(avgDeploymentMetric);
 		}
 	}
 
@@ -174,6 +178,25 @@ public class Simulation {
 
 			// metrics sampling
 			Statistics.getInstance().sampleAll(time);
+
+			// TODO use update functions
+			/*
+			if (time == 14400) {
+				double maxAvgDeployment = 0.0;
+				int maxIndex = -1;
+				for (int i = 0; i < globalDeployment.length; i++) {
+					double avgDep = (double) Statistics.getInstance().getMetric(buildMetricName(STAT_AVG_DEPLOYMENT +i)).getValue();
+					if (maxIndex == -1 || avgDep > maxAvgDeployment) {
+						maxAvgDeployment = avgDep;
+						maxIndex = i;
+					}
+				}
+
+				double newSpeedup = 0.1;
+				ComputingInfrastructure.getInfrastructure().getNodeTypes()[maxIndex].setCpuSpeedup(newSpeedup);
+			}
+			*/
+
 
 			if (time % 5000 == 0)
 				// TODO print simulation completion percentage
