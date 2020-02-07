@@ -89,7 +89,10 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 
 	private double evaluateVoidPolicyQRespTime(State s) {
 		double cost = 0.0;
-		State pds = s;
+
+		/* we just need a copy of the state object */
+		State pds = StateUtils.computePostDecisionState(s, ActionIterator.getDoNothingAction(), this);
+
 		Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
 		for (int lambda : possibleLambdas) {
 			// change pds.lambda to lambda
