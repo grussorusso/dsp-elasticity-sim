@@ -288,7 +288,8 @@ public class Simulation {
 		}
 
 		ComputingInfrastructure.initCustomInfrastructure(
-				new double[]{2, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 1.0, 1.65, 1.5},
+				//new double[]{2, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 1.0, 1.65, 1.5},
+				new double[]{2, 0.3, 1.0, 0.9, 1.7, 0.8, 1.8, 1.0, 1.65, 1.5},
 				conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
 
 		try {
@@ -296,7 +297,7 @@ public class Simulation {
 					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
-			Application app = ApplicationBuilder.multiOperatorApplication();
+			Application app = ApplicationBuilder.singleOperatorApplication();
 			ApplicationManager am = new ApplicationManager(app);
 
 			Simulation simulation = new Simulation(inputRateFileReader, am);
