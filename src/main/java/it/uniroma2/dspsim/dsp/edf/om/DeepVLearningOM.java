@@ -49,7 +49,7 @@ public class DeepVLearningOM extends DeepLearningOM {
         State pdState = StateUtils.computePostDecisionState(oldState, action, this);
 
         // unknown cost
-        double cU = reward - computeActionCost(action) - StateUtils.computeDeploymentCostNormalized(pdState, this);
+        double cU = reward - computeActionCost(action) - (StateUtils.computeDeploymentCostNormalized(pdState, this) * this.getwResources());
         Action greedyAction = this.greedyASP.selectAction(currentState);
         double newQ = getQ(currentState, greedyAction);
         newQ = gamma.getValue() * newQ + cU;
@@ -75,7 +75,7 @@ public class DeepVLearningOM extends DeepLearningOM {
     private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
         double v = getV(postDecisionState).getDouble(0);
-        return v + computeActionCost(action) + StateUtils.computeDeploymentCostNormalized(postDecisionState, this);
+        return v + computeActionCost(action) + (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
     }
 
     private double computeActionCost(Action action) {

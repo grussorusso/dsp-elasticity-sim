@@ -8,22 +8,21 @@ import it.uniroma2.dspsim.dsp.edf.om.request.BasicOMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
+import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
+import it.uniroma2.dspsim.dsp.edf.om.threshold.MaxSpeedupThresholdPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.threshold.MinCostThresholdPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.threshold.ThresholdPolicy;
 
 public class ThresholdBasedOM extends OperatorManager {
 
 	private double scaleOutThreshold;
-	private NodeType defaultNodeType = null;
+	private ThresholdPolicy thresholdPolicy;
 
 	public ThresholdBasedOM(Operator operator) {
 		super(operator);
 
-		/* Default resource type (cheapest). */
-		// TODO use more complex criterion
-		for (NodeType nt : ComputingInfrastructure.getInfrastructure().getNodeTypes()) {
-			if (defaultNodeType == null || defaultNodeType.getCost() > nt.getCost())	{
-				defaultNodeType = nt;
-			}
-		}
+		this.thresholdPolicy = new MaxSpeedupThresholdPolicy();
 
 		this.scaleOutThreshold = Configuration.getInstance().getDouble(ConfigurationKeys.OM_THRESHOLD_KEY, 0.7);
 	}
@@ -33,19 +32,7 @@ public class ThresholdBasedOM extends OperatorManager {
 		final double u = monitoringInfo.getCpuUtilization();
 		final double p = operator.getInstances().size();
 
-		Reconfiguration rcf;
-
-		if (u > scaleOutThreshold && p < operator.getMaxParallelism()) {
-			/* scale-out */
-			rcf = Reconfiguration.scaleOut(defaultNodeType);
-		} else if (p > 1 && u*p/(p-1) < 0.75 * scaleOutThreshold) {
-			/* scale-in */
-			rcf = Reconfiguration.scaleIn(defaultNodeType);
-		} else {
-			rcf = Reconfiguration.doNothing();
-		}
-
-
+		Reconfiguration rcf = thresholdPolicy.applyThresholdPolicy(u, p, operator, this.scaleOutThreshold);
 		return new BasicOMRequest(rcf);
 	}
 }
