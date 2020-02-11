@@ -39,6 +39,8 @@ public abstract class ConfigurationKeys {
 	public static final String OPERATOR_VALUES_COMPUTING_CASE_KEY = "operator.values.computing.case";
 	/** Load Balancer**/
 	public static final String OPERATOR_LOAD_BALANCER_TYPE_KEY = "operator.load.balancer.type";
+	/** Method for computing per-operator SLO. */
+	public static final String OPERATOR_SLO_COMPUTATION_METHOD = "dsp.slo.operator.method";
 
 	/**
 	 * Application.

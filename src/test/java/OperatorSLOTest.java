@@ -5,7 +5,6 @@ import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -45,7 +44,7 @@ public class OperatorSLOTest {
             app.addEdge(op3, op4);
             app.addEdge(op3, op5);
 
-            if (balanced) computeBalancedOperatorSLO(app); else computeOperatorsSlo(app);
+            if (balanced) computeHeuristicOperatorSLO(app); else computeOperatorsSLO(app);
 
             return app;
         }

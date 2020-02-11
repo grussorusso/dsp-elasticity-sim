@@ -3,13 +3,16 @@ package it.uniroma2.dspsim.dsp;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
-import it.uniroma2.dspsim.utils.KeyValueStorage;
 import it.uniroma2.dspsim.utils.Tuple2;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class ApplicationBuilder {
+
+	static private Logger log = LoggerFactory.getLogger(ApplicationBuilder.class);
 
 	static public Application buildApplication()
 	{
@@ -42,7 +45,7 @@ public class ApplicationBuilder {
 				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
 		app.addOperator(op);
 
-		computeOperatorsSlo(app);
+		computeOperatorsSLO(app);
 
 		return app;
 	}
@@ -81,7 +84,7 @@ public class ApplicationBuilder {
 		app.addEdge(op3, op4);
 		app.addEdge(op3, op5);
 
-		computeBalancedOperatorSLO(app);
+		computeOperatorsSLO(app);
 
 		return app;
 	}
@@ -103,7 +106,7 @@ public class ApplicationBuilder {
 		app.addOperator(op2);
 		app.addEdge(op1, op2);
 
-		computeOperatorsSlo(app);
+		computeOperatorsSLO(app);
 
 		return app;
 	}
@@ -130,7 +133,7 @@ public class ApplicationBuilder {
 		app.addEdge(op1, op2);
 		app.addEdge(op1, op3);
 
-		computeOperatorsSlo(app);
+		computeOperatorsSLO(app);
 
 		return app;
 	}
@@ -159,7 +162,7 @@ public class ApplicationBuilder {
 		app.addEdge(op2, op4);
 		app.addEdge(op3, op4);
 
-		computeOperatorsSlo(app);
+		computeOperatorsSLO(app);
 
 		return app;
 	}
@@ -200,20 +203,30 @@ public class ApplicationBuilder {
 		app.addEdge(op3, op6);
 		app.addEdge(op5, op6);
 
-		computeBalancedOperatorSLO(app);
+		computeOperatorsSLO(app);
 
 		return app;
 	}
 
-	protected static void computeOperatorsSlo(Application app) {
-		double rSLO = Configuration.getInstance().getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.1);
-		//rSLO = 0.8 * rSLO;
-		for (Operator op : app.getOperators()) {
-			op.setSloRespTime(rSLO / app.getMaxPathLength(op));
+	protected static void computeOperatorsSLO(Application app) {
+		Configuration conf = Configuration.getInstance();
+		double rSLO = conf.getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.1);
+
+		String operatorSLOmethod = conf.getString(ConfigurationKeys.OPERATOR_SLO_COMPUTATION_METHOD, "");
+
+		if (operatorSLOmethod.equalsIgnoreCase("heuristic")) {
+			log.info("Computing operators SLO using heuristic.");
+			computeHeuristicOperatorSLO(app);
+		} else {
+			log.info("Computing operators SLO using default method.");
+			/* default */
+			for (Operator op : app.getOperators()) {
+				op.setSloRespTime(rSLO / app.getMaxPathLength(op));
+			}
 		}
 	}
 
-	protected static void computeBalancedOperatorSLO(Application app) {
+	protected static void computeHeuristicOperatorSLO(Application app) {
 		double rSLO = Configuration.getInstance().getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.100);
 		double inputRate = Configuration.getInstance().getInteger(ConfigurationKeys.RL_OM_MAX_INPUT_RATE_KEY, 600);
 
@@ -285,8 +298,8 @@ public class ApplicationBuilder {
 		balanceSLO(applicationSLO, operatorSLOMap, paths, opSloAssignableMap);
 
 
-		for (String opName : opParallelismMap.keySet())
-			System.out.println(String.format("%s\t->\t%d", opName, opParallelismMap.get(opName)));
+		//for (String opName : opParallelismMap.keySet())
+		//	System.out.println(String.format("%s\t->\t%d", opName, opParallelismMap.get(opName)));
 
 		return operatorSLOMap;
 	}
