@@ -46,9 +46,9 @@ public class TestStateIterator {
                 // print k lambda state info
                 KLambdaState s = (KLambdaState) state;
                 str.append("\t[");
-                for (int i = 0; i < s.getK().length; i++) {
-                    str.append(String.format("%d", s.getK()[i]));
-                    if (i < s.getK().length - 1)
+                for (int i = 0; i < s.getActualDeployment().length; i++) {
+                    str.append(String.format("%d", s.getActualDeployment()[i]));
+                    if (i < s.getActualDeployment().length - 1)
                         str.append(", ");
                 }
                 str.append("]");

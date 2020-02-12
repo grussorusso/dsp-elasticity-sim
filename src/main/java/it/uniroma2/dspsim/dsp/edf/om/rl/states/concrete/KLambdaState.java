@@ -8,19 +8,14 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 public class KLambdaState extends State {
-    // k usage
-    private int[] k;
 
     public KLambdaState(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
         super(index, k, lambda, maxLambda, maxParallelism);
-
-        this.k = k;
     }
 
     @Override
     public int getArrayRepresentationLength() {
         return (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
-        //return this.getTotalStates() + 1;
     }
 
     private int getTotalStates() {
@@ -69,24 +64,4 @@ public class KLambdaState extends State {
         return oneHotVector;
     }
 
-    private double lambdaLevelNormalized(int value, int maxValue) {
-        return (double) value/ (double) maxValue;
-    }
-
-    public int[] getK() {
-        return k;
-    }
-
-    //@Override
-    //public String dump() {
-    //    StringBuilder str = new StringBuilder(super.dump());
-    //    str.append("\t[");
-    //    for (int i = 0; i < this.k.length; i++) {
-    //        str.append(String.format("%d", this.k[i]));
-    //        if (i < this.k.length - 1)
-    //            str.append(", ");
-    //    }
-    //    str.append("]");
-    //    return str.toString();
-    //}
 }
