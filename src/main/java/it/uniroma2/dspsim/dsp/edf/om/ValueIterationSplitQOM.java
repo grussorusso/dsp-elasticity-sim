@@ -13,6 +13,8 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,6 +23,8 @@ import java.io.PrintWriter;
 import java.util.Set;
 
 public class ValueIterationSplitQOM extends ValueIterationOM {
+
+	private static Logger log = LoggerFactory.getLogger(ValueIterationSplitQOM.class);
 
 	private QTable resourcesQ;
 	private QTable reconfigurationQ;
@@ -186,6 +190,9 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 	}
 
 	private double evaluateQrespTime (State s, Action a) {
+		//StringBuilder sb = new StringBuilder();
+		//sb.append(String.format("%s-R(%s,%s)", operator.getName(), s.dump(), a.dump()));
+
 		double cost = 0.0;
 		// from s,a compute pds
 		State pds = StateUtils.computePostDecisionState(s, a, this);
@@ -207,7 +214,11 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 			}
 
 			cost += p * (pdCost + getGamma() * q);
+			//sb.append(String.format("+%.3f*[%.3f+gam*%.3f]", p, pdCost, q));
 		}
+
+		//log.info(sb.toString());
+
 		return cost;
 	}
 
@@ -222,6 +233,9 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 
 		State pds = StateUtils.computePostDecisionState(currentState, chosenAction, this);
 		double nextRespTime = StateUtils.computeRespTime(pds, this);
+		if (Double.isInfinite(nextRespTime) || Double.isNaN(nextRespTime)) {
+			nextRespTime = MAX_Q_RESPTIME;
+		}
 		double avgFutureRespTime = (qResp-nextRespTime)/getGamma()*(1.0-getGamma());
 		ReconfigurationScore score = new SplitQReconfigurationScore(qRes,qRcf,nextRespTime,avgFutureRespTime);
 
@@ -236,6 +250,9 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 			double qRespNop = voidPolicyRespTimeQ.getQ(currentState, nop);
 
 			nextRespTime = StateUtils.computeRespTime(currentState, this);
+			if (Double.isInfinite(nextRespTime) || Double.isNaN(nextRespTime)) {
+				nextRespTime = MAX_Q_RESPTIME;
+			}
 			avgFutureRespTime = (qRespNop-nextRespTime)/getGamma()*(1.0-getGamma());
 
 			scoreNop = new SplitQReconfigurationScore(qResNop, qRcfNop, nextRespTime, avgFutureRespTime);
@@ -271,8 +288,14 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 						double qresptime = respTimeQ.getQ(s,a);
 						State pds = StateUtils.computePostDecisionState(s, a, this);
 						double nextRespTime = StateUtils.computeRespTime(pds, this);
+						if (Double.isInfinite(nextRespTime) || Double.isNaN(nextRespTime)) {
+							nextRespTime = MAX_Q_RESPTIME;
+						}
 						double avgFutureRespTime = (qresptime-nextRespTime)/getGamma()*(1.0-getGamma());
 						double nextRespTimeVoid = StateUtils.computeRespTime(s, this);
+						if (Double.isInfinite(nextRespTimeVoid) || Double.isNaN(nextRespTimeVoid)) {
+							nextRespTimeVoid = MAX_Q_RESPTIME;
+						}
 						double avgFutureRespTimeVoid = (voidPolicyRespTimeQ.getQ(s,ActionIterator.getDoNothingAction())-nextRespTimeVoid)/getGamma()*(1.0-getGamma());
 						printWriter.print(String.format("%s+%s\t%f\t%f\t%f\t%f\tR=%f+%f, %f+%f\n",
 								s.dump(), a.dump(),

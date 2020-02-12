@@ -26,6 +26,13 @@ public abstract class ConfigurationKeys {
 	public static final String TRAINING_INPUT_FILE_PATH_KEY = "input.file.path.training";
 
 	/**
+	 * Simulation.
+	 */
+	public static final String SIMULATION_STOP_TIME = "simulation.stoptime";
+	public static final String SIMULATION_DETAILED_SCALING_LOG = "simulation.log.detailedscaling";
+
+
+	/**
 	 * Node types number.
 	 */
 	public static final String NODE_TYPES_NUMBER_KEY = "node.types.number";

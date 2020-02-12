@@ -240,4 +240,16 @@ public class Operator {
 	public double computeNormalizedDeploymentCost() {
 		return computeDeploymentCost() / computeMaxDeploymentCost();
 	}
+
+	public int[] getCurrentDeployment()
+	{
+		int resTypes = ComputingInfrastructure.getInfrastructure().getNodeTypes().length;
+		int deployment[] = new int[resTypes];
+
+		for (NodeType nt : instances) {
+			deployment[nt.getIndex()]++;
+		}
+
+		return deployment;
+	}
 }

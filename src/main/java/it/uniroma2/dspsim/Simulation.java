@@ -16,6 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Arrays;
 import java.util.Map;
 
 public class Simulation {
@@ -58,6 +59,8 @@ public class Simulation {
 	private double wReconf;
 	private double wRes;
 
+	private boolean detailedScalingLog;
+
 	public Simulation (InputRateFileReader inputRateFileReader, Application application) {
 		this.inputRateFileReader = inputRateFileReader;
 		this.app = application;
@@ -67,6 +70,8 @@ public class Simulation {
 		this.wSLO = conf.getDouble(ConfigurationKeys.RL_OM_SLO_WEIGHT_KEY, 0.33);
 		this.wReconf = conf.getDouble(ConfigurationKeys.RL_OM_RECONFIG_WEIGHT_KEY, 0.33);
 		this.wRes = conf.getDouble(ConfigurationKeys.RL_OM_RESOURCES_WEIGHT_KEY, 0.33);
+
+		this.detailedScalingLog = conf.getBoolean(ConfigurationKeys.SIMULATION_DETAILED_SCALING_LOG, false);
 
 		logger.info("SLO latency: {}", LATENCY_SLO);
 	}
@@ -137,13 +142,18 @@ public class Simulation {
 			double iterationCost = 0.0;
 
 			double responseTime = app.endToEndLatency(inputRate);
-			logger.info("Input Rate: {}", inputRate);
-			logger.info("Response time: {}", responseTime);
+			if (detailedScalingLog) {
+				logger.info("[T={}] AppInputRate: {}", time, inputRate);
+				logger.info("[T={}] AppResponseTime: {}", time, responseTime);
+			}
 			if (responseTime > LATENCY_SLO) {
 				Statistics.getInstance().updateMetric(buildMetricName(STAT_LATENCY_VIOLATIONS), 1);
 
 				// add slo violation cost
 				iterationCost += this.wSLO;
+
+				if (detailedScalingLog)
+					logger.info("[T={}] AppSLOViolation", time);
 			}
 
 			// update used resources cost metric
@@ -160,9 +170,11 @@ public class Simulation {
 			applyReconfigurations(reconfigurations);
 
 			// add reconfiguration cost if there is a configuration in this iteration
-			iterationCost += checkReconfigurationPresence(reconfigurations) ? this.wReconf : 0.0;
+			boolean isAppReconfigured = checkReconfigurationPresence(reconfigurations);
+			iterationCost += isAppReconfigured ? this.wReconf : 0.0;
 
-			//System.out.println(inputRate + "\t" + responseTime);
+			if (detailedScalingLog && isAppReconfigured)
+				logger.info("[T={}] AppReconfiguration", time);
 
 			// update steps counter
 			Statistics.getInstance().updateMetric(buildMetricName(STAT_STEPS_COUNTER), 1);
@@ -174,6 +186,13 @@ public class Simulation {
 			int[] globalDeployment = app.computeGlobalDeployment();
 			for (int i = 0; i < globalDeployment.length; i++) {
 				Statistics.getInstance().updateMetric(buildMetricName(STAT_AVG_DEPLOYMENT + i), globalDeployment[i]);
+			}
+
+			if (detailedScalingLog) {
+				for (Operator op : app.getOperators()) {
+					int deployment[] = op.getCurrentDeployment();
+					logger.info("[T={}] OpDeployment of {}: {}", time, op.getName(), Arrays.toString(deployment));
+				}
 			}
 
 			// metrics sampling
@@ -224,7 +243,9 @@ public class Simulation {
 			if (!rcf.isReconfiguration())
 				continue;
 
-			logger.info("{} reconfiguration: {}", op.getName(), rcf);
+			if (detailedScalingLog) {
+				logger.info("[T={}] OpReconfiguration of {}: {}", time, op.getName(), rcf);
+			}
 
 			op.reconfigure(rcf);
 			appReconfigured = true;
@@ -304,7 +325,9 @@ public class Simulation {
 			Statistics.getInstance().registerMetric(new TimeMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME));
 			Statistics.getInstance().registerMetric(new AvgMemoryMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY));
 			// run simulation
-			simulation.run();
+
+			long stopTime = conf.getLong(ConfigurationKeys.SIMULATION_STOP_TIME, -1l);
+			simulation.run(stopTime);
 
 			Statistics.getInstance().updateMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME, 0);
 			Statistics.getInstance().updateMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY, 0);
