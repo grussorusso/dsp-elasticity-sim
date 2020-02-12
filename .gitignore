@@ -1,9 +1,12 @@
 *.iml
-*.ser
 out/
 target/
 .idea/
-simLog.log
-test_results
 classes
-src/main/resources/META-INF
+
+test_results
+*.ser
+simLog.log
+process*sh
+plot*gp
+detail*dat
