@@ -217,12 +217,14 @@ public class Simulation {
 			*/
 
 
-			if (time % 5000 == 0)
-				// TODO print simulation completion percentage
-				System.out.println(time);
+			if (time % 10000 == 0)
+				System.out.print('.');
+			if (time > 0 && time % 100000 == 0)
+				System.out.print('|');
 
 			time++;
 		}
+		System.out.print('\n');
 	}
 
 	private boolean checkReconfigurationPresence(Map<Operator, Reconfiguration> reconfigurations) {

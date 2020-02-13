@@ -92,7 +92,7 @@ public class EDF {
 							rate = monitoringInfo.getInputRate(); // TODO what if we have multiple sources?
 						} else {
 							for (Operator up : op.getUpstreamOperators()) {
-								rate += omMonitoringInfo.get(up).getInputRate() * up.getSelectivity();
+								rate += Math.min(omMonitoringInfo.get(up).getInputRate(), up.getCurrentMaxThroughput()) * up.getSelectivity();
 							}
 						}
 

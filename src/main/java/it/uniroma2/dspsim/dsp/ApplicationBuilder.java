@@ -25,6 +25,8 @@ public class ApplicationBuilder {
 			return buildDEBS2019Application();
 		} else if (appName.equalsIgnoreCase("simple-tandem")) {
 			return simpleTandemApplication();
+		} else if (appName.equalsIgnoreCase("pipeline3")) {
+			return pipeline3Application();
 		} else if (appName.equalsIgnoreCase("simple-tree")) {
 			return simpleTreeApplication();
 		}
@@ -92,7 +94,8 @@ public class ApplicationBuilder {
 	static public Application simpleTandemApplication() {
 		Application app = new Application();
 
-		final double mu = 10.0;
+		//final double mu = 10.0;
+		final double mu = 200.0;
 		final double serviceTimeMean = 1/mu;
 		final double serviceTimeVariance = 1.0/mu*1.0/mu;
 
@@ -101,7 +104,7 @@ public class ApplicationBuilder {
 		Operator op1 = new Operator("op1",
 				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
 		Operator op2 = new Operator("op2",
-				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
+				new MG1OperatorQueueModel(serviceTimeMean*0.7, serviceTimeVariance*0.49), maxParallelism);
 		app.addOperator(op1);
 		app.addOperator(op2);
 		app.addEdge(op1, op2);
@@ -111,10 +114,39 @@ public class ApplicationBuilder {
 		return app;
 	}
 
+	static public Application pipeline3Application() {
+		Application app = new Application();
+
+		//final double mu = 10.0;
+		final double mu0 = 200.0;
+		final double mu[] = {mu0, 1.5*mu0, 0.9*mu0};
+		final double serviceTimeMean[] = new double[3];
+		final double serviceTimeVariance[] = new double[3];
+		for (int i = 0; i<3; i++) {
+			serviceTimeMean[i] = 1.0/mu[i];
+			serviceTimeVariance[i] = 1.0/(mu[i]*mu[i]);
+		}
+
+		final int maxParallelism = Configuration.getInstance()
+				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
+		Operator op1 = new Operator("op1", new MG1OperatorQueueModel(serviceTimeMean[0], serviceTimeVariance[0]), maxParallelism);
+		Operator op2 = new Operator("op2", new MG1OperatorQueueModel(serviceTimeMean[1], serviceTimeVariance[1]), maxParallelism);
+		Operator op3 = new Operator("op3", new MG1OperatorQueueModel(serviceTimeMean[2], serviceTimeVariance[2]), maxParallelism);
+		app.addOperator(op1);
+		app.addOperator(op2);
+		app.addOperator(op3);
+		app.addEdge(op1, op2);
+		app.addEdge(op2, op3);
+
+		computeOperatorsSLO(app);
+
+		return app;
+	}
+
 	static public Application simpleTreeApplication() {
 		Application app = new Application();
 
-		final double mu = 350.0;
+		final double mu = 200.0;
 		final double serviceTimeMean = 1/mu;
 		final double serviceTimeVariance = 1.0/mu*1.0/mu;
 
@@ -124,7 +156,7 @@ public class ApplicationBuilder {
 		Operator op1 = new Operator("op1",
 				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
 		Operator op2 = new Operator("op2",
-				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
+				new MG1OperatorQueueModel(serviceTimeMean*0.7, serviceTimeVariance*0.49), maxParallelism);
 		Operator op3 = new Operator("op3",
 				new MG1OperatorQueueModel(serviceTimeMean/5.0, serviceTimeVariance), maxParallelism);
 		app.addOperator(op1);

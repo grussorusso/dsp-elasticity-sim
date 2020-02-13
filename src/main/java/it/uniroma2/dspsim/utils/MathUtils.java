@@ -26,8 +26,8 @@ public class MathUtils {
     public static double remapDiscretizedValue(double max, int level, int levels) {
         final double quantum = max / levels;
         final double floorMapping = level * quantum;
-        final double ceilMapping = floorMapping + quantum;
-        return (floorMapping + ceilMapping) / 2;
+        return floorMapping + quantum/2.0;
+        //return floorMapping + quantum;
     }
 
     public static int toBase10(int[] number, int fromBase) {

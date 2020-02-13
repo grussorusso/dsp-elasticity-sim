@@ -92,14 +92,19 @@ public class Statistics {
 
 	public void dumpAll()
 	{
-		for (Metric m : metrics.values())
-			System.out.println(m.toString());
+		dumpAll(System.out);
 	}
 
 	public void dumpAll(OutputStream out) {
+		List<String> lines = new ArrayList<>(metrics.size());
+		for (Metric m : metrics.values())
+			lines.add(m.toString());
+
+		Collections.sort(lines);
+
 		try {
-			for (Metric m : metrics.values()) {
-				byte[] bytes = m.toString().getBytes();
+			for (String l : lines) {
+				byte[] bytes = l.getBytes();
 				out.write(bytes);
 				out.write("\n".getBytes());
 			}

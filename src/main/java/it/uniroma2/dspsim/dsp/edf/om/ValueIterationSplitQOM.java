@@ -35,10 +35,11 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 
 	private QTable respTimeQ;
 
-	static final double MAX_Q_RESPTIME = 100000.0; // TODO
+	double MAX_Q_RESPTIME; // TODO
 
 	public ValueIterationSplitQOM(Operator operator) {
 		super(operator);
+		MAX_Q_RESPTIME = 10*operator.getSloRespTime(); // TODO
 	}
 
 	@Override

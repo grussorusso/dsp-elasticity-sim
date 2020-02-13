@@ -10,11 +10,8 @@ import it.uniroma2.dspsim.dsp.edf.om.DynamicProgrammingOM;
 import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
 import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
 import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
-import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
@@ -120,6 +117,7 @@ public class CentralizedAM extends ApplicationManager {
 
 	private void computePolicy() {
 		double delta;
+		long iter = 0;
 
 		do {
 			delta = 0.0;
@@ -127,6 +125,20 @@ public class CentralizedAM extends ApplicationManager {
 					ComputingInfrastructure.getInfrastructure(), inputRateLevels);
 			while (sit.hasNext()) {
 				JointState s = sit.next();
+
+				// TODO: we skip states where lambdas differ
+				int lambda = s.states[0].getLambda();
+				boolean ok = true;
+				for (int i = 1; i<s.states.length; i++) {
+					if (s.states[i].getLambda() != lambda) {
+						ok = false;
+						break;
+					}
+				}
+				if (!ok)
+					continue;
+
+
 				JointActionIterator ait = new JointActionIterator(nOperators);
 				while (ait.hasNext()) {
 					JointAction a = ait.next();
@@ -136,7 +148,9 @@ public class CentralizedAM extends ApplicationManager {
 					delta = Math.max(delta, _delta);
 				}
 			}
-			System.err.println(delta);
+			iter++;
+			if (iter % 25 == 0)
+				System.err.println(delta);
 		} while (delta > 0.0001);
 	}
 
@@ -292,8 +306,14 @@ public class CentralizedAM extends ApplicationManager {
 		for (int i = 0; i<nOperators; i++) {
 			Operator op = application.getOperators().get(i);
 			s[i] = StateUtils.computeCurrentState(omMonitoringInfo.get(op), op, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
+
+			if (s[i].getLambda() != s[0].getLambda()) {
+				throw new RuntimeException("Different lambdas in joint state. Remove shortcut in the code for this case");
+			}
 		}
 		JointState currentState = new JointState(s);
+
+		logger.info("Expected violation: " + isAppSLOViolated(currentState));
 
 		// Pick best global action
 		JointAction a = greedyAction(currentState);
