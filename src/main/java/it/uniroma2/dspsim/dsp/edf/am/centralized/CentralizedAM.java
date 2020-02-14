@@ -14,12 +14,15 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.utils.MathUtils;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static it.uniroma2.dspsim.dsp.edf.om.RewardBasedOM.action2reconfiguration;
@@ -47,10 +50,12 @@ public class CentralizedAM extends ApplicationManager {
 	private double gamma;
 	private DoubleMatrix<Integer, Integer> pMatrix;
 	private JointQTable qTable;
+	private Operator[] operators;
 
 	public CentralizedAM(Application application, double sloLatency) {
 		super(application, sloLatency);
 		this.nOperators = application.getOperators().size();
+		this.operators = application.getOperators().toArray(new Operator[]{});
 
 		Configuration configuration = Configuration.getInstance();
 
@@ -126,19 +131,6 @@ public class CentralizedAM extends ApplicationManager {
 			while (sit.hasNext()) {
 				JointState s = sit.next();
 
-				// TODO: we skip states where lambdas differ
-				int lambda = s.states[0].getLambda();
-				boolean ok = true;
-				for (int i = 1; i<s.states.length; i++) {
-					if (s.states[i].getLambda() != lambda) {
-						ok = false;
-						break;
-					}
-				}
-				if (!ok)
-					continue;
-
-
 				JointActionIterator ait = new JointActionIterator(nOperators);
 				while (ait.hasNext()) {
 					JointAction a = ait.next();
@@ -154,63 +146,6 @@ public class CentralizedAM extends ApplicationManager {
 		} while (delta > 0.0001);
 	}
 
-	private void serializeQ (String filename) {
-
-		FileOutputStream file = null;
-		try {
-			file = new FileOutputStream(filename);
-			ObjectOutputStream out = new ObjectOutputStream(file);
-			out.writeObject(qTable);
-			out.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-	}
-
-	private void dumpQ(String filename) {
-
-		// create file
-		File file = new File(filename);
-		try {
-			if (!file.exists()) {
-				file.getParentFile().mkdirs();
-				file.createNewFile();
-			}
-			PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
-			JointStateIterator sit = new JointStateIterator(nOperators, maxParallelism,
-					ComputingInfrastructure.getInfrastructure(), inputRateLevels);
-			while (sit.hasNext()) {
-				JointState s = sit.next();
-
-				// TODO: we ignore states where operators have different lambdas
-				int lambda = s.states[0].getLambda();
-				boolean ok = true;
-				for (int i = 1; i<s.states.length && ok; i++) {
-					if (s.states[i].getLambda() != lambda)
-						ok = false;
-				}
-				if (!ok)
-					continue;
-
-				JointActionIterator ait = new JointActionIterator(nOperators);
-				while (ait.hasNext()) {
-					JointAction a = ait.next();
-					if (!s.validateAction(a))
-						continue;
-					double q = qTable.getQ(s,a);
-					printWriter.println(String.format("Q(%s,%s) = %f", s.toString(), a.toString(), q));
-				}
-			}
-			printWriter.flush();
-			printWriter.close();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
 	private double updateQ(JointState s, JointAction a) {
 		/* immediate cost */
 		double crcf = 0.0;
@@ -223,9 +158,20 @@ public class CentralizedAM extends ApplicationManager {
 		double cslo = 0.0;
 		double futureCost = 0.0;
 
+		Map<Operator, int[]> opDeployment = new HashMap<>();
+		for (int i = 0; i<nOperators; i++) {
+			opDeployment.put(operators[i], newS.states[i].getActualDeployment());
+		}
+
+
 		for (int lambda = 0; lambda < inputRateLevels; ++lambda) {
-			for (int i = 0; i < nOperators; i++) {
-				newS.states[i].setLambda(lambda);
+			// compute per operator lambda...
+			newS.states[0].setLambda(lambda);
+			double realInputRate = MathUtils.remapDiscretizedValue(maxInputRate, lambda, inputRateLevels);
+			Map<Operator, Double> opRealInputRate = application.computePerOperatorInputRate(realInputRate, opDeployment);
+			for (int i = 1; i < nOperators; i++) {
+				int lambdaOp = MathUtils.discretizeValue(maxInputRate, opRealInputRate.get(operators[i]), inputRateLevels);
+				newS.states[i].setLambda(lambdaOp);
 			}
 
 			// NOTE: We are assuming lambdas are proportional among different operators...
@@ -306,10 +252,6 @@ public class CentralizedAM extends ApplicationManager {
 		for (int i = 0; i<nOperators; i++) {
 			Operator op = application.getOperators().get(i);
 			s[i] = StateUtils.computeCurrentState(omMonitoringInfo.get(op), op, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
-
-			if (s[i].getLambda() != s[0].getLambda()) {
-				throw new RuntimeException("Different lambdas in joint state. Remove shortcut in the code for this case");
-			}
 		}
 		JointState currentState = new JointState(s);
 
@@ -332,4 +274,52 @@ public class CentralizedAM extends ApplicationManager {
 	final protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap) {
 		throw new RuntimeException("This method should never be called!");
 	}
+
+	private void serializeQ (String filename) {
+
+		FileOutputStream file = null;
+		try {
+			file = new FileOutputStream(filename);
+			ObjectOutputStream out = new ObjectOutputStream(file);
+			out.writeObject(qTable);
+			out.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}
+
+	private void dumpQ(String filename) {
+
+		// create file
+		File file = new File(filename);
+		try {
+			if (!file.exists()) {
+				file.getParentFile().mkdirs();
+				file.createNewFile();
+			}
+			PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
+			JointStateIterator sit = new JointStateIterator(nOperators, maxParallelism,
+					ComputingInfrastructure.getInfrastructure(), inputRateLevels);
+			while (sit.hasNext()) {
+				JointState s = sit.next();
+
+				JointActionIterator ait = new JointActionIterator(nOperators);
+				while (ait.hasNext()) {
+					JointAction a = ait.next();
+					if (!s.validateAction(a))
+						continue;
+					double q = qTable.getQ(s,a);
+					printWriter.println(String.format("Q(%s,%s) = %f", s.toString(), a.toString(), q));
+				}
+			}
+			printWriter.flush();
+			printWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 }

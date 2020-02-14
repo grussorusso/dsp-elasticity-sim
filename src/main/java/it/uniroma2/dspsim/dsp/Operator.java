@@ -84,14 +84,6 @@ public class Operator {
 		return responseTime(inputRate, this.instances);
 	}
 
-	public double getCurrentMaxThroughput () {
-		double thr = 0.0;
-		for (NodeType nt : instances) {
-			thr += 1.0 / queueModel.getServiceTimeMean() * nt.getCpuSpeedup();
-		}
-		return thr;
-	}
-
 	public double utilization(double inputRate, List<NodeType> operatorInstances) {
 		List<Tuple2<NodeType, Double>> inputRates = loadBalancer.balance(inputRate, operatorInstances);
 
@@ -258,5 +250,26 @@ public class Operator {
 		}
 
 		return deployment;
+	}
+
+	public double getCurrentMaxThroughput () {
+		double thr = 0.0;
+		for (NodeType nt : instances) {
+			thr += 1.0 / queueModel.getServiceTimeMean() * nt.getCpuSpeedup();
+		}
+		return thr;
+	}
+
+	public double getMaxThroughput (int[] deployment) {
+		ComputingInfrastructure infrastructure = ComputingInfrastructure.getInfrastructure();
+
+		double thr = 0.0;
+		for (int i = 0; i<deployment.length; i++) {
+			thr += deployment[i] * 1.0 / queueModel.getServiceTimeMean() * infrastructure.getNodeTypes()[i].getCpuSpeedup();
+
+			if (infrastructure.getNodeTypes()[i].getIndex() != i)
+				throw new RuntimeException("We are doing something wrong here!");
+		}
+		return thr;
 	}
 }

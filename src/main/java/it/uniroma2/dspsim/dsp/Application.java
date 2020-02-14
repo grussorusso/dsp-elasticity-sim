@@ -2,6 +2,7 @@ package it.uniroma2.dspsim.dsp;
 
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
+import org.nd4j.linalg.api.ops.Op;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -196,4 +197,65 @@ public class Application {
 
 		return globalDeployment;
     }
+
+	public Map<Operator, Double> computePerOperatorInputRate (double inputRate)
+	{
+		Map<Operator, int[]> opDeployment = new HashMap<>();
+		for (Operator op : operators) {
+			opDeployment.put(op, op.getCurrentDeployment());
+		}
+
+		return computePerOperatorInputRate(inputRate, opDeployment);
+	}
+
+	public Map<Operator, Double> computePerOperatorInputRate (double inputRate, Map<Operator, int[]> opDeployment)
+	{
+		Map<Operator, Double> opInputRate = new HashMap<>();
+		for (Operator op : operators) {
+			opInputRate.put(op, 0.0);
+		}
+		boolean done = false;
+
+		while (!done) {
+			done = true;
+
+			for (Operator src : getOperators()) {
+				if (!src.isSource())
+					continue;
+
+				/* BFS visit */
+				Set<Operator> checked = new HashSet<>();
+				Deque<Operator> queue = new ArrayDeque<>();
+				queue.push(src);
+
+				while (!queue.isEmpty()) {
+					Operator op = queue.pop();
+					if (!checked.contains(op)) {
+						double rate = 0.0;
+
+						if (op.isSource())	{
+							rate = inputRate; // TODO what if we have multiple sources?
+						} else {
+							for (Operator up : op.getUpstreamOperators()) {
+								rate += Math.min(opInputRate.get(up), up.getMaxThroughput(opDeployment.get(up))) * up.getSelectivity();
+							}
+						}
+
+						double oldValue = opInputRate.get(op);
+						done &= (oldValue == rate);
+
+						opInputRate.put(op,rate);
+
+						for (Operator down : op.getDownstreamOperators())  {
+							queue.push(down);
+						}
+
+						checked.add(op);
+					}
+				}
+			}
+		}
+
+		return opInputRate;
+	}
 }

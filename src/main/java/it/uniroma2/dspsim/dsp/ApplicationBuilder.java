@@ -25,6 +25,8 @@ public class ApplicationBuilder {
 			return buildDEBS2019Application();
 		} else if (appName.equalsIgnoreCase("simple-tandem")) {
 			return simpleTandemApplication();
+		} else if (appName.equalsIgnoreCase("pipeline2")) {
+			return pipeline2Application();
 		} else if (appName.equalsIgnoreCase("pipeline3")) {
 			return pipeline3Application();
 		} else if (appName.equalsIgnoreCase("pipeline4")) {
@@ -144,9 +146,15 @@ public class ApplicationBuilder {
 		return app;
 	}
 
+	static public Application pipeline2Application() {
+		final double mu0 = 350.0;
+		final double mu[] = {mu0, 1.5*mu0};
+		return buildMM1Pipeline(mu);
+	}
+
 	static public Application pipeline3Application() {
-		final double mu0 = 200.0;
-		final double mu[] = {mu0, 1.5*mu0, 0.9*mu0};
+		final double mu0 = 350.0;
+		final double mu[] = {mu0, 1.5*mu0, mu0};
 		return buildMM1Pipeline(mu);
 	}
 

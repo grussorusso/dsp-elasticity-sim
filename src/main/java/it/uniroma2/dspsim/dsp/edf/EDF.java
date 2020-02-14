@@ -11,11 +11,14 @@ import it.uniroma2.dspsim.dsp.edf.am.ApplicationManagerType;
 import it.uniroma2.dspsim.dsp.edf.am.centralized.CentralizedAM;
 import it.uniroma2.dspsim.dsp.edf.om.*;
 import it.uniroma2.dspsim.dsp.edf.om.factory.OperatorManagerFactory;
-import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class EDF {
+
+	private static Logger logger = LoggerFactory.getLogger(EDF.class);
 
 	private Application application;
 
@@ -63,59 +66,16 @@ public class EDF {
 
 	public Map<Operator, Reconfiguration> pickReconfigurations (MonitoringInfo monitoringInfo) {
 		Map<Operator, OMMonitoringInfo> omMonitoringInfo = new HashMap<>();
+		Map<Operator, Double> opInputRate = application.computePerOperatorInputRate(monitoringInfo.getInputRate());
+		logger.info("OpInputRate: {}", opInputRate);
+
 		for (Operator op : application.getOperators()) {
+			final double rate = opInputRate.get(op);
+			final double u = op.utilization(rate);
+
 			omMonitoringInfo.put(op, new OMMonitoringInfo());
-			omMonitoringInfo.get(op).setInputRate(0.0);
-		}
-
-		/* Compute operator input rate */
-		boolean done = false;
-
-		while (!done) {
-			done = true;
-
-			for (Operator src : application.getOperators()) {
-				if (!src.isSource())
-					continue;
-
-				/* BFS visit */
-				Set<Operator> checked = new HashSet<>();
-				Deque<Operator> queue = new ArrayDeque<>();
-				queue.push(src);
-
-				while (!queue.isEmpty()) {
-					Operator op = queue.pop();
-					if (!checked.contains(op)) {
-						double rate = 0.0;
-
-						if (op.isSource())	{
-							rate = monitoringInfo.getInputRate(); // TODO what if we have multiple sources?
-						} else {
-							for (Operator up : op.getUpstreamOperators()) {
-								rate += Math.min(omMonitoringInfo.get(up).getInputRate(), up.getCurrentMaxThroughput()) * up.getSelectivity();
-							}
-						}
-
-						double oldValue = omMonitoringInfo.get(op).getInputRate();
-						done &= (oldValue == rate);
-
-						omMonitoringInfo.get(op).setInputRate(rate);
-
-						for (Operator down : op.getDownstreamOperators())  {
-							queue.push(down);
-						}
-
-						checked.add(op);
-					}
-				}
-			}
-		}
-
-		/* Add other monitoring information */
-		for (Operator op : application.getOperators()) {
-			OMMonitoringInfo opInfo = omMonitoringInfo.get(op);
-			final double u = op.utilization(opInfo.getInputRate());
-			opInfo.setCpuUtilization(u);
+			omMonitoringInfo.get(op).setInputRate(rate);
+			omMonitoringInfo.get(op).setCpuUtilization(u);
 		}
 
 		return applicationManager.planReconfigurations(omMonitoringInfo, operatorManagers);
