@@ -77,4 +77,45 @@ public class TestJointStateSpace {
 
 		System.out.println("Counter: " + counter);
 	}
+
+	@Test
+	public void testCountJointStates()
+	{
+		ComputingInfrastructure.initDefaultInfrastructure(1);
+		for (int operators = 2; operators <= 4; ++operators) {
+			for (int maxPar = 2; maxPar <= 5; ++maxPar) {
+				for (int lambdaLevels = 5; lambdaLevels <= 10; ++lambdaLevels) {
+					int maxParallelism[] = new int[operators];
+					for (int i =0; i<operators; i++)
+						maxParallelism[i] = maxPar;
+					JointStateIterator it = new JointStateIterator(maxParallelism.length,
+							maxParallelism, ComputingInfrastructure.getInfrastructure(), lambdaLevels);
+
+					long statesCounter = 0;
+					long actionsCounter = 0;
+					while (it.hasNext()) {
+						JointState s = it.next();
+						// TODO: we could skip some states where lambdas increase
+						++statesCounter;
+
+						JointActionIterator ait = new JointActionIterator(maxParallelism.length);
+						while (ait.hasNext()) {
+							JointAction a = ait.next();
+							if (s.validateAction(a)) {
+								actionsCounter++;
+							}
+						}
+					}
+					StringBuilder ln = new StringBuilder();
+					ln.append(String.format("%d\t%d\t%d\t", operators, maxPar, lambdaLevels));
+					ln.append(statesCounter);
+					ln.append('\t');
+					ln.append(actionsCounter);
+					ln.append('\t');
+					ln.append(Math.multiplyExact(statesCounter, actionsCounter));
+					System.out.println(ln.toString());
+				}
+			}
+		}
+	}
 }
