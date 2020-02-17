@@ -280,7 +280,9 @@ public class ApplicationBuilder {
 			log.info("Computing operators SLO using default method.");
 			/* default */
 			for (Operator op : app.getOperators()) {
-				op.setSloRespTime(rSLO / app.getMaxPathLength(op));
+				double opSlo = rSLO / app.getMaxPathLength(op);
+				op.setSloRespTime(opSlo);
+				log.info("SLO[{}] = {}", op.getName(), opSlo);
 			}
 		}
 	}
@@ -289,10 +291,14 @@ public class ApplicationBuilder {
 		double rSLO = Configuration.getInstance().getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.100);
 		double inputRate = Configuration.getInstance().getInteger(ConfigurationKeys.RL_OM_MAX_INPUT_RATE_KEY, 600);
 
+		inputRate = inputRate/2.0; // TODO
+
 		Map<String, Double> opSLOMap = optimizeSLODivisionOnPaths(app, rSLO, inputRate);
 
 		for (Operator op : app.getOperators()) {
-			op.setSloRespTime(opSLOMap.get(op.getName()));
+			final double opSlo = opSLOMap.get(op.getName());
+			op.setSloRespTime(opSlo);
+			log.info("SLO[{}] = {}", op.getName(), opSlo);
 		}
 	}
 
@@ -356,6 +362,8 @@ public class ApplicationBuilder {
 		Map<String, Boolean> opSloAssignableMap = new HashMap<>();
 		balanceSLO(applicationSLO, operatorSLOMap, paths, opSloAssignableMap);
 
+		log.info("Heuristic SLO: {}", operatorSLOMap);
+		log.info("Heuristic parallelism: {}", opParallelismMap);
 
 		//for (String opName : opParallelismMap.keySet())
 		//	System.out.println(String.format("%s\t->\t%d", opName, opParallelismMap.get(opName)));
@@ -376,12 +384,19 @@ public class ApplicationBuilder {
 			double pathRespTime = 0.0;
 			for (Operator op : path) {
 				// TODO operator input rate != source input rate
+				// TODO speedup?
 				double opRespTime = op.getQueueModel().responseTime(inputRate / operatorParallelismMap.get(op.getName()), 1.0);
+				//if (Double.isInfinite(opRespTime)) {
+				//	pathRespTime = Double.POSITIVE_INFINITY;
+				//	break;
+				//}
 				pathSLOMap.put(op.getName(), opRespTime);
 				pathRespTime += opRespTime;
 			}
 
 			if (pathRespTime <= applicationSLO) {
+				log.info("Path R = {}", pathRespTime);
+				log.info("PathSLOMAP: {}", pathSLOMap);
 				return new Tuple2<>(pathSLOMap, changed);
 			}
 

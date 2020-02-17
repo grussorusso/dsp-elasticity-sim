@@ -20,6 +20,7 @@ OUTDIR=results_${EXPERIMENT_TAG}
 [[ -e $OUTDIR ]] || mkdir $OUTDIR
 
 mv test_results/* ${OUTDIR}/
+cp simLog.log ${OUTDIR}
 
 bash processDetailedLog.sh
 mv detail* ${OUTDIR}
