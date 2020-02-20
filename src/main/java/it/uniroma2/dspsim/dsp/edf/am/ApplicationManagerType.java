@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.am;
 public enum ApplicationManagerType {
     DO_NOTHING,
     CENTRALIZED,
+    SECOND_OPPORTUNITY,
     SPLITQ_BASED;
 
     public static ApplicationManagerType fromString(String str) throws IllegalArgumentException {
@@ -12,6 +13,8 @@ public enum ApplicationManagerType {
             return SPLITQ_BASED;
         } else if (str.equalsIgnoreCase("centralized")) {
             return CENTRALIZED;
+        } else if (str.equalsIgnoreCase("second-opportunity")) {
+            return SECOND_OPPORTUNITY;
         } else {
             throw new IllegalArgumentException("Not valid application manager type " + str);
         }

@@ -8,6 +8,9 @@ import it.uniroma2.dspsim.dsp.edf.om.request.SplitQReconfigurationScore;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.GreedyActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
@@ -35,11 +38,15 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 
 	private QTable respTimeQ;
 
+	private ActionSelectionPolicy freeReconfigurationActionSelection;
+
 	double MAX_Q_RESPTIME; // TODO
 
 	public ValueIterationSplitQOM(Operator operator) {
 		super(operator);
 		MAX_Q_RESPTIME = 10*operator.getSloRespTime(); // TODO
+
+		freeReconfigurationActionSelection = new GreedyActionSelectionPolicy(new FreeReconfSelectionPolicyCallback());
 	}
 
 	@Override
@@ -223,11 +230,8 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 		return cost;
 	}
 
-	@Override
-	protected OMRequest prepareOMRequest(State currentState, Action chosenAction) {
-		/*
-		 * Provide information to the AM.
-		 */
+	private ReconfigurationScore computeReconfigurationScore (State currentState, Action chosenAction)
+	{
 		double qRes = resourcesQ.getQ(currentState, chosenAction);
 		double qRcf = reconfigurationQ.getQ(currentState, chosenAction);
 		double qResp = respTimeQ.getQ(currentState, chosenAction);
@@ -238,29 +242,57 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 			nextRespTime = MAX_Q_RESPTIME;
 		}
 		double avgFutureRespTime = (qResp-nextRespTime)/getGamma()*(1.0-getGamma());
-		ReconfigurationScore score = new SplitQReconfigurationScore(qRes,qRcf,nextRespTime,avgFutureRespTime);
+		return new SplitQReconfigurationScore(qRes,qRcf,nextRespTime,avgFutureRespTime);
+	}
 
+	@Override
+	protected OMRequest prepareOMRequest(State currentState, Action chosenAction) {
+		ReconfigurationScore score = computeReconfigurationScore(currentState, chosenAction);
 
 		Action nop = ActionIterator.getDoNothingAction();
-		ReconfigurationScore scoreNop;
-		if (nop.equals(chosenAction)) {
-			scoreNop = score;
-		} else {
-			double qResNop = resourcesQ.getQ(currentState, nop);
-			double qRcfNop = reconfigurationQ.getQ(currentState, nop);
-			double qRespNop = voidPolicyRespTimeQ.getQ(currentState, nop);
+		Action secondaryAction = null;
+		ReconfigurationScore nopScore;
 
-			nextRespTime = StateUtils.computeRespTime(currentState, this);
-			if (Double.isInfinite(nextRespTime) || Double.isNaN(nextRespTime)) {
-				nextRespTime = MAX_Q_RESPTIME;
+		if (nop.equals(chosenAction)) { /* chosen is no reconf action */
+			nopScore = score;
+			// as fallback, propose the action which you'd choose
+			// if the immediate rcf cost is 0 (in case someone else reconfigures)
+			secondaryAction = freeReconfigurationActionSelection.selectAction(currentState);
+			if (secondaryAction.equals(nop)) {
+				secondaryAction = null;
 			}
-			avgFutureRespTime = (qRespNop-nextRespTime)/getGamma()*(1.0-getGamma());
-
-			scoreNop = new SplitQReconfigurationScore(qResNop, qRcfNop, nextRespTime, avgFutureRespTime);
+		} else {
+			nopScore = computeReconfigurationScore(currentState, nop);
 		}
 
-		return new RewardBasedOMRequest(action2reconfiguration(chosenAction), score, scoreNop);
+		RewardBasedOMRequest request = new RewardBasedOMRequest(action2reconfiguration(chosenAction), score, nopScore);
+		if (secondaryAction != null) {
+			log.info("{} proposing a secondary action", operator.getName());
+			ReconfigurationScore secondaryScore = computeReconfigurationScore(currentState, secondaryAction);
+			request.addRequestedReconfiguration(action2reconfiguration(secondaryAction), secondaryScore);
+		}
+
+		return request;
 	}
+
+	private class FreeReconfSelectionPolicyCallback implements ActionSelectionPolicyCallback
+	{
+		@Override
+		public boolean validateAction(State s, Action a) {
+			return ValueIterationSplitQOM.this.validateAction(s,a);
+		}
+
+		@Override
+		public double evaluateAction(State s, Action a) {
+			double q = ValueIterationSplitQOM.this.evaluateAction(s,a);
+			if (a.getDelta() != 0) {
+				q -= getwReconf();
+			}
+
+			return q;
+		}
+	}
+
 	/**
 	 * Dump policy on file
 	 */

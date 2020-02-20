@@ -28,7 +28,12 @@ public abstract class ApplicationManager {
 	public Map<Operator, Reconfiguration> planReconfigurations(Map<Operator, OMMonitoringInfo> omMonitoringInfo,
 															   Map<Operator, OperatorManager> operatorManagers) {
 
-		/* Let each OM make a decision. */
+		Map<OperatorManager, OMRequest> omRequests = pickOMRequests(omMonitoringInfo, operatorManagers);
+		return plan(omRequests, omMonitoringInfo);
+	}
+
+	protected Map<OperatorManager, OMRequest> pickOMRequests (Map<Operator, OMMonitoringInfo> omMonitoringInfo,
+															  Map<Operator, OperatorManager> operatorManagers) {
 		Map<OperatorManager, OMRequest> omRequests = new HashMap<>();
 		for (Operator op : application.getOperators()) {
 			OMMonitoringInfo operatorMonitoringInfo = omMonitoringInfo.get(op);
@@ -37,10 +42,11 @@ public abstract class ApplicationManager {
 			omRequests.put(om, req);
 		}
 
-		return plan(omRequests);
+		return omRequests;
 	}
 
-	abstract protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap);
+	abstract protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap,
+														   Map<Operator, OMMonitoringInfo> omMonitoringInfo);
 
 	protected Map<Operator, Reconfiguration> acceptAll(Map<OperatorManager, OMRequest> omRequestMap) {
 		Map<Operator, Reconfiguration> reconfigurations = new HashMap<>(omRequestMap.size());

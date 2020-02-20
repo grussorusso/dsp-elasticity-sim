@@ -3,6 +3,9 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.edf.am.centralized.JointAction;
+import it.uniroma2.dspsim.dsp.edf.am.centralized.JointState;
+import it.uniroma2.dspsim.dsp.edf.am.centralized.JointStateUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
@@ -11,6 +14,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCa
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
@@ -20,6 +24,7 @@ import it.uniroma2.dspsim.stats.metrics.CpuMetric;
 import it.uniroma2.dspsim.stats.metrics.AvgMemoryMetric;
 import it.uniroma2.dspsim.stats.metrics.TimeMetric;
 import it.uniroma2.dspsim.stats.samplers.StepSampler;
+import it.uniroma2.dspsim.utils.MathUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -186,6 +191,19 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         return ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.GREEDY, this);
     }
 
+    public double computeSLOViolationProbability (State s, Action a) {
+        State newS = StateUtils.computePostDecisionState(s,a, this);
+
+        double prob = 0.0;
+        for (int lambda = 0; lambda < getInputRateLevels(); ++lambda) {
+            newS.setLambda(lambda);
+            double p = getpMatrix().getValue(s.getLambda(), newS.getLambda());
+            double sloCost = StateUtils.computeSLOCost(newS, this); /* 0 or 1 */
+            prob += p*sloCost;
+        }
+
+        return prob;
+    }
     /**
      * Dump policy on file
      */

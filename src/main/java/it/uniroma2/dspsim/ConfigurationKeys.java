@@ -16,6 +16,7 @@ public abstract class ConfigurationKeys {
 	 * Test base path
 	 */
 	public static final String OUTPUT_BASE_PATH_KEY = "output.base.path";
+	public static final String OUTPUT_LOG_FILENAME = "simLog.log";
 
 	/**
 	 * Data source.

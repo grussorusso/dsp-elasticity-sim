@@ -59,6 +59,12 @@ public class Action extends AbstractAction {
      * Dump action
      */
     public String dump() {
-        return String.format("A(%d,%d)", delta, resTypeIndex);
+        if (delta == 0) {
+            return " ~ ";
+        } else if (delta > 0) {
+            return String.format("+%d%c", delta, resTypeIndex+'a');
+        } else {
+            return String.format("-%d%c", -delta, resTypeIndex + 'a');
+        }
     }
 }

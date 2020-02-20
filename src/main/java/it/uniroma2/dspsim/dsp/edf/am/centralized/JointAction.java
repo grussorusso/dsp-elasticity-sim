@@ -32,4 +32,22 @@ public class JointAction {
 
 		return false;
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (!(o instanceof JointAction))
+			return false;
+
+		JointAction other = (JointAction)o;
+		int n = actions.length;
+		if (n != other.actions.length)
+			return false;
+
+		for (int i = 0; i<n; i++) {
+			if (!(actions[i].equals(other.actions[i])))
+				return false;
+		}
+
+		return true;
+	}
 }

@@ -1,13 +1,21 @@
 package it.uniroma2.dspsim.dsp.edf.am;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Application;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
+import it.uniroma2.dspsim.dsp.edf.am.centralized.JointState;
+import it.uniroma2.dspsim.dsp.edf.am.centralized.JointStateUtils;
+import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
 import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
 import it.uniroma2.dspsim.dsp.edf.om.request.ReconfigurationScore;
 import it.uniroma2.dspsim.dsp.edf.om.request.RewardBasedOMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.request.SplitQReconfigurationScore;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
+import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.utils.JointReconfigurationIterator;
 import it.uniroma2.dspsim.utils.Tuple2;
 import org.slf4j.Logger;
@@ -21,8 +29,29 @@ public class SplitQBasedAM extends ApplicationManager {
 
 	private Logger logger = LoggerFactory.getLogger(SplitQBasedAM.class);
 
+
+	private double wReconf;
+	private double wSLO;
+	private double wResources;
+
+	private double localGamma, globalGamma;
+
 	public SplitQBasedAM(Application application, double sloLatency) {
 		super(application, sloLatency);
+
+		Configuration configuration = Configuration.getInstance();
+
+		// reward weights
+		this.wReconf = configuration.getDouble(ConfigurationKeys.RL_OM_RECONFIG_WEIGHT_KEY, 0.33);
+		this.wSLO = configuration.getDouble(ConfigurationKeys.RL_OM_SLO_WEIGHT_KEY, 0.33);
+		this.wResources = configuration.getDouble(ConfigurationKeys.RL_OM_RESOURCES_WEIGHT_KEY, 0.33);
+		this.localGamma = Configuration.getInstance().getDouble(ConfigurationKeys.DP_GAMMA_KEY, 0.99);
+
+		// TODO:
+		this.globalGamma = localGamma;
+		//this.wReconf = 0.1;
+		//this.wResources = 0.45;
+		//this.wSLO = 0.45;
 	}
 
 	private RewardBasedOMRequest getRequest (OMRequest request) {
@@ -43,7 +72,10 @@ public class SplitQBasedAM extends ApplicationManager {
 	}
 
 	@Override
-	protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap) {
+	public Map<Operator, Reconfiguration> planReconfigurations(Map<Operator, OMMonitoringInfo> omMonitoringInfo,
+															   Map<Operator, OperatorManager> operatorManagers) {
+		Map<OperatorManager, OMRequest> omRequestMap = pickOMRequests(omMonitoringInfo, operatorManagers);
+
 		/* Number of OMs. */
 		final int N = omRequestMap.size();
 		/* Count of reconf. requested by each OM. */
@@ -73,6 +105,7 @@ public class SplitQBasedAM extends ApplicationManager {
 						rcf, score, request.getNoReconfigurationScore());
 				scoredRcfs[i].add(new Tuple2<>(rcf, score));
 			}
+
 			i++;
 		}
 
@@ -85,7 +118,7 @@ public class SplitQBasedAM extends ApplicationManager {
 		JointReconfigurationIterator iterator = new JointReconfigurationIterator(N, omRcfCount);
 		while (iterator.hasNext()) {
 			int a[] = iterator.next();
-			double q = evaluateGlobalQ(a, managers, scoredRcfs);
+			double q = evaluateGlobalQ(a, managers, omMonitoringInfo, scoredRcfs);
 			logger.info("Q({}) = {}", a , q);
 			if (bestQ == null || q < bestQ) {
 				bestAction = a.clone();
@@ -111,15 +144,42 @@ public class SplitQBasedAM extends ApplicationManager {
 	}
 
 	private double evaluateGlobalQ(int[] a, ArrayList<OperatorManager> oms,
+								   Map<Operator, OMMonitoringInfo> omMonitoringInfo,
 								   ArrayList<Tuple2<Reconfiguration, SplitQReconfigurationScore>>[] scoredRcfs) {
 		int N = a.length;
 
+		final NodeType[] nodeTypes = ComputingInfrastructure.getInfrastructure().getNodeTypes();
+
 		/* Q_resources */
-		double Qres = 0.0;
+		double cRes = 0.0;
+		double futureQres = 0.0;
 		for (int i=0; i<N; i++) {
-			Qres += scoredRcfs[i].get(a[i]).getV().getqResources();
+			/* Immediate res. cost */
+			double cResOp = 0.0;
+			Operator op = oms.get(i).getOperator();
+			int[] currentDeployment = op.getCurrentDeployment();
+			Reconfiguration rcf = scoredRcfs[i].get(a[i]).getK();
+			if (rcf.getInstancesToAdd() != null) {
+				for (NodeType nt : rcf.getInstancesToAdd()) {
+					currentDeployment[nt.getIndex()]++;
+				}
+			}
+			if (rcf.getInstancesToRemove() != null) {
+				for (NodeType nt : rcf.getInstancesToRemove()) {
+					currentDeployment[nt.getIndex()]--;
+				}
+			}
+			for (int j = 0; j<currentDeployment.length; j++) {
+				cResOp += currentDeployment[j]*nodeTypes[j].getCost();
+			}
+
+			cResOp /= op.getMaxParallelism()*ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
+			futureQres += (scoredRcfs[i].get(a[i]).getV().getqResources()-cResOp)/localGamma; /* account future cost only */
+			cRes += cResOp;
 		}
-		Qres /= N; /* normalized based on number of operator */
+		cRes /= N;
+		futureQres /= N; /* normalized based on number of operator */
+		double Qres = cRes + globalGamma*futureQres;
 
 		/* Q_rcf */
 		double futureQrcf = 0.0;
@@ -134,7 +194,7 @@ public class SplitQBasedAM extends ApplicationManager {
 			futureQrcf = Math.max(futureQrcf, omFutureQRcf);
 		}
 		double immediateRcfCost = isRcfJoint? 1.0 : 0.0;
-		//double qRcf = futureQrcf + immediateRcfCost;
+		//double qRcf = globalGamma*futureQrcf + immediateRcfCost;
 		double qRcf = immediateRcfCost; // ignore future Rcf
 
 		/* Q_slo */
@@ -151,18 +211,20 @@ public class SplitQBasedAM extends ApplicationManager {
 		boolean immediateSLOViolation = isAppSLOViolated(opResponseTime);
 		boolean futureSLOViolation = isAppSLOViolated(opFutureResponseTime);
 
-		final double gamma = 0.99;// TODO: get gamma from conf
 		double Qslo = 0.0;
 		if (immediateSLOViolation)
 			Qslo += 1.0;
 		if (futureSLOViolation)
-			Qslo += gamma/(1.0-gamma);
+			Qslo += globalGamma/(1.0-globalGamma);
 
-		// TODO: get weights from conf
-		final double w=0.33;
 		logger.info("Q({}): res={}, rcf={}, slo={}", a, Qres, qRcf, Qslo);
-		return w*Qres + w*qRcf + w*Qslo;
+		return wResources*Qres + wReconf*qRcf + wSLO*Qslo;
 	}
 
 
+	@Override
+	final protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap,
+														Map<Operator, OMMonitoringInfo> omMonitoringInfoMap) {
+		throw new RuntimeException("This method should never be called!");
+	}
 }

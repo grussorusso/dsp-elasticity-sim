@@ -11,7 +11,6 @@ import it.uniroma2.dspsim.dsp.edf.om.OMMonitoringInfo;
 import it.uniroma2.dspsim.dsp.edf.om.OperatorManager;
 import it.uniroma2.dspsim.dsp.edf.om.request.OMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.utils.MathUtils;
@@ -20,9 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static it.uniroma2.dspsim.dsp.edf.om.RewardBasedOM.action2reconfiguration;
@@ -90,12 +87,12 @@ public class CentralizedAM extends ApplicationManager {
 			e.printStackTrace();
 		}
 
+		final String outputBasePath = Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "");
 		String qTableFilename = configuration.getString(ConfigurationKeys.AM_CENTRALIZED_PRECOMPUTED_QTABLE_FILE, "");
 		if (qTableFilename == null || qTableFilename.isEmpty()) {
 			this.qTable = JointQTable.createQTable(nOperators, maxParallelism, inputRateLevels);
 			computePolicy();
-			serializeQ(String.format("%s/centralizedQtable.ser",
-					Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
+			serializeQ(String.format("%s/centralizedQtable.ser", outputBasePath));
 		} else {
 			try {
 				this.qTable = loadQTable(qTableFilename);
@@ -105,8 +102,9 @@ public class CentralizedAM extends ApplicationManager {
 				e.printStackTrace();
 			}
 		}
-		dumpQ(String.format("%s/centralizedQtable",
-				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
+
+		dumpQ(String.format("%s/centralizedQtable", outputBasePath));
+		dumpPolicy(String.format("%s/policy", outputBasePath));
 	}
 
 	private JointQTable loadQTable(String qTableFilename) throws IOException, ClassNotFoundException {
@@ -152,8 +150,8 @@ public class CentralizedAM extends ApplicationManager {
 		if (a.isReconfiguration())
 			crcf = 1.0;
 
-		JointState newS = computePDS(s,a);
-		double cres = computeNormalizedResourcesCost(newS);
+		JointState newS = JointStateUtils.computePDS(s,a,inputRateLevels,maxParallelism);
+		double cres = JointStateUtils.computeNormalizedResourcesCost(newS, maxParallelism);
 
 		double cslo = 0.0;
 		double futureCost = 0.0;
@@ -177,7 +175,7 @@ public class CentralizedAM extends ApplicationManager {
 			// NOTE: We are assuming lambdas are proportional among different operators...
 			double p = pMatrix.getValue(s.states[0].getLambda(), newS.states[0].getLambda());
 
-			if(isAppSLOViolated(newS)) {
+			if(isAppSLOViolationExpectedInState(newS)) {
 				cslo += p;
 			}
 
@@ -194,7 +192,7 @@ public class CentralizedAM extends ApplicationManager {
 		return Math.abs(oldQ-q);
 	}
 
-	private JointAction greedyAction(JointState s) {
+	public JointAction greedyAction(JointState s) {
 		JointAction bestA = null;
 		Double bestQ = null;
 
@@ -213,7 +211,37 @@ public class CentralizedAM extends ApplicationManager {
 		return bestA;
 	}
 
-	private boolean isAppSLOViolated(JointState newS) {
+	public double computeSLOViolationProbability (JointState s, JointAction a) {
+		JointState newS = JointStateUtils.computePDS(s,a,inputRateLevels,maxParallelism);
+
+		Map<Operator, int[]> opDeployment = new HashMap<>();
+		for (int i = 0; i<nOperators; i++) {
+			opDeployment.put(operators[i], newS.states[i].getActualDeployment());
+		}
+
+		double prob = 0.0;
+		for (int lambda = 0; lambda < inputRateLevels; ++lambda) {
+			// compute per operator lambda...
+			newS.states[0].setLambda(lambda);
+			double realInputRate = MathUtils.remapDiscretizedValue(maxInputRate, lambda, inputRateLevels);
+			Map<Operator, Double> opRealInputRate = application.computePerOperatorInputRate(realInputRate, opDeployment);
+			for (int i = 1; i < nOperators; i++) {
+				int lambdaOp = MathUtils.discretizeValue(maxInputRate, opRealInputRate.get(operators[i]), inputRateLevels);
+				newS.states[i].setLambda(lambdaOp);
+			}
+
+			// NOTE: We are assuming lambdas are proportional among different operators...
+			double p = pMatrix.getValue(s.states[0].getLambda(), newS.states[0].getLambda());
+
+			if(isAppSLOViolationExpectedInState(newS)) {
+				prob += p;
+			}
+		}
+
+		return prob;
+	}
+
+	public boolean isAppSLOViolationExpectedInState(JointState newS) {
 		Map<Operator, Double> opRespTime = new HashMap<>();
 
 		for (int i = 0; i < application.getOperators().size(); i++) {
@@ -228,34 +256,12 @@ public class CentralizedAM extends ApplicationManager {
 		return isAppSLOViolated(opRespTime);
 	}
 
-	private double computeNormalizedResourcesCost (JointState s) {
-		double cost = 0.0;
-		for (int i = 0; i < nOperators; i++) {
-			cost += StateUtils.computeDeploymentCostNormalized(s.states[i], maxParallelism[i]);
-		}
-		return cost/nOperators;
-	}
-
-	private JointState computePDS(JointState s, JointAction a) {
-		State pds[] = new State[nOperators];
-		for (int i = 0; i<nOperators; i++)
-			pds[i] = StateUtils.computePostDecisionState(s.states[i], a.actions[i], StateType.K_LAMBDA, inputRateLevels, maxParallelism[i]);
-
-		return new JointState(pds);
-	}
-
 	@Override
 	public Map<Operator, Reconfiguration> planReconfigurations(Map<Operator, OMMonitoringInfo> omMonitoringInfo,
 															   Map<Operator, OperatorManager> operatorManagers) {
-		// Compute current state
-		State s[] = new State[nOperators];
-		for (int i = 0; i<nOperators; i++) {
-			Operator op = application.getOperators().get(i);
-			s[i] = StateUtils.computeCurrentState(omMonitoringInfo.get(op), op, maxInputRate, inputRateLevels, StateType.K_LAMBDA);
-		}
-		JointState currentState = new JointState(s);
+		JointState currentState = JointStateUtils.computeCurrentState(application, omMonitoringInfo, maxInputRate, inputRateLevels);
 
-		logger.info("Expected violation: " + isAppSLOViolated(currentState));
+		logger.info("Expected violation: " + isAppSLOViolationExpectedInState(currentState));
 
 		// Pick best global action
 		JointAction a = greedyAction(currentState);
@@ -271,7 +277,8 @@ public class CentralizedAM extends ApplicationManager {
 	}
 
 	@Override
-	final protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap) {
+	final protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap,
+														Map<Operator, OMMonitoringInfo> omMonitoringInfoMap) {
 		throw new RuntimeException("This method should never be called!");
 	}
 
@@ -293,7 +300,6 @@ public class CentralizedAM extends ApplicationManager {
 
 	private void dumpQ(String filename) {
 
-		// create file
 		File file = new File(filename);
 		try {
 			if (!file.exists()) {
@@ -314,6 +320,29 @@ public class CentralizedAM extends ApplicationManager {
 					double q = qTable.getQ(s,a);
 					printWriter.println(String.format("Q(%s,%s) = %f", s.toString(), a.toString(), q));
 				}
+			}
+			printWriter.flush();
+			printWriter.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void dumpPolicy (String filename) {
+
+		File file = new File(filename);
+		try {
+			if (!file.exists()) {
+				file.getParentFile().mkdirs();
+				file.createNewFile();
+			}
+			PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
+			JointStateIterator sit = new JointStateIterator(nOperators, maxParallelism,
+					ComputingInfrastructure.getInfrastructure(), inputRateLevels);
+			while (sit.hasNext()) {
+				JointState s = sit.next();
+				JointAction a = greedyAction(s);
+				printWriter.println(String.format("%s -> %s", s.toString(), a.toString()));
 			}
 			printWriter.flush();
 			printWriter.close();
