@@ -49,12 +49,16 @@ public abstract class ConfigurationKeys {
 	public static final String OPERATOR_LOAD_BALANCER_TYPE_KEY = "operator.load.balancer.type";
 	/** Method for computing per-operator SLO. */
 	public static final String OPERATOR_SLO_COMPUTATION_METHOD = "dsp.slo.operator.method";
+	public static final String OPERATOR_SLO_COMPUTATION_CUSTOM_QUOTAS = "dsp.slo.operator.custom.quotas";
+
 
 	/**
 	 * Application.
 	 */
 	/** Application topology to use. */
 	public static final String APPLICATION = "dsp.app.type";
+	/** File describing the application (if 'fromfile' app is used) */
+	public static final String APPLICATION_FILE_SPEC = "dsp.app.file";
 	/** Current SLO in terms of application latency (seconds). */
 	public static final String SLO_LATENCY_KEY = "dsp.slo.latency";
 

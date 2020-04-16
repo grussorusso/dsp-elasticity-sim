@@ -34,9 +34,7 @@ import java.util.*;
 
 public class ValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
 
-    private static final String STAT_VI_MEMORY_USAGE = "VI Memory Usage";
     private static final String STAT_VI_STEP_TIME = "VI Step Time";
-    private static final String STAT_VI_CPU_USAGE = "VI CPU Usage";
 
     // V matrix
     protected QTable qTable;
@@ -63,15 +61,9 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         StepSampler stepSampler = new StepSampler("VI Step Sampler", 1);
 
         // per operator metrics
-        AvgMemoryMetric opAvgMemoryMetric = new AvgMemoryMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE));
-        opAvgMemoryMetric.addSampler(stepSampler);
-        statistics.registerMetric(opAvgMemoryMetric);
         TimeMetric opTimeMetric = new TimeMetric(getOperatorMetricName(STAT_VI_STEP_TIME));
         opTimeMetric.addSampler(stepSampler);
         statistics.registerMetric(opTimeMetric);
-        CpuMetric opCpuMetric = new CpuMetric(getOperatorMetricName(STAT_VI_CPU_USAGE));
-        opCpuMetric.addSampler(stepSampler);
-        statistics.registerMetric(opCpuMetric);
     }
 
     /**
@@ -92,8 +84,6 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
 
             Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_STEP_TIME), 0);
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_MEMORY_USAGE), 0);
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_CPU_USAGE), 0);
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);

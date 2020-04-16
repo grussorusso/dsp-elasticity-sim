@@ -8,6 +8,7 @@ import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.*;
 import java.util.*;
 
 public class ApplicationBuilder {
@@ -16,44 +17,108 @@ public class ApplicationBuilder {
 
 	static public Application buildApplication()
 	{
+		Application application;
 		String appName = Configuration.getInstance().getString(ConfigurationKeys.APPLICATION, "single-operator");
+
 		if (appName.equalsIgnoreCase("single-operator")) {
-			return singleOperatorApplication();
+			application = singleOperatorApplication(1.0);
+		} else if (appName.equalsIgnoreCase("single-operator-fast")) {
+			application = singleOperatorApplication(5.0);
+		} else if (appName.equalsIgnoreCase("fromfile")) {
+			application = buildApplicationFromFile();
 		} else if (appName.equalsIgnoreCase("fork-join")) {
-			return buildForkJoinApplication();
+			application = buildForkJoinApplication();
 		} else if (appName.equalsIgnoreCase("debs2019")) {
-			return buildDEBS2019Application();
+			application = buildDEBS2019Application();
 		} else if (appName.equalsIgnoreCase("simple-tandem")) {
-			return simpleTandemApplication();
+			application = simpleTandemApplication();
 		} else if (appName.equalsIgnoreCase("pipeline2")) {
-			return pipeline2Application();
+			application = pipeline2Application();
 		} else if (appName.equalsIgnoreCase("pipeline3")) {
-			return pipeline3Application();
+			application = pipeline3Application();
 		} else if (appName.equalsIgnoreCase("pipeline4")) {
-			return pipeline4Application();
+			application = pipeline4Application();
 		} else if (appName.equalsIgnoreCase("pipeline5")) {
-			return pipeline5Application();
+			application = pipeline5Application();
 		} else if (appName.equalsIgnoreCase("simple-tree")) {
-			return simpleTreeApplication();
+			application = simpleTreeApplication();
+		} else {
+			throw new RuntimeException("Invalid application: " + appName);
 		}
 
-		throw new RuntimeException("Invalid application: " + appName);
+		computeOperatorsSLO(application);
+		return application;
 	}
 
-	static public Application singleOperatorApplication() {
+	static public Application buildApplicationFromFile() {
+		String appFilename = Configuration.getInstance().getString(ConfigurationKeys.APPLICATION_FILE_SPEC, "");
+		if (appFilename.isEmpty())
+			throw new RuntimeException("Invalid application file: " + appFilename);
+
+		return buildApplicationFromFile(appFilename);
+	}
+
+	private static Application buildApplicationFromFile(String filename) {
+		File file = new File(filename);
+		Application app = new Application();
+		Map<String, Operator> name2op = new HashMap<>();
+		final int maxParallelism = Configuration.getInstance()
+				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
+
+		try {
+			BufferedReader br = new BufferedReader(new FileReader(file));
+			String line;
+			while ((line = br.readLine()) != null) {
+				String tokens[] = line.split(",");
+				tokens = Arrays.stream(tokens).map(String::trim).toArray(String[]::new);
+
+				if (tokens[0].equalsIgnoreCase("OP")) {
+					/* operator spec */
+					if (tokens.length != 4)
+						throw new RuntimeException("Invalid op line: " + Arrays.toString(tokens));
+
+					String opName = tokens[1];
+					final double opStMean = 1.0/Double.parseDouble(tokens[2]);
+					final double opStSCV = Double.parseDouble(tokens[3]);
+					final double opStVar = opStSCV*opStMean*opStMean;
+					Operator op = new Operator(opName, new MG1OperatorQueueModel(opStMean, opStVar), maxParallelism);
+
+					if (name2op.containsKey(opName))
+						throw new RuntimeException("Already used operator name!");
+
+					name2op.put(opName, op);
+					app.addOperator(op);
+				} else if (tokens[0].equalsIgnoreCase("EDGE")) {
+					/* edge spec */
+					if (tokens.length != 3)
+						throw new RuntimeException("Invalid edge line: " + Arrays.toString(tokens));
+					Operator op1 = name2op.get(tokens[1]);
+					Operator op2 = name2op.get(tokens[2]);
+					app.addEdge(op1, op2);
+				}
+			}
+
+			log.info("Operators: {}", app.getOperators().size());
+			log.info("Paths: {}", app.getAllPaths().size());
+			return app;
+		} catch (IOException e) {
+			e.printStackTrace();
+			throw new RuntimeException("Invalid application file: " + filename);
+		}
+	}
+
+	static public Application singleOperatorApplication(double muScalingFactor) {
 		Application app = new Application();
 
-		final double mu = 180.0;
+		final double mu = 180.0 * muScalingFactor;
 		final double serviceTimeMean = 1/mu;
 		final double serviceTimeVariance = 1.0/mu*1.0/mu/2.0;
 
 		final int maxParallelism = Configuration.getInstance()
 				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
-		Operator op = new Operator("filter",
+		Operator op = new Operator("singleOp",
 				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
 		app.addOperator(op);
-
-		computeOperatorsSLO(app);
 
 		return app;
 	}
@@ -92,8 +157,6 @@ public class ApplicationBuilder {
 		app.addEdge(op3, op4);
 		app.addEdge(op3, op5);
 
-		computeOperatorsSLO(app);
-
 		return app;
 	}
 
@@ -117,8 +180,6 @@ public class ApplicationBuilder {
 				app.addEdge(ops[i-1], ops[i]);
 			}
 		}
-
-		computeOperatorsSLO(app);
 
 		return app;
 	}
@@ -147,8 +208,8 @@ public class ApplicationBuilder {
 	}
 
 	static public Application pipeline2Application() {
-		final double mu0 = 350.0;
-		final double mu[] = {mu0, 1.5*mu0};
+		final double mu0 = 120.0;
+		final double mu[] = {mu0, 5.0*mu0};
 		return buildMM1Pipeline(mu);
 	}
 
@@ -192,8 +253,6 @@ public class ApplicationBuilder {
 		app.addEdge(op1, op2);
 		app.addEdge(op1, op3);
 
-		computeOperatorsSLO(app);
-
 		return app;
 	}
 
@@ -220,8 +279,6 @@ public class ApplicationBuilder {
 		app.addEdge(op1, op3);
 		app.addEdge(op2, op4);
 		app.addEdge(op3, op4);
-
-		computeOperatorsSLO(app);
 
 		return app;
 	}
@@ -262,8 +319,6 @@ public class ApplicationBuilder {
 		app.addEdge(op3, op6);
 		app.addEdge(op5, op6);
 
-		computeOperatorsSLO(app);
-
 		return app;
 	}
 
@@ -276,6 +331,21 @@ public class ApplicationBuilder {
 		if (operatorSLOmethod.equalsIgnoreCase("heuristic")) {
 			log.info("Computing operators SLO using heuristic.");
 			computeHeuristicOperatorSLO(app);
+		} else if (operatorSLOmethod.equalsIgnoreCase("custom")) {
+			// TODO: experimental
+			String[] quotas = conf.getString(ConfigurationKeys.OPERATOR_SLO_COMPUTATION_CUSTOM_QUOTAS, "").
+					split(",");
+			log.info("Operators = {}");
+			if (app.getOperators().size() != quotas.length)
+				throw new RuntimeException("Invalid quotas for computing operator SLO");
+
+			for (int i = 0; i<app.getOperators().size(); i++) {
+				final Operator op = app.getOperators().get(i);
+				final double opSlo = rSLO * Double.parseDouble(quotas[i]);
+
+				log.info("{} -> SLO: {}", op.getName(), opSlo);
+				op.setSloRespTime(opSlo);
+			}
 		} else {
 			log.info("Computing operators SLO using default method.");
 			/* default */
