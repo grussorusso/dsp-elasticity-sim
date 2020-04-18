@@ -5,23 +5,17 @@ if [[ $# -lt 1 ]]; then
 fi
 
 EXPERIMENT_TAG="$1"
+OUT_DIR="results_${EXPERIMENT_TAG}"
+[[ -e $OUT_DIR ]] || mkdir $OUT_DIR
 
+conf_file=$(mktemp)
+cat ${@:2} > $conf_file
+echo "output.base.path = $OUT_DIR/" >> $conf_file
+echo "output.log = $OUT_DIR/simLog.log" >> $conf_file
 
 #--------------------
 # Running simulator
 #--------------------
 echo "Running experiment: ${EXPERIMENT_TAG}"
 java -Xmx12g -jar out/artifacts/dspelasticitysimulator_jar/dspelasticitysimulator.jar ${@:2}
-
-#--------------------
-# Processing results
-#--------------------
-OUTDIR=results_${EXPERIMENT_TAG}
-[[ -e $OUTDIR ]] || mkdir $OUTDIR
-
-mv test_results/* ${OUTDIR}/
-cp simLog.log ${OUTDIR}
-
-bash processDetailedLog.sh
-mv detail* ${OUTDIR}
-cp plotDetailedLog.gp $OUTDIR
+[[ $? -eq 0 ]] || exit 1

@@ -22,7 +22,7 @@ public class TestQTable {
         //guavaTableAdQTableHashingTest(10, 5);
         //guavaTableAdQTableHashingTest(7, 10);
 
-        arrayBasedQTableHashingTest(10, 10);
+        arrayBasedQTableHashingTest(2, 10);
 
         //doubleMatrixAsQTableHashingTest(3, 5);
         //doubleMatrixAsQTableHashingTest(5, 10);

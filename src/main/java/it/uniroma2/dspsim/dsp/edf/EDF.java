@@ -67,7 +67,6 @@ public class EDF {
 	public Map<Operator, Reconfiguration> pickReconfigurations (MonitoringInfo monitoringInfo) {
 		Map<Operator, OMMonitoringInfo> omMonitoringInfo = new HashMap<>();
 		Map<Operator, Double> opInputRate = application.computePerOperatorInputRate(monitoringInfo.getInputRate());
-		logger.info("OpInputRate: {}", opInputRate);
 
 		for (Operator op : application.getOperators()) {
 			final double rate = opInputRate.get(op);
