@@ -32,21 +32,16 @@ public class ApplicationBuilder {
 			application = buildDEBS2019Application();
 		} else if (appName.equalsIgnoreCase("simple-tandem")) {
 			application = simpleTandemApplication();
-		} else if (appName.equalsIgnoreCase("pipeline2")) {
-			application = pipeline2Application();
-		} else if (appName.equalsIgnoreCase("pipeline3")) {
-			application = pipeline3Application();
-		} else if (appName.equalsIgnoreCase("pipeline4")) {
-			application = pipeline4Application();
-		} else if (appName.equalsIgnoreCase("pipeline5")) {
-			application = pipeline5Application();
 		} else if (appName.equalsIgnoreCase("simple-tree")) {
 			application = simpleTreeApplication();
 		} else {
 			throw new RuntimeException("Invalid application: " + appName);
 		}
 
-		computeOperatorsSLO(application);
+		String amType = Configuration.getInstance().getString(ConfigurationKeys.AM_TYPE_KEY, "");
+		if (!amType.equalsIgnoreCase("centralized"))
+			computeOperatorsSLO(application);
+
 		return application;
 	}
 
@@ -160,30 +155,6 @@ public class ApplicationBuilder {
 		return app;
 	}
 
-	static private Application buildMM1Pipeline (double mu[])
-	{
-		Application app = new Application();
-
-
-		int N = mu.length;
-		Operator ops[] = new Operator[N];
-		final int maxParallelism = Configuration.getInstance() .getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
-
-		for (int i = 0; i< N; i++) {
-			final double stMean = 1.0/mu[i];
-			final double stVar = stMean*stMean;
-			String name = String.format("op%d", i+1);
-			ops[i] = new Operator(name, new MG1OperatorQueueModel(stMean, stVar), maxParallelism);
-			app.addOperator(ops[i]);
-
-			if (i > 0) {
-				app.addEdge(ops[i-1], ops[i]);
-			}
-		}
-
-		return app;
-	}
-
 	static public Application simpleTandemApplication() {
 		Application app = new Application();
 
@@ -207,29 +178,6 @@ public class ApplicationBuilder {
 		return app;
 	}
 
-	static public Application pipeline2Application() {
-		final double mu0 = 120.0;
-		final double mu[] = {mu0, 5.0*mu0};
-		return buildMM1Pipeline(mu);
-	}
-
-	static public Application pipeline3Application() {
-		final double mu0 = 350.0;
-		final double mu[] = {mu0, 1.5*mu0, mu0};
-		return buildMM1Pipeline(mu);
-	}
-
-	static public Application pipeline4Application() {
-		final double mu0 = 250.0;
-		final double mu[] = {mu0, 2.0*mu0, 10.0*mu0, 1.5*mu0};
-		return buildMM1Pipeline(mu);
-	}
-
-	static public Application pipeline5Application() {
-		final double mu0 = 250.0;
-		final double mu[] = {mu0, 2.0*mu0, 10.0*mu0, 1.5*mu0, mu0};
-		return buildMM1Pipeline(mu);
-	}
 
 	static public Application simpleTreeApplication() {
 		Application app = new Application();
@@ -332,18 +280,14 @@ public class ApplicationBuilder {
 			log.info("Computing operators SLO using heuristic.");
 			computeHeuristicOperatorSLO(app);
 		} else if (operatorSLOmethod.equalsIgnoreCase("custom")) {
-			// TODO: experimental
 			String[] quotas = conf.getString(ConfigurationKeys.OPERATOR_SLO_COMPUTATION_CUSTOM_QUOTAS, "").
 					split(",");
-			log.info("Operators = {}");
 			if (app.getOperators().size() != quotas.length)
 				throw new RuntimeException("Invalid quotas for computing operator SLO");
 
 			for (int i = 0; i<app.getOperators().size(); i++) {
 				final Operator op = app.getOperators().get(i);
 				final double opSlo = rSLO * Double.parseDouble(quotas[i]);
-
-				log.info("{} -> SLO: {}", op.getName(), opSlo);
 				op.setSloRespTime(opSlo);
 			}
 		} else {
@@ -352,8 +296,11 @@ public class ApplicationBuilder {
 			for (Operator op : app.getOperators()) {
 				double opSlo = rSLO / app.getMaxPathLength(op);
 				op.setSloRespTime(opSlo);
-				log.info("SLO[{}] = {}", op.getName(), opSlo);
 			}
+		}
+
+		for (Operator op : app.getOperators()) {
+			log.info("SLO[{}] = {}", op.getName(), op.getSloRespTime());
 		}
 	}
 

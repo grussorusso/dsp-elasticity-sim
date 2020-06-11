@@ -151,9 +151,12 @@ public class Simulation {
 
 				// add slo violation cost
 				iterationCost += this.wSLO;
+				logger.info("SloCost={}",1.0);
 
 				if (detailedScalingLog)
 					logger.info("[T={}] AppSLOViolation", time);
+			} else {
+				logger.info("SloCost={}",0.0);
 			}
 
 			// update used resources cost metric
@@ -162,7 +165,8 @@ public class Simulation {
 			Statistics.getInstance().updateMetric(buildMetricName(STAT_RESOURCES_COST_MAX_SUM), app.computeMaxDeploymentCost());
 
 			// add deployment cost normalized
-			iterationCost += (app.computeDeploymentCost() / app.computeMaxDeploymentCost()) * this.wRes;
+			final double cRes = (app.computeDeploymentCost() / app.computeMaxDeploymentCost());
+			iterationCost += cRes * this.wRes;
 
 			/* Reconfiguration */
 			monitoringInfo.setInputRate(inputRate);
