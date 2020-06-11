@@ -4,6 +4,7 @@ public enum OperatorManagerType {
     DO_NOTHING,
     THRESHOLD_BASED,
     Q_LEARNING,
+    Q_LEARNING_PDS,
     FA_Q_LEARNING,
     DEEP_Q_LEARNING,
     DEEP_V_LEARNING,
@@ -21,6 +22,8 @@ public enum OperatorManagerType {
             return THRESHOLD_BASED;
         } else if (str.equalsIgnoreCase("q-learning")) {
             return Q_LEARNING;
+        } else if (str.equalsIgnoreCase("q-learning-pds")) {
+            return Q_LEARNING_PDS;
         } else if (str.equalsIgnoreCase("fa-q-learning")) {
             return FA_Q_LEARNING;
         } else if (str.equalsIgnoreCase("deep-q-learning")) {
