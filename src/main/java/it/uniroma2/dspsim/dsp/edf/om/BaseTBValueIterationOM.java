@@ -15,8 +15,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.stats.Statistics;
-import it.uniroma2.dspsim.stats.metrics.RealValuedMetric;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -26,11 +24,6 @@ import java.util.Random;
 import java.util.Set;
 
 public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
-
-    private static final String STAT_TBVI_TIME = "OM - TBVI Elapsed Time (seconds)";
-    private static final String STAT_TBVI_TRAJECTORY_LENGTH = "OM - TBVI Trajectory Length";
-    private static final String STAT_TBVI_TRAJECTORIES_COMPUTED = "OM - TBVI Trajectories Computed";
-    private static final String STAT_TBVI_SAMPLES_SEEN = "OM - TBVI Samples Seen";
 
     private Random rng;
 
@@ -102,9 +95,6 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
             iterationCompleted++;
         }
-
-        // store metrics
-        storeTBVIExecutionMetrics(elapsedMillis, trajectoryLength, trajectoriesComputed);
     }
 
     protected State tbviIteration(State s, Action a) {
@@ -212,28 +202,6 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         return s.validateAction(a);
     }
 
-    /**
-     * Store TBVI execution metrics
-     */
-    private void storeTBVIExecutionMetrics(long elapsedMillis, long trajectoryLength, long trajectoriesComputed) {
-        Statistics statistics = Statistics.getInstance();
-
-        statistics.registerMetricIfNotExists(new RealValuedMetric(getOperatorMetricName(STAT_TBVI_TIME)));
-        statistics.registerMetricIfNotExists(new RealValuedMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORY_LENGTH)));
-        statistics.registerMetricIfNotExists(new RealValuedMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORIES_COMPUTED)));
-        statistics.registerMetricIfNotExists(new RealValuedMetric(getOperatorMetricName(STAT_TBVI_SAMPLES_SEEN)));
-
-        statistics.updateMetric(getOperatorMetricName(STAT_TBVI_TIME), (double) elapsedMillis / (double) 1000);
-        statistics.updateMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORY_LENGTH), (double) trajectoryLength);
-        statistics.updateMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORIES_COMPUTED), (double) trajectoriesComputed);
-        statistics.updateMetric(getOperatorMetricName(STAT_TBVI_SAMPLES_SEEN), (double) (trajectoriesComputed * trajectoryLength));
-
-        // print same results
-        System.out.println("Elapsed time: " + elapsedMillis / 1000 + " seconds");
-        System.out.println("Trajectory length: " + trajectoryLength);
-        System.out.println("Trajectories computed: " + trajectoriesComputed);
-        System.out.println("Samples: " + trajectoriesComputed * trajectoryLength);
-    }
 
 
     /**

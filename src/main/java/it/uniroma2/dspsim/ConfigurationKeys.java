@@ -147,12 +147,6 @@ public abstract class ConfigurationKeys {
 	public static final String ASP_TYPE_KEY = "asp.type";
 
 	/**
-	 * Random (R) ASP params.
-	 */
-	/** random action selection seed */
-	public static final String ASP_R_RANDOM_SEED_KEY = "asp.r.random.seed";
-
-	/**
 	 * Epsilon greedy (EG) ASP params.
 	 */
 	/** epsilon param. */
@@ -161,6 +155,4 @@ public abstract class ConfigurationKeys {
 	public static final String ASP_EG_EPSILON_DECAY_KEY = "asp.eg.epsilon.decay";
 	public static final String ASP_EG_EPSILON_MIN_VALUE_KEY = "asp.eg.epsilon.min.value";
 	public static final String ASP_EG_EPSILON_DECAY_STEPS_KEY = "asp.eg.om.epsilon.decay.steps";
-	/** epsilon random action selection seed. */
-	public static final String ASP_EG_RANDOM_SEED_KEY = "asp.eg.epsilon.random.seed";
 }

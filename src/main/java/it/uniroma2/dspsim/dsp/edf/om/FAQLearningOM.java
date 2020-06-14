@@ -32,9 +32,6 @@ public class FAQLearningOM extends ReinforcementLearningOM {
 
     private ActionSelectionPolicy greedyActionSelection;
 
-    private static final String STAT_BELLMAN_ERROR_AVG = "Q-Learning Bellman Error Avg";
-    private static final String STAT_BELLMAN_ERROR_SUM = "Q-Learning Bellman Error Sum";
-
     public FAQLearningOM(Operator operator) {
         super(operator);
 
@@ -76,10 +73,6 @@ public class FAQLearningOM extends ReinforcementLearningOM {
         updateWeights(newQ - oldQ, oldState, action);
 
         decrementAlpha();
-
-        // update bellman error metrics
-        // per operator
-        Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM), bellmanError);
     }
 
     private void decrementAlpha() {

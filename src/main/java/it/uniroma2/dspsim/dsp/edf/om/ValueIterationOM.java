@@ -30,8 +30,6 @@ import java.util.*;
 
 public class ValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
 
-    private static final String STAT_VI_STEP_TIME = "VI Step Time";
-
     // V matrix
     protected QTable qTable;
 
@@ -70,9 +68,6 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
                 startIterationTime = System.currentTimeMillis();
 
             delta = vi();
-
-
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_VI_STEP_TIME), 0);
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);

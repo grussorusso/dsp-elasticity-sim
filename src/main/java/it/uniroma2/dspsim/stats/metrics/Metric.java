@@ -19,6 +19,11 @@ public abstract class Metric {
 		return String.format("%s = %s", id, dumpValue());
 	}
 
+	public void close()
+	{
+
+	}
+
 	/**
 	 * GETTER
 	 */

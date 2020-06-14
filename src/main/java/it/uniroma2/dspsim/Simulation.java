@@ -72,7 +72,7 @@ public class Simulation {
 		this.metricViolations = new CountMetric(STAT_LATENCY_VIOLATIONS);
 		statistics.registerMetric(metricViolations);
 
-		this.metricAvgCost = new RealValuedMetric(STAT_APPLICATION_COST_AVG);
+		this.metricAvgCost = new RealValuedMetric(STAT_APPLICATION_COST_AVG, true, true);
 		statistics.registerMetric(metricAvgCost);
 
 		this.metricReconfigurations = new CountMetric(STAT_RECONFIGURATIONS);
