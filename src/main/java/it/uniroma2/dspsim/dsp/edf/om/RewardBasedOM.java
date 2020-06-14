@@ -12,16 +12,10 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.Statistics;
-import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.IncrementalAvgMetric;
-import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
-import it.uniroma2.dspsim.utils.MathUtils;
 
 public abstract class RewardBasedOM extends OperatorManager {
 
@@ -38,12 +32,6 @@ public abstract class RewardBasedOM extends OperatorManager {
     private StateType stateRepresentation;
 
     private ActionSelectionPolicy actionSelectionPolicy;
-
-    protected static final String STAT_REWARD_INCREMENTAL_AVG = "OM - Incremental Avg Reward";
-    protected static final String STAT_REWARD_SUM = "OM - Reward Sum";
-    protected static final String STAT_GET_REWARD_COUNTER = "OM - Get Reward Counter";
-
-    protected static final String STEP_SAMPLER_ID = "step-sampler";
 
     public RewardBasedOM(Operator operator) {
         super(operator);
@@ -72,13 +60,6 @@ public abstract class RewardBasedOM extends OperatorManager {
     }
 
     protected void registerMetrics(Statistics statistics) {
-        // PER OPERATOR METRICS
-        // learning step counter
-        statistics.registerMetricIfNotExists(new CountMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER)));
-        // total reward
-        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_REWARD_SUM)));
-        // incremental avg reward
-        statistics.registerMetricIfNotExists(new IncrementalAvgMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_AVG)));
     }
 
     protected String getOperatorMetricName(String metricName) {
@@ -96,11 +77,6 @@ public abstract class RewardBasedOM extends OperatorManager {
             double reward = computeCost(lastChosenAction, currentState, monitoringInfo.getInputRate());
 
             useReward(reward, lastState, lastChosenAction, currentState, monitoringInfo);
-
-            // update avg reward statistic
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER), 1);
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_SUM), reward);
-            Statistics.getInstance().updateMetric(getOperatorMetricName(STAT_REWARD_INCREMENTAL_AVG), reward);
         }
 
         // pick new action

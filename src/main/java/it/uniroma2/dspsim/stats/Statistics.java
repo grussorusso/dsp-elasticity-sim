@@ -37,45 +37,17 @@ public class Statistics {
 		}
 	}
 
-	public void updateMetric (String id, Integer intValue, String... inner_ids) {
-		this.updateMetricTree(id, intValue, inner_ids);
+	public void updateMetric (String id, Integer intValue) {
+		metrics.get(id).update(intValue);
 	}
 
 
-	public void updateMetric (String id, Double realValue, String... inner_ids) {
-		this.updateMetricTree(id, realValue, inner_ids);
+	public void updateMetric (String id, Double realValue) {
+		metrics.get(id).update(realValue);
 	}
 
-	/**
-	 * Update metric calling metric.update(value) of metric with id = inner_ids.length - 1
-	 * With this method is possible to update metric in a metric's three
-	 * If inner_ids is not passed to method it will be ignored,
-	 * so metric with id 'id' will be updated with 'value'.
-	 * WARNING : you have to know all metrics id path
-	 * @param id : initial metric id
-	 * @param value : updating value
-	 * @param inner_ids : inner ids path
-	 */
-	private void updateMetricTree(String id, Number value, String... inner_ids) {
-		if (inner_ids == null || inner_ids.length <= 0)
-			if (value instanceof Double)
-				metrics.get(id).update((double) value);
-			else if (value instanceof Integer)
-				metrics.get(id).update((int) value);
-			else
-				throw new IllegalArgumentException("Value number type not supported");
-		else {
-			String[] ids = new String[inner_ids.length - 1];
-			System.arraycopy(inner_ids, 1, ids, 0, inner_ids.length - 1);
-			updateMetricTree(inner_ids[0], value, ids);
-		}
-	}
-
-	public Metric getMetric(String id) {
-		if (this.metrics.containsKey(id))
-			return this.metrics.get(id);
-		else
-			throw new IllegalArgumentException("metric id not known");
+	public Metric getMetric (String id) {
+		return this.metrics.get(id);
 	}
 
 	public void dumpSorted()
@@ -112,14 +84,6 @@ public class Statistics {
 			out.close();
 		} catch (IOException e) {
 			e.printStackTrace();
-		}
-	}
-
-    // get sample of all metrics in hash map that
-	// have been configured to be sampled during simulation
-	public void sampleAll(long simulationTime) {
-		for (Metric m : metrics.values()) {
-			m.sample(simulationTime);
 		}
 	}
 

@@ -12,10 +12,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelection
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.stats.Statistics;
-import it.uniroma2.dspsim.stats.metrics.AvgMetric;
-import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
-import it.uniroma2.dspsim.stats.samplers.StepSampler;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

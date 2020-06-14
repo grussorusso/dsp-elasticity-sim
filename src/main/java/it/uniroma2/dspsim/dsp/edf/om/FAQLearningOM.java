@@ -18,10 +18,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyTy
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.stats.Statistics;
-import it.uniroma2.dspsim.stats.metrics.AvgMetric;
-import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
-import it.uniroma2.dspsim.stats.samplers.StepSampler;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 
 public class FAQLearningOM extends ReinforcementLearningOM {
@@ -67,19 +63,6 @@ public class FAQLearningOM extends ReinforcementLearningOM {
     @Override
     protected void registerMetrics(Statistics statistics) {
         super.registerMetrics(statistics);
-
-        // PER OPERATOR METRICS
-        // total bellman error
-        statistics.registerMetric(new RealValuedCountMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)));
-        // bellman error avg
-        AvgMetric bellmanErrorAvgMetric = new AvgMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_AVG),
-                statistics.getMetric(getOperatorMetricName(STAT_BELLMAN_ERROR_SUM)),
-                (CountMetric) statistics.getMetric(getOperatorMetricName(STAT_GET_REWARD_COUNTER)));
-        statistics.registerMetric(bellmanErrorAvgMetric);
-        // add step sampling to bellman error avg metric
-        StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
-        bellmanErrorAvgMetric.addSampler(stepSampler);
-        statistics.registerMetricIfNotExists(bellmanErrorAvgMetric);
     }
 
     @Override

@@ -21,11 +21,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
-import it.uniroma2.dspsim.stats.metrics.CpuMetric;
-import it.uniroma2.dspsim.stats.metrics.AvgMemoryMetric;
-import it.uniroma2.dspsim.stats.metrics.TimeMetric;
-import it.uniroma2.dspsim.stats.samplers.StepSampler;
-import it.uniroma2.dspsim.utils.MathUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -58,13 +53,6 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
     @Override
     protected void registerMetrics(Statistics statistics) {
         super.registerMetrics(statistics);
-
-        StepSampler stepSampler = new StepSampler("VI Step Sampler", 1);
-
-        // per operator metrics
-        TimeMetric opTimeMetric = new TimeMetric(getOperatorMetricName(STAT_VI_STEP_TIME));
-        opTimeMetric.addSampler(stepSampler);
-        statistics.registerMetric(opTimeMetric);
     }
 
     /**

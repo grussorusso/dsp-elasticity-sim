@@ -18,8 +18,7 @@ public class CountMetric extends Metric {
 		throw new RuntimeException("CountMetric does not accept real values!");
 	}
 
-	@Override
-	public Number getValue() {
+	public Number getCount() {
 		return count;
 	}
 

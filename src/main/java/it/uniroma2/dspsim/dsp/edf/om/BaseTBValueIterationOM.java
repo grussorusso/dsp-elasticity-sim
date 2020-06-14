@@ -16,7 +16,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
-import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.metrics.RealValuedMetric;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -218,10 +218,10 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     private void storeTBVIExecutionMetrics(long elapsedMillis, long trajectoryLength, long trajectoriesComputed) {
         Statistics statistics = Statistics.getInstance();
 
-        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_TBVI_TIME)));
-        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORY_LENGTH)));
-        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORIES_COMPUTED)));
-        statistics.registerMetricIfNotExists(new RealValuedCountMetric(getOperatorMetricName(STAT_TBVI_SAMPLES_SEEN)));
+        statistics.registerMetricIfNotExists(new RealValuedMetric(getOperatorMetricName(STAT_TBVI_TIME)));
+        statistics.registerMetricIfNotExists(new RealValuedMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORY_LENGTH)));
+        statistics.registerMetricIfNotExists(new RealValuedMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORIES_COMPUTED)));
+        statistics.registerMetricIfNotExists(new RealValuedMetric(getOperatorMetricName(STAT_TBVI_SAMPLES_SEEN)));
 
         statistics.updateMetric(getOperatorMetricName(STAT_TBVI_TIME), (double) elapsedMillis / (double) 1000);
         statistics.updateMetric(getOperatorMetricName(STAT_TBVI_TRAJECTORY_LENGTH), (double) trajectoryLength);

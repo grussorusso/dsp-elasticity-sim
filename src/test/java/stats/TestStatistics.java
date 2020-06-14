@@ -1,7 +1,7 @@
 package stats;
 
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
-import it.uniroma2.dspsim.stats.metrics.RealValuedCountMetric;
+import it.uniroma2.dspsim.stats.metrics.RealValuedMetric;
 import it.uniroma2.dspsim.stats.Statistics;
 import org.junit.Test;
 
@@ -13,7 +13,7 @@ public class TestStatistics {
 		s.registerMetric(new CountMetric("test"));
 		s.updateMetric("test", 2);
 
-		s.registerMetric(new RealValuedCountMetric("test2"));
+		s.registerMetric(new RealValuedMetric("test2"));
 		s.updateMetric("test2", 4);
 
 		s.dumpAll();

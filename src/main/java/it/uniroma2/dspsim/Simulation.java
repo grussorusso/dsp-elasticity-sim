@@ -7,10 +7,8 @@ import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.*;
-import it.uniroma2.dspsim.stats.samplers.StepSampler;
 import it.uniroma2.dspsim.utils.LoggingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,34 +19,17 @@ import java.util.Map;
 
 public class Simulation {
 
-	static {
-	}
-
 	/** Simulated time */
 	private long time = 0l;
 
 	private final double LATENCY_SLO;
 
 	/* Statistics */
-	private static final String SIMULATION_STATS_NAME_PREFIX = "Simulation - ";
-
-	private static final String STAT_STEPS_COUNTER = "Steps Counter";
-	private static final String STAT_LATENCY_VIOLATIONS = "Latency Violations";
-	private static final String STAT_VIOLATIONS_PERCENTAGE = "Latency Violations Percentage";
-	private static final String STAT_RECONFIGURATIONS = "Reconfigurations";
-	private static final String STAT_RECONFIGURATIONS_PERCENTAGE = "Reconfigurations Percentage";
-	private static final String STAT_RESOURCES_COST_USED_SUM = "Resources Cost Used Sum";
-	private static final String STAT_RESOURCES_COST_MAX_SUM = "Resources Cost Max Sum";
-	private static final String STAT_RESOURCES_COST_PERCENTAGE = "Resources Cost Percentage";
-	private static final String STAT_RESOURCES_COST_AVG = "Resources Cost Avg";
-	private static final String STAT_APPLICATION_COST_AVG = "Application Avg Cost";
-
-	private static final String STAT_SIMULATION_TIME = "Simulation Time";
-	private static final String STAT_SIMULATION_MEMORY = "Simulation Memory";
-
-	protected static final String STAT_AVG_DEPLOYMENT = "Avg Deployment in resources of type - ";
-
-	private static final String STEP_SAMPLER_ID = "Step-sampler";
+	private Metric metricViolations;
+	private Metric metricReconfigurations;
+	private Metric metricResCost;
+	private Metric metricAvgCost;
+	private Metric[] metricDeployedInstances;
 
 	private InputRateFileReader inputRateFileReader;
 	private Application app;
@@ -83,52 +64,33 @@ public class Simulation {
 	private void registerMetrics () {
 		Statistics statistics = Statistics.getInstance();
 
-		StepSampler stepSampler = new StepSampler(STEP_SAMPLER_ID, 1);
+		final String STAT_LATENCY_VIOLATIONS = "Violations";
+		final String STAT_RECONFIGURATIONS = "Reconfigurations";
+		final String STAT_RESOURCES_COST = "ResourcesCost";
+		final String STAT_APPLICATION_COST_AVG = "AvgCost";
 
-		//SIMPLE METRICS
-		// steps counter metric
-		statistics.registerMetric(new CountMetric(buildMetricName(STAT_STEPS_COUNTER)));
-		// SLO violations counter
-		statistics.registerMetric(new CountMetric(buildMetricName(STAT_LATENCY_VIOLATIONS)));
-		// reconfigurations counter
-		statistics.registerMetric(new CountMetric(buildMetricName(STAT_RECONFIGURATIONS)));
-		// resources cost used sum
-		statistics.registerMetric(new RealValuedCountMetric(buildMetricName(STAT_RESOURCES_COST_USED_SUM)));
-		// max possible resources sum
-		statistics.registerMetric(new RealValuedCountMetric(buildMetricName(STAT_RESOURCES_COST_MAX_SUM)));
+		this.metricViolations = new CountMetric(STAT_LATENCY_VIOLATIONS);
+		statistics.registerMetric(metricViolations);
 
-		// COMPOSED METRICS
-		// SLO violations percentage
-		statistics.registerMetric(new PercentageMetric(buildMetricName(STAT_VIOLATIONS_PERCENTAGE),
-				statistics.getMetric(buildMetricName(STAT_LATENCY_VIOLATIONS)), statistics.getMetric(buildMetricName(STAT_STEPS_COUNTER))));
-		// reconfigurations percentage
-		statistics.registerMetric(new PercentageMetric(buildMetricName(STAT_RECONFIGURATIONS_PERCENTAGE),
-				statistics.getMetric(buildMetricName(STAT_RECONFIGURATIONS)), statistics.getMetric(buildMetricName(STAT_STEPS_COUNTER))));
-		// resources cost percentage
-		statistics.registerMetric(new PercentageMetric(buildMetricName(STAT_RESOURCES_COST_PERCENTAGE),
-				statistics.getMetric(buildMetricName(STAT_RESOURCES_COST_USED_SUM)), statistics.getMetric(buildMetricName(STAT_RESOURCES_COST_MAX_SUM))));
-		// resources cost avg
-		statistics.registerMetric(new IncrementalAvgMetric(buildMetricName(STAT_RESOURCES_COST_AVG)));
+		this.metricAvgCost = new RealValuedMetric(STAT_APPLICATION_COST_AVG);
+		statistics.registerMetric(metricAvgCost);
 
-		// incremental avg reward
-		IncrementalAvgMetric incrementalAvgMetric = new IncrementalAvgMetric(buildMetricName(STAT_APPLICATION_COST_AVG));
-		incrementalAvgMetric.addSampler(stepSampler);
-		statistics.registerMetric(incrementalAvgMetric);
+		this.metricReconfigurations = new CountMetric(STAT_RECONFIGURATIONS);
+		statistics.registerMetric(metricReconfigurations);
 
-		// avg deployment
+		this.metricResCost = new RealValuedMetric(STAT_RESOURCES_COST);
+		statistics.registerMetric(metricResCost);
+
+		this.metricDeployedInstances = new RealValuedMetric[ComputingInfrastructure.getInfrastructure().getNodeTypes().length];
 		for (int i = 0; i < ComputingInfrastructure.getInfrastructure().getNodeTypes().length; i++) {
-			IncrementalAvgMetric avgDeploymentMetric = new IncrementalAvgMetric(buildMetricName(STAT_AVG_DEPLOYMENT + i));
-			//avgDeploymentMetric.addSampler(stepSampler);
-			statistics.registerMetricIfNotExists(avgDeploymentMetric);
+			this.metricDeployedInstances[i]	 = new RealValuedMetric("InstancesType" + i);
+			statistics.registerMetric(this.metricDeployedInstances[i]);
 		}
-	}
-
-	private String buildMetricName(String name) {
-		return this.SIMULATION_STATS_NAME_PREFIX + name;
 	}
 
 	public void run (long stopTime) throws IOException {
 		registerMetrics();
+		Statistics stats = Statistics.getInstance();
 
 		logger.warn("Starting simulation");
 
@@ -147,7 +109,7 @@ public class Simulation {
 				logger.info("[T={}] AppResponseTime: {}", time, responseTime);
 			}
 			if (responseTime > LATENCY_SLO) {
-				Statistics.getInstance().updateMetric(buildMetricName(STAT_LATENCY_VIOLATIONS), 1);
+				metricViolations.update(1);
 
 				// add slo violation cost
 				iterationCost += this.wSLO;
@@ -159,13 +121,11 @@ public class Simulation {
 				logger.info("SloCost={}",0.0);
 			}
 
-			// update used resources cost metric
-			Statistics.getInstance().updateMetric(buildMetricName(STAT_RESOURCES_COST_USED_SUM), app.computeDeploymentCost());
-			// update max resources cost metric
-			Statistics.getInstance().updateMetric(buildMetricName(STAT_RESOURCES_COST_MAX_SUM), app.computeMaxDeploymentCost());
+			final double deploymentCost = app.computeDeploymentCost();
+			metricResCost.update(deploymentCost);
 
 			// add deployment cost normalized
-			final double cRes = (app.computeDeploymentCost() / app.computeMaxDeploymentCost());
+			final double cRes = (deploymentCost / app.computeMaxDeploymentCost());
 			iterationCost += cRes * this.wRes;
 
 			/* Reconfiguration */
@@ -180,16 +140,13 @@ public class Simulation {
 			if (detailedScalingLog && isAppReconfigured)
 				logger.info("[T={}] AppReconfiguration", time);
 
-			// update steps counter
-			Statistics.getInstance().updateMetric(buildMetricName(STAT_STEPS_COUNTER), 1);
-
 			// update application avg cost
-			Statistics.getInstance().updateMetric(buildMetricName(STAT_APPLICATION_COST_AVG), iterationCost);
+			metricAvgCost.update(iterationCost);
 
 			// update avg deployment
 			int[] globalDeployment = app.computeGlobalDeployment();
 			for (int i = 0; i < globalDeployment.length; i++) {
-				Statistics.getInstance().updateMetric(buildMetricName(STAT_AVG_DEPLOYMENT + i), globalDeployment[i]);
+				metricDeployedInstances[i].update(globalDeployment[i]);
 			}
 
 			if (detailedScalingLog) {
@@ -198,28 +155,6 @@ public class Simulation {
 					logger.info("[T={}] OpDeployment of {}: {}", time, op.getName(), Arrays.toString(deployment));
 				}
 			}
-
-			// metrics sampling
-			Statistics.getInstance().sampleAll(time);
-
-			// TODO use update functions
-			/*
-			if (time == 14400) {
-				double maxAvgDeployment = 0.0;
-				int maxIndex = -1;
-				for (int i = 0; i < globalDeployment.length; i++) {
-					double avgDep = (double) Statistics.getInstance().getMetric(buildMetricName(STAT_AVG_DEPLOYMENT +i)).getValue();
-					if (maxIndex == -1 || avgDep > maxAvgDeployment) {
-						maxAvgDeployment = avgDep;
-						maxIndex = i;
-					}
-				}
-
-				double newSpeedup = 0.1;
-				ComputingInfrastructure.getInfrastructure().getNodeTypes()[maxIndex].setCpuSpeedup(newSpeedup);
-			}
-			*/
-
 
 			if (time % 10000 == 0)
 				System.out.print('.');
@@ -258,7 +193,7 @@ public class Simulation {
 		}
 
 		if (appReconfigured)
-			Statistics.getInstance().updateMetric(buildMetricName(STAT_RECONFIGURATIONS), 1);
+			metricReconfigurations.update(1);
 
 		return appReconfigured;
 	}
@@ -329,15 +264,8 @@ public class Simulation {
 			Application app = ApplicationBuilder.buildApplication();
 			Simulation simulation = new Simulation(inputRateFileReader, app);
 
-			Statistics.getInstance().registerMetric(new TimeMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME));
-			Statistics.getInstance().registerMetric(new AvgMemoryMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY));
-			// run simulation
-
 			long stopTime = conf.getLong(ConfigurationKeys.SIMULATION_STOP_TIME, -1l);
 			simulation.run(stopTime);
-
-			Statistics.getInstance().updateMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_TIME, 0);
-			Statistics.getInstance().updateMetric(SIMULATION_STATS_NAME_PREFIX + STAT_SIMULATION_MEMORY, 0);
 
 			/* Dump used configuration in output folder. */
 			simulation.dumpConfigs();
