@@ -60,6 +60,8 @@ public class ApplicationBuilder {
 		final int maxParallelism = Configuration.getInstance()
 				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
 
+		double appSLO = Configuration.getInstance().getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.1);
+
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(file));
 			String line;
@@ -69,7 +71,7 @@ public class ApplicationBuilder {
 
 				if (tokens[0].equalsIgnoreCase("OP")) {
 					/* operator spec */
-					if (tokens.length != 4)
+					if (tokens.length < 4)
 						throw new RuntimeException("Invalid op line: " + Arrays.toString(tokens));
 
 					String opName = tokens[1];
@@ -83,6 +85,11 @@ public class ApplicationBuilder {
 
 					name2op.put(opName, op);
 					app.addOperator(op);
+
+					if (tokens.length > 4) {
+						final double sloQuota = Double.parseDouble(tokens[4]);
+						op.setSloRespTime(sloQuota * appSLO);
+					}
 				} else if (tokens[0].equalsIgnoreCase("EDGE")) {
 					/* edge spec */
 					if (tokens.length != 3)
@@ -276,7 +283,13 @@ public class ApplicationBuilder {
 
 		String operatorSLOmethod = conf.getString(ConfigurationKeys.OPERATOR_SLO_COMPUTATION_METHOD, "");
 
-		if (operatorSLOmethod.equalsIgnoreCase("heuristic")) {
+		if (operatorSLOmethod.equalsIgnoreCase("fromfile")) {
+			log.info("Assuming operator SLO has been provided in the app file.");
+
+			if (!conf.getString(ConfigurationKeys.APPLICATION, "").equalsIgnoreCase("fromfile")) {
+				throw new RuntimeException("Cannot use SLO fromfile option if the application is not read from file!")	;
+			}
+		} else if (operatorSLOmethod.equalsIgnoreCase("heuristic")) {
 			log.info("Computing operators SLO using heuristic.");
 			computeHeuristicOperatorSLO(app);
 		} else if (operatorSLOmethod.equalsIgnoreCase("custom")) {
