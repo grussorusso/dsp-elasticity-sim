@@ -17,8 +17,16 @@ public class Reconfiguration {
 		return new Reconfiguration(toAdd, null);
 	}
 
+	static public Reconfiguration scaleOut (NodeType toAdd[]) {
+		return new Reconfiguration(toAdd, null);
+	}
+
 	static public Reconfiguration scaleIn (NodeType nt) {
 		NodeType toRemove[] = { nt };
+		return new Reconfiguration(null, toRemove);
+	}
+
+	static public Reconfiguration scaleIn (NodeType toRemove[]) {
 		return new Reconfiguration(null, toRemove);
 	}
 

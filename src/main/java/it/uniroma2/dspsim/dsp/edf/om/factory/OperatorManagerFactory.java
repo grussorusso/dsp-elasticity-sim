@@ -16,6 +16,8 @@ public class OperatorManagerFactory {
                 return new DoNothingOM(operator);
             case THRESHOLD_BASED:
                 return new ThresholdBasedOM(operator);
+            case OPTIMAL_ALLOCATION:
+                return new OptimalAllocationOM(operator);
             case Q_LEARNING:
                 return new QLearningOM(operator);
             case Q_LEARNING_PDS:

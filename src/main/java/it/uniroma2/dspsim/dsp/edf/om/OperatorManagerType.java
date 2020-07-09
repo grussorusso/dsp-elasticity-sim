@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.om;
 public enum OperatorManagerType {
     DO_NOTHING,
     THRESHOLD_BASED,
+    OPTIMAL_ALLOCATION,
     Q_LEARNING,
     Q_LEARNING_PDS,
     FA_Q_LEARNING,
@@ -20,6 +21,8 @@ public enum OperatorManagerType {
             return DO_NOTHING;
         } else if (str.equalsIgnoreCase("threshold")) {
             return THRESHOLD_BASED;
+        } else if (str.equalsIgnoreCase("optimal-allocation")) {
+            return OPTIMAL_ALLOCATION;
         } else if (str.equalsIgnoreCase("q-learning")) {
             return Q_LEARNING;
         } else if (str.equalsIgnoreCase("q-learning-pds")) {

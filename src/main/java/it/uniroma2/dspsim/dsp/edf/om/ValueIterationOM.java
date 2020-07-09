@@ -3,12 +3,8 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.am.centralized.JointAction;
-import it.uniroma2.dspsim.dsp.edf.am.centralized.JointState;
-import it.uniroma2.dspsim.dsp.edf.am.centralized.JointStateUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.ArrayBasedQTable;
-import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
@@ -30,7 +26,6 @@ import java.util.*;
 
 public class ValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
 
-    // V matrix
     protected QTable qTable;
 
     public ValueIterationOM(Operator operator) {

@@ -17,4 +17,5 @@ public abstract class OperatorManager {
 	public Operator getOperator() {
 		return operator;
 	}
+
 }
