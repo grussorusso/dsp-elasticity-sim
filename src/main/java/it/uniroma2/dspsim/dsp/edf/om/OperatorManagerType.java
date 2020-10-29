@@ -4,6 +4,7 @@ public enum OperatorManagerType {
     DO_NOTHING,
     THRESHOLD_BASED,
     OPTIMAL_ALLOCATION,
+    MODEL_BASED,
     Q_LEARNING,
     Q_LEARNING_PDS,
     FA_Q_LEARNING,
@@ -23,6 +24,8 @@ public enum OperatorManagerType {
             return THRESHOLD_BASED;
         } else if (str.equalsIgnoreCase("optimal-allocation")) {
             return OPTIMAL_ALLOCATION;
+        } else if (str.equalsIgnoreCase("model-based")) {
+            return MODEL_BASED;
         } else if (str.equalsIgnoreCase("q-learning")) {
             return Q_LEARNING;
         } else if (str.equalsIgnoreCase("q-learning-pds")) {
