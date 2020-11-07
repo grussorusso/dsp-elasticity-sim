@@ -4,80 +4,68 @@ from GPyOpt.methods import BayesianOptimization
 import numpy as np
 import subprocess
 import re
+from application import App
 
-if len(sys.argv) != 1+2:
-    print("Usage: gpyopt_sim.py <simulator conf> <base .app file>")
-    exit(1)
-
-CONF=sys.argv[1]
-APPFILE=sys.argv[2]
 JAR_FILE="/home/gabriele/Programmazione/dspelasticitysimulator/out/artifacts/dspelasticitysimulator_jar/dspelasticitysimulator.jar"
 
-class App:
-    def __init__ (self, file):
-        self.operators = []
-        self.edges = []
-
-        with open(file, "r") as f:
-            for line in f:
-                fields = line.strip().split(",")
-                if fields[0] == "op":
-                    name,stmean,stscv = fields[1:4]
-                    stmean = float(stmean)
-                    stscv = float(stscv)
-                    self.operators.append((name, stmean, stscv))
-                else:
-                    self.edges.append(fields)
-
-    def get_n_operators(self):
-        return len(self.operators)
-
-    def write (self, quotas, outfile):
-        with open(outfile, "w") as of:
-            for i in range(len(self.operators)):
-                op = self.operators[i]
-                of.write("op,{},{},{},{}\n".format(op[0],op[1],op[2],quotas[i]))
-            for e in self.edges:
-                of.write("{}\n".format(",".join(e)))
-
-def simulate (X, app):
-    TEMP_CONF="/tmp/gp.properties"
-    TEMP_APP="/tmp/gp.app"
-
-    quotas = X[0]
-    app.write(quotas, TEMP_APP)
-
-#    print(X)
-
-    with open(TEMP_CONF,"w") as tempf:
-        conf_line = "dsp.app.file = {}\n".format(TEMP_APP)
-        tempf.write(conf_line)
-
-    try:
-        cp = subprocess.run(["java", "-jar", JAR_FILE, CONF , TEMP_CONF], capture_output=True, check=True)
-    except subprocess.CalledProcessError as e:
-        s = e.stderr.decode("utf-8")
-        print(s)
-        raise(e)
-    s = cp.stdout.decode("utf-8")
-
+def parse_output (s):
     regex="AvgCost\s*=\s*(0.\d+)"
     #regex="Slo Violations = (\d+)"
-    m=re.search(regex, s)
 
+    m=re.search(regex, s)
     if m == None:
         print(s)
         print("Could not parse output.")
         exit(2)
 
     cost = float(m.groups()[0])
+    return cost
+
+def simulate (quotas, app, base_conf, long_sim=False):
+    TEMP_CONF="/tmp/gp.properties"
+    TEMP_APP="/tmp/gp.app"
+
+    # Generate app file
+    app.write(quotas, TEMP_APP)
+
+    # Temporary conf is used to specify the app file to load
+    with open(TEMP_CONF,"w") as tempf:
+        conf_line = "dsp.app.file = {}\n".format(TEMP_APP)
+        tempf.write(conf_line)
+
+        if long_sim:
+            tempf.write("simulation.stoptime = 999999\n")
+
+    # Run the simulation
+    try:
+        cp = subprocess.run(["java", "-jar", JAR_FILE, base_conf, TEMP_CONF], capture_output=True, check=True)
+    except subprocess.CalledProcessError as e:
+        s = e.stderr.decode("utf-8")
+        print(s)
+        raise(e)
+
+    s = cp.stdout.decode("utf-8")
+    cost = parse_output(s)
+
     print("{} -> {}".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost))
+    return cost
+
+def evaluate (X, app, base_conf):
+    quotas = X[0]
+    cost = simulate(quotas, app, base_conf)
     return np.array([cost])
 
 
 
 def main():
-    app = App(APPFILE)
+    if len(sys.argv) != 1+2:
+        print("Usage: gpyopt_sim.py <simulator conf> <base .app file>")
+        exit(1)
+
+    base_conf = sys.argv[1]
+    app_file = sys.argv[2]
+
+    app = App(app_file)
     n_op = app.get_n_operators()
 
     # Create domain
@@ -101,7 +89,7 @@ def main():
     kernel = GPy.kern.Matern52(input_dim=n_op, variance=1.0, lengthscale=1.0)
 
     # --- Solve your problem
-    myBopt = BayesianOptimization(f=lambda x : simulate(x, app),
+    myBopt = BayesianOptimization(f=lambda x : evaluate(x, app, base_conf),
             kernel=kernel,
             normalize_Y=True,
             maximize=False,
@@ -115,7 +103,16 @@ def main():
     print("fx_opt = "+str(myBopt.fx_opt))
     print("="*20)
 
-    myBopt.plot_acquisition()
+    #myBopt.plot_acquisition()
+
+    # Run final simulation
+    cost = simulate(myBopt.x_opt, app, base_conf, True)
+    print("Final cost: {}", cost)
+
+    # Run baseline simulation
+    cost = simulate([1.0/n_op for i in range(n_op)], app, base_conf, True)
+    print("Baseline cost: {}", cost)
+    
 
 main()
 
