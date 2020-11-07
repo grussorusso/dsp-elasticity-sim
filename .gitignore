@@ -10,3 +10,5 @@ simLog.log
 process*sh
 plot*gp
 detail*dat
+
+results_*

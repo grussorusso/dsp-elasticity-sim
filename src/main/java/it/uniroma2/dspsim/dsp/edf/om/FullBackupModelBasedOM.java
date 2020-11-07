@@ -16,6 +16,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,6 +29,10 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 	double[][] unknownCostEst;
 
 	private double gamma;
+
+	private VariableParameter alpha;
+	private int alphaDecaySteps;
+	private int alphaDecayStepsCounter;
 
 	private final int skipFullBackupAfter = 1000;
 	private final int fullBackupEvery = 20;
@@ -56,6 +61,27 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 				this
 		);
 
+		double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.1);
+		double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 1.0);
+		double alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
+
+		this.alpha = new VariableParameter(alphaInitValue, alphaMinValue, 1.0, alphaDecay);
+		this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
+		this.alphaDecayStepsCounter = 0;
+
+		logger.info("Alpha conf: init={}, decay={}, currValue={}", alphaInitValue,
+				alphaDecay, alpha.getValue());
+
+	}
+
+	private void decrementAlpha() {
+		if (this.alphaDecaySteps > 0) {
+			this.alphaDecayStepsCounter++;
+			if (this.alphaDecayStepsCounter >= this.alphaDecaySteps) {
+				this.alpha.update();
+				this.alphaDecayStepsCounter = 0;
+			}
+		}
 	}
 
 	private QTable buildQ() {
@@ -124,10 +150,9 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 		}
 
 		/* Update cost estimate */
-		final double UNKNOWN_COST_ALPHA = 0.5;
 		final int k = currentState.overallParallelism();
 		final double oldval = unknownCostEst[k-1][jLambda];
-		final double newval = (1.0-UNKNOWN_COST_ALPHA)*oldval + UNKNOWN_COST_ALPHA * unknownCost;
+		final double newval = (1.0-alpha.getValue())*oldval + alpha.getValue() * unknownCost;
 		unknownCostEst[k-1][jLambda] = newval;
 
 		int k0,k1;
@@ -173,6 +198,7 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 		//}
 		//System.out.println("----------");
 
+		decrementAlpha();
 
 		/* Do a full backup */
 		if (time < skipFullBackupAfter || time % fullBackupEvery == 0)
