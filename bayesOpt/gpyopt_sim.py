@@ -10,28 +10,36 @@ JAR_FILE="/home/gabriele/Programmazione/dspelasticitysimulator/out/artifacts/dsp
 
 def parse_output (s):
     regex="AvgCost\s*=\s*(0.\d+)"
-    #regex="Slo Violations = (\d+)"
+    regexV="Violations = (\d+)"
+    regexR="Reconfigurations = (\d+)"
+    regexRC="ResourcesCost =\s*(\d+.\d+)"
 
     m=re.search(regex, s)
-    if m == None:
-        print(s)
-        print("Could not parse output.")
-        exit(2)
-
     cost = float(m.groups()[0])
-    return cost
 
-def simulate (quotas, app, base_conf, long_sim=False):
+    m=re.search(regexV, s)
+    vio = int(m.groups()[0])
+
+    m=re.search(regexR, s)
+    rcf = int(m.groups()[0])
+
+    m=re.search(regexRC, s)
+    rc = float(m.groups()[0])
+    #try:
+    #except:
+    #    print(s)
+    #    print("Could not parse output.")
+    #    exit(2)
+
+    return (cost, (vio, rcf, rc))
+
+def simulate (app_file, base_conf, slo_setting_method = "fromfile",  long_sim=False):
     TEMP_CONF="/tmp/gp.properties"
-    TEMP_APP="/tmp/gp.app"
-
-    # Generate app file
-    app.write_with_quotas(quotas, TEMP_APP)
 
     # Temporary conf is used to specify the app file to load
     with open(TEMP_CONF,"w") as tempf:
-        conf_line = "dsp.app.file = {}\n".format(TEMP_APP)
-        tempf.write(conf_line)
+        tempf.write("dsp.app.file = {}\n".format(app_file))
+        tempf.write("dsp.slo.operator.method = {}\n".format(slo_setting_method))
 
         if long_sim:
             tempf.write("simulation.stoptime = 999999\n")
@@ -45,13 +53,34 @@ def simulate (quotas, app, base_conf, long_sim=False):
         raise(e)
 
     s = cp.stdout.decode("utf-8")
-    cost = parse_output(s)
+    cost,stats = parse_output(s)
 
-    return cost
+    return (cost,stats)
+
+def simulate_with_quotas (quotas, app, base_conf, long_sim=False):
+    # Generate app file
+    TEMP_APP="/tmp/gp.app"
+    app.write_with_quotas(quotas, TEMP_APP)
+
+    return simulate(TEMP_APP, base_conf, "fromfile", long_sim)
+
+def simulate_default_slo (app, base_conf, long_sim=False):
+    # Generate app file
+    TEMP_APP="/tmp/gp.app"
+    app.write(TEMP_APP)
+
+    return simulate(TEMP_APP, base_conf, "default", long_sim)
+
+def simulate_heuristic (app, base_conf, long_sim=False):
+    # Generate app file
+    TEMP_APP="/tmp/gp.app"
+    app.write(TEMP_APP)
+
+    return simulate(TEMP_APP, base_conf, "heuristic", long_sim)
 
 def evaluate (X, app, base_conf):
     quotas = X[0]
-    cost = simulate(quotas, app, base_conf)
+    cost,stats = simulate_with_quotas(quotas, app, base_conf)
 
     print("{} -> {}".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost))
     return np.array([cost])
@@ -65,7 +94,7 @@ def optimize_quotas (app, base_conf):
     for i in range(n_op):
         domain.append({'name': 'x{}'.format(i+1), 'type': 'continuous', 'domain': (0.01,0.99)})
 
-    print("Domain: {}".format(domain))
+    #print("Domain: {}".format(domain))
 
     c_ub = "-1"
     c_lb = "0.99"
@@ -75,7 +104,14 @@ def optimize_quotas (app, base_conf):
 
     constraints = [{'name': 'constr_1', 'constraint': c_ub},
                 {'name': 'constr_2', 'constraint': c_lb}]
-    print(constraints)
+
+    # Additional model-based constraints
+    #for i in range(n_op-1):
+    #    c = "+x[:,{}]-x[:,{}]".format(i,i+1)
+    #    constraints.append({'name': 'constr_extra', 'constraint': c})
+
+    for constr in constraints: 
+        print(constr)
 
 
     kernel = GPy.kern.Matern52(input_dim=n_op, variance=1.0, lengthscale=1.0)
@@ -111,12 +147,16 @@ def main():
     opt_quotas = optimize_quotas(app, base_conf)
 
     # Run final simulation
-    cost = simulate(opt_quotas, app, base_conf, True)
-    print("Final cost: {}".format(cost))
+    cost,stats = simulate_with_quotas(opt_quotas, app, base_conf, True)
+    print("Final cost: {} : {}".format(cost, stats))
 
     # Run baseline simulation
-    #cost = simulate([1.0/n_op for i in range(n_op)], app, base_conf, True)
-    #print("Baseline cost: {}".format(cost))
+    cost,stats = simulate_default_slo(app, base_conf, True)
+    print("Baseline cost: {} : {}".format(cost, stats))
+
+    # Run heuristic simulation
+    cost,stats = simulate_heuristic (app, base_conf, True)
+    print("Heuristic cost: {} : {}".format(cost, stats))
     
 
 main()
