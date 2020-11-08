@@ -26,7 +26,7 @@ def simulate (quotas, app, base_conf, long_sim=False):
     TEMP_APP="/tmp/gp.app"
 
     # Generate app file
-    app.write(quotas, TEMP_APP)
+    app.write_with_quotas(quotas, TEMP_APP)
 
     # Temporary conf is used to specify the app file to load
     with open(TEMP_CONF,"w") as tempf:
@@ -47,25 +47,17 @@ def simulate (quotas, app, base_conf, long_sim=False):
     s = cp.stdout.decode("utf-8")
     cost = parse_output(s)
 
-    print("{} -> {}".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost))
     return cost
 
 def evaluate (X, app, base_conf):
     quotas = X[0]
     cost = simulate(quotas, app, base_conf)
+
+    print("{} -> {}".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost))
     return np.array([cost])
 
 
-
-def main():
-    if len(sys.argv) != 1+2:
-        print("Usage: gpyopt_sim.py <simulator conf> <base .app file>")
-        exit(1)
-
-    base_conf = sys.argv[1]
-    app_file = sys.argv[2]
-
-    app = App(app_file)
+def optimize_quotas (app, base_conf):
     n_op = app.get_n_operators()
 
     # Create domain
@@ -104,14 +96,27 @@ def main():
     print("="*20)
 
     #myBopt.plot_acquisition()
+    return myBopt.x_opt
+
+
+def main():
+    if len(sys.argv) != 1+2:
+        print("Usage: gpyopt_sim.py <simulator conf> <base .app file>")
+        exit(1)
+
+    base_conf = sys.argv[1]
+    app_file = sys.argv[2]
+
+    app = App(app_file)
+    opt_quotas = optimize_quotas(app, base_conf)
 
     # Run final simulation
-    cost = simulate(myBopt.x_opt, app, base_conf, True)
-    print("Final cost: {}", cost)
+    cost = simulate(opt_quotas, app, base_conf, True)
+    print("Final cost: {}".format(cost))
 
     # Run baseline simulation
-    cost = simulate([1.0/n_op for i in range(n_op)], app, base_conf, True)
-    print("Baseline cost: {}", cost)
+    #cost = simulate([1.0/n_op for i in range(n_op)], app, base_conf, True)
+    #print("Baseline cost: {}".format(cost))
     
 
 main()
