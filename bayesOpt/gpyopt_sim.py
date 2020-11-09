@@ -1,7 +1,9 @@
 import sys
+import random
 import GPy
 from GPyOpt.methods import BayesianOptimization
 import numpy as np
+import argparse
 import subprocess
 import re
 from application import App
@@ -25,15 +27,10 @@ def parse_output (s):
 
     m=re.search(regexRC, s)
     rc = float(m.groups()[0])
-    #try:
-    #except:
-    #    print(s)
-    #    print("Could not parse output.")
-    #    exit(2)
 
     return (cost, (vio, rcf, rc))
 
-def simulate (app_file, base_conf, slo_setting_method = "fromfile",  long_sim=False):
+def simulate (app_file, base_conf, slo_setting_method = "fromfile", rmax=None,  long_sim=False):
     TEMP_CONF="/tmp/gp.properties"
 
     # Temporary conf is used to specify the app file to load
@@ -43,6 +40,8 @@ def simulate (app_file, base_conf, slo_setting_method = "fromfile",  long_sim=Fa
 
         if long_sim:
             tempf.write("simulation.stoptime = 999999\n")
+        if rmax != None:
+            tempf.write("dsp.slo.latency = {}\n".format(rmax))
 
     # Run the simulation
     try:
@@ -57,26 +56,26 @@ def simulate (app_file, base_conf, slo_setting_method = "fromfile",  long_sim=Fa
 
     return (cost,stats)
 
-def simulate_with_quotas (quotas, app, base_conf, long_sim=False):
+def simulate_with_quotas (quotas, app, base_conf, rmax=None, long_sim=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write_with_quotas(quotas, TEMP_APP)
 
-    return simulate(TEMP_APP, base_conf, "fromfile", long_sim)
+    return simulate(TEMP_APP, base_conf, "fromfile", rmax, long_sim)
 
-def simulate_default_slo (app, base_conf, long_sim=False):
+def simulate_default_slo (app, base_conf, rmax=None, long_sim=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write(TEMP_APP)
 
-    return simulate(TEMP_APP, base_conf, "default", long_sim)
+    return simulate(TEMP_APP, base_conf, "default", rmax, long_sim)
 
-def simulate_heuristic (app, base_conf, long_sim=False):
+def simulate_heuristic (app, base_conf, rmax=None, long_sim=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write(TEMP_APP)
 
-    return simulate(TEMP_APP, base_conf, "heuristic", long_sim)
+    return simulate(TEMP_APP, base_conf, "heuristic", rmax, long_sim)
 
 def evaluate (X, app, base_conf):
     quotas = X[0]
@@ -86,7 +85,7 @@ def evaluate (X, app, base_conf):
     return np.array([cost])
 
 
-def optimize_quotas (app, base_conf):
+def optimize_quotas (app, base_conf, n_iterations):
     n_op = app.get_n_operators()
 
     # Create domain
@@ -124,7 +123,7 @@ def optimize_quotas (app, base_conf):
             initial_design_numdata=5,
             constraints=constraints,
             domain=domain)
-    myBopt.run_optimization(max_iter=10)
+    myBopt.run_optimization(max_iter=n_iterations)
 
     print("="*20)
     print("x_opt =  "+str(myBopt.x_opt))
@@ -136,26 +135,39 @@ def optimize_quotas (app, base_conf):
 
 
 def main():
-    if len(sys.argv) != 1+2:
-        print("Usage: gpyopt_sim.py <simulator conf> <base .app file>")
-        exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--conf', action='store', required=True)
+    parser.add_argument('--app', action='store', required=True)
+    parser.add_argument('--rmax', action='store', required=False, type=float)
+    parser.add_argument('--iters', action='store', required=False, default=10, type=int)
+    parser.add_argument('--seed', action='store', required=False, default=123, type=int)
+    parser.add_argument('--approximate-model', action='store_true', required=False, default=False)
 
-    base_conf = sys.argv[1]
-    app_file = sys.argv[2]
+    args = parser.parse_args()
+    base_conf = args.conf
+    rmax = args.rmax
+    approximate_model = args.approximate_model
 
-    app = App(app_file)
-    opt_quotas = optimize_quotas(app, base_conf)
+    random.seed(args.seed)
+
+    app = App(args.app)
+    if approximate_model:
+        eval_app = app.approximate()
+    else:
+        eval_app = app
+
+    opt_quotas = optimize_quotas(eval_app, base_conf, args.iters)
 
     # Run final simulation
-    cost,stats = simulate_with_quotas(opt_quotas, app, base_conf, True)
+    cost,stats = simulate_with_quotas(opt_quotas, app, base_conf, rmax, long_sim=True)
     print("Final cost: {} : {}".format(cost, stats))
 
     # Run baseline simulation
-    cost,stats = simulate_default_slo(app, base_conf, True)
+    cost,stats = simulate_default_slo(app, base_conf, rmax, long_sim=True)
     print("Baseline cost: {} : {}".format(cost, stats))
 
     # Run heuristic simulation
-    cost,stats = simulate_heuristic (app, base_conf, True)
+    cost,stats = simulate_heuristic (app, base_conf, rmax, long_sim=True)
     print("Heuristic cost: {} : {}".format(cost, stats))
     
 
