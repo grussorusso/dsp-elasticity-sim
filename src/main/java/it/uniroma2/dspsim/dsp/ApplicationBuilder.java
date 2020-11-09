@@ -334,8 +334,6 @@ public class ApplicationBuilder {
 
 	private static Map<String, Double> optimizeSLODivisionOnPaths(Application app,
 																  double applicationSLO, double inputRate) {
-		// get application slo
-		DoubleMatrix<Integer, String> sloApplicationMap = new DoubleMatrix<>(Double.POSITIVE_INFINITY);
 		// flag
 		boolean done = false;
 		// create operator parallelism map
@@ -349,7 +347,9 @@ public class ApplicationBuilder {
 
 		// get application paths
 		List<ArrayList<Operator>> paths = (List<ArrayList<Operator>>) app.getAllPaths();
+
 		// optimize paths
+		DoubleMatrix<Integer, String> sloApplicationMap = new DoubleMatrix<>(Double.POSITIVE_INFINITY);
 		while (!done) {
 			done = true;
 			for (int i = 0; i < paths.size(); i++) {
@@ -365,14 +365,19 @@ public class ApplicationBuilder {
 
 		// assign slack
 		for (int i = 0; i < paths.size(); i++) {
+			double pathSLOSum = 0.0;
+			for (Double slo : sloApplicationMap.getRow(i).values())
+				pathSLOSum += slo;
+
+			double slack = applicationSLO - pathSLOSum;
 			Map<String, Double> opSLOWithSlackMap =
-					allocateSlack(applicationSLO, sloApplicationMap.getRow(i), paths.get(i));
+					allocateSlack(slack, sloApplicationMap.getRow(i), paths.get(i));
 			for (String opName : opSLOWithSlackMap.keySet()) {
 				sloApplicationMap.setValue(i, opName, opSLOWithSlackMap.get(opName));
 			}
 		}
 
-		// build operator slo map
+		// Give each operator minimum SLO across paths
 		Map<String, Double> operatorSLOMap = new HashMap<>();
 		for (int i = 0; i < paths.size(); i++) {
 			if (i == 0)
@@ -389,8 +394,7 @@ public class ApplicationBuilder {
 		}
 
 		// balance the remaining SLO
-		Map<String, Boolean> opSloAssignableMap = new HashMap<>();
-		balanceSLO(applicationSLO, operatorSLOMap, paths, opSloAssignableMap);
+		balanceSLO(applicationSLO, operatorSLOMap, paths);
 
 		log.info("Heuristic SLO: {}", operatorSLOMap);
 		log.info("Heuristic parallelism: {}", opParallelismMap);
@@ -463,34 +467,27 @@ public class ApplicationBuilder {
 
 	}
 
-	private static Map<String, Double> allocateSlack(double applicationSLO,
-													 Map<String, Double> sloMap, ArrayList<Operator> path) {
-		double pathSLOSum = 0.0;
-		for (Double slo : sloMap.values())
-			pathSLOSum += slo;
-
-		double slack = applicationSLO - pathSLOSum;
-
-		Map<String, Double> serviceTimeMeanPathMap = new HashMap<>();
-		double pathServiceTime = 0.0;
+	private static Map<String, Double> allocateSlack(double slack, Map<String, Double> sloMap, ArrayList<Operator> path) {
+		Map<String, Double> opWeightMap = new HashMap<>();
+		double totalWeight = 0.0;
 		for (Operator op : path) {
-			double opServiceTimeMean = op.getQueueModel().getServiceTimeMean();
-			serviceTimeMeanPathMap.put(op.getName(), opServiceTimeMean);
-			pathServiceTime += opServiceTimeMean;
+			//double opWeight = op.getQueueModel().getServiceTimeMean(); // TODO
+			double opWeight = sloMap.get(op.getName()); // TODO
+			opWeightMap.put(op.getName(), opWeight);
+			totalWeight += opWeight;
 		}
 
 		for (Operator op : path) {
 			sloMap.put(op.getName(), sloMap.get(op.getName()) +
-					(slack * (serviceTimeMeanPathMap.get(op.getName()) / pathServiceTime)));
+					(slack * (opWeightMap.get(op.getName()) / totalWeight)));
 		}
 
 		return sloMap;
 	}
 
-	private static void balanceSLO(double applicationSLO,
-												  Map<String, Double> opSloMap, List<ArrayList<Operator>> paths,
-												  Map<String, Boolean> opSloAssignableMap) {
+	private static void balanceSLO(double applicationSLO, Map<String, Double> opSloMap, List<ArrayList<Operator>> paths) {
 
+		Map<String, Boolean> opSloAssignableMap = new HashMap<>();
 		List<Tuple2<Integer, Double>> slackPerPathList = new ArrayList<>();
 
 		for (int i = 0; i < paths.size(); i++) {
@@ -517,14 +514,15 @@ public class ApplicationBuilder {
 			ArrayList<Operator> toBalance = new ArrayList<>();
 			for (Operator op : path) {
 				// avoid operator in slack not assignable map
-				if (opSloAssignableMap.containsKey(op.getName())) continue;
+				if (opSloAssignableMap.containsKey(op.getName()))
+					continue;
 				toBalance.add(op);
 			}
 			Map<String, Double> pathSloMap = new HashMap<>();
 			for (Operator op : path) {
 				pathSloMap.put(op.getName(), opSloMap.get(op.getName()));
 			}
-			Map<String, Double> slackMap = allocateSlack(applicationSLO, pathSloMap, toBalance);
+			Map<String, Double> slackMap = allocateSlack(slackPerPathList.get(j).getV(), pathSloMap, toBalance);
 
 			for (Operator op : toBalance) {
 				opSloMap.put(op.getName(), slackMap.get(op.getName()));
