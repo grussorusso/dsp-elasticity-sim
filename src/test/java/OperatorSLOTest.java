@@ -44,7 +44,7 @@ public class OperatorSLOTest {
             app.addEdge(op3, op4);
             app.addEdge(op3, op5);
 
-            if (balanced) computeHeuristicOperatorSLO(app); else computeOperatorsSLO(app);
+            if (balanced) computeHeuristicOperatorSLO(app, false); else computeOperatorsSLO(app);
 
             return app;
         }

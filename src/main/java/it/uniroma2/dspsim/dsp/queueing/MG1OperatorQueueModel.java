@@ -1,6 +1,6 @@
 package it.uniroma2.dspsim.dsp.queueing;
 
-import it.uniroma2.dspsim.infrastructure.NodeType;
+import java.util.Random;
 
 public class MG1OperatorQueueModel implements OperatorQueueModel {
 
@@ -38,5 +38,12 @@ public class MG1OperatorQueueModel implements OperatorQueueModel {
 	@Override
 	public double getServiceTimeMean() {
 		return this.serviceTimeMean;
+	}
+
+
+	public OperatorQueueModel getApproximateModel (Random r) {
+		double newMean = this.serviceTimeMean + 0.05*this.serviceTimeMean*r.nextGaussian();
+		double newVar = newMean*newMean;
+		return new MG1OperatorQueueModel(newMean, newVar);
 	}
 }

@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
+import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.utils.Tuple2;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.slf4j.Logger;
@@ -291,7 +292,10 @@ public class ApplicationBuilder {
 			}
 		} else if (operatorSLOmethod.equalsIgnoreCase("heuristic")) {
 			log.info("Computing operators SLO using heuristic.");
-			computeHeuristicOperatorSLO(app);
+			computeHeuristicOperatorSLO(app, false);
+		} else if (operatorSLOmethod.equalsIgnoreCase("heuristic-approx")) {
+			log.info("Computing operators SLO using heuristic-approx.");
+			computeHeuristicOperatorSLO(app, true);
 		} else if (operatorSLOmethod.equalsIgnoreCase("custom")) {
 			String[] quotas = conf.getString(ConfigurationKeys.OPERATOR_SLO_COMPUTATION_CUSTOM_QUOTAS, "").
 					split(",");
@@ -317,13 +321,13 @@ public class ApplicationBuilder {
 		}
 	}
 
-	protected static void computeHeuristicOperatorSLO(Application app) {
+	protected static void computeHeuristicOperatorSLO(Application app, boolean approximateModel) {
 		double rSLO = Configuration.getInstance().getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.100);
 		double inputRate = Configuration.getInstance().getInteger(ConfigurationKeys.RL_OM_MAX_INPUT_RATE_KEY, 600);
 
 		inputRate = inputRate/2.0; // TODO
 
-		Map<String, Double> opSLOMap = optimizeSLODivisionOnPaths(app, rSLO, inputRate);
+		Map<String, Double> opSLOMap = optimizeSLODivisionOnPaths(app, rSLO, inputRate, approximateModel);
 
 		for (Operator op : app.getOperators()) {
 			final double opSlo = opSLOMap.get(op.getName());
@@ -332,8 +336,8 @@ public class ApplicationBuilder {
 		}
 	}
 
-	private static Map<String, Double> optimizeSLODivisionOnPaths(Application app,
-																  double applicationSLO, double inputRate) {
+	private static Map<String, Double> optimizeSLODivisionOnPaths(Application app, double applicationSLO,
+																  double inputRate, boolean approximateModel) {
 		// flag
 		boolean done = false;
 		// create operator parallelism map
@@ -348,12 +352,24 @@ public class ApplicationBuilder {
 		// get application paths
 		List<ArrayList<Operator>> paths = (List<ArrayList<Operator>>) app.getAllPaths();
 
+		// the heuristic needs a queueing model of each op
+		Map<String, OperatorQueueModel> opQueueingModels = new HashMap<>();
+		Random r = new Random();
+		for (Operator op : app.getOperators()) {
+			if (approximateModel) {
+				opQueueingModels.put(op.getName(), op.getQueueModel().getApproximateModel(r));
+			} else {
+				opQueueingModels.put(op.getName(), op.getQueueModel());
+			}
+		}
+
 		// optimize paths
 		DoubleMatrix<Integer, String> sloApplicationMap = new DoubleMatrix<>(Double.POSITIVE_INFINITY);
 		while (!done) {
 			done = true;
 			for (int i = 0; i < paths.size(); i++) {
-				Tuple2<Map<String, Double>, Boolean> pathOptimizationResults = optimizePath(inputRate, applicationSLO, paths.get(i), opParallelismMap, opMaxParallelismMap);
+				Tuple2<Map<String, Double>, Boolean> pathOptimizationResults = optimizePath(inputRate, applicationSLO,
+						paths.get(i), opParallelismMap, opMaxParallelismMap, opQueueingModels);
 				for (String opName : pathOptimizationResults.getK().keySet()) {
 					sloApplicationMap.setValue(i, opName, pathOptimizationResults.getK().get(opName));
 				}
@@ -408,7 +424,8 @@ public class ApplicationBuilder {
 	private static Tuple2<Map<String, Double>, Boolean> optimizePath(double inputRate, double applicationSLO,
 																	 ArrayList<Operator> path,
 																	 Map<String, Integer> operatorParallelismMap,
-																	 Map<String, Integer> operatorMaxParallelismMap) {
+																	 Map<String, Integer> operatorMaxParallelismMap,
+																	 Map<String, OperatorQueueModel> opQueueingModels) {
 		// flag
 		boolean changed = false;
 
@@ -419,7 +436,8 @@ public class ApplicationBuilder {
 			for (Operator op : path) {
 				// TODO operator input rate != source input rate
 				// TODO speedup?
-				double opRespTime = op.getQueueModel().responseTime(inputRate / operatorParallelismMap.get(op.getName()), 1.0);
+				OperatorQueueModel qn = opQueueingModels.get(op.getName());
+				double opRespTime = qn.responseTime(inputRate / operatorParallelismMap.get(op.getName()), 1.0);
 				//if (Double.isInfinite(opRespTime)) {
 				//	pathRespTime = Double.POSITIVE_INFINITY;
 				//	break;
@@ -439,7 +457,8 @@ public class ApplicationBuilder {
 
 			for (Operator op : path) {
 				int opParallelism = operatorParallelismMap.get(op.getName());
-				double diff = Math.abs(op.getQueueModel().responseTime(inputRate / (opParallelism + 1), 1.0) - pathSLOMap.get(op.getName()));
+				OperatorQueueModel qn = opQueueingModels.get(op.getName());
+				double diff = Math.abs(qn.responseTime(inputRate / (opParallelism + 1), 1.0) - pathSLOMap.get(op.getName()));
 				if ((bottleneckOperatorIndex == null || diff > maxDiff || Double.isNaN(diff)) && opParallelism < operatorMaxParallelismMap.get(op.getName())) {
 					maxDiff = diff;
 					bottleneckOperatorIndex = op.getName();

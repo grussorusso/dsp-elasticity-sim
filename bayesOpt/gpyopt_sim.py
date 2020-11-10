@@ -30,7 +30,7 @@ def parse_output (s):
 
     return (cost, (vio, rcf, rc))
 
-def simulate (app_file, base_conf, slo_setting_method = "fromfile", rmax=None,  long_sim=False):
+def simulate (app_file, base_conf, slo_setting_method = "fromfile", rmax=None, ompolicy="vi",  long_sim=False):
     TEMP_CONF="/tmp/gp.properties"
 
     # Temporary conf is used to specify the app file to load
@@ -40,6 +40,8 @@ def simulate (app_file, base_conf, slo_setting_method = "fromfile", rmax=None,  
 
         if long_sim:
             tempf.write("simulation.stoptime = 999999\n")
+        if ompolicy != None:
+            tempf.write("edf.om.type = {}\n".format(ompolicy))
         if rmax != None:
             tempf.write("dsp.slo.latency = {}\n".format(rmax))
 
@@ -56,26 +58,30 @@ def simulate (app_file, base_conf, slo_setting_method = "fromfile", rmax=None,  
 
     return (cost,stats)
 
-def simulate_with_quotas (quotas, app, base_conf, rmax=None, long_sim=False):
+def simulate_with_quotas (quotas, app, base_conf, rmax=None, ompolicy="vi", long_sim=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write_with_quotas(quotas, TEMP_APP)
 
-    return simulate(TEMP_APP, base_conf, "fromfile", rmax, long_sim)
+    return simulate(TEMP_APP, base_conf, "fromfile", rmax, ompolicy, long_sim)
 
-def simulate_default_slo (app, base_conf, rmax=None, long_sim=False):
+def simulate_default_slo (app, base_conf, rmax=None, ompolicy="vi", long_sim=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write(TEMP_APP)
 
-    return simulate(TEMP_APP, base_conf, "default", rmax, long_sim)
+    return simulate(TEMP_APP, base_conf, "default", rmax, ompolicy, long_sim)
 
-def simulate_heuristic (app, base_conf, rmax=None, long_sim=False):
+def simulate_heuristic (app, base_conf, rmax=None, ompolicy="vi", long_sim=False, approx=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write(TEMP_APP)
 
-    return simulate(TEMP_APP, base_conf, "heuristic", rmax, long_sim)
+    alg="heuristic"
+    if approx:
+        alg="heuristic-approx"
+
+    return simulate(TEMP_APP, base_conf, alg, rmax, ompolicy, long_sim)
 
 def evaluate (X, app, base_conf):
     quotas = X[0]
@@ -141,12 +147,20 @@ def main():
     parser.add_argument('--rmax', action='store', required=False, type=float)
     parser.add_argument('--iters', action='store', required=False, default=10, type=int)
     parser.add_argument('--seed', action='store', required=False, default=123, type=int)
+    parser.add_argument('--omalg', action='store', required=False, default="vi")
     parser.add_argument('--approximate-model', action='store_true', required=False, default=False)
 
     args = parser.parse_args()
     base_conf = args.conf
     rmax = args.rmax
     approximate_model = args.approximate_model
+    omalg = args.omalg
+
+    print("Conf: {}".format(base_conf))
+    print("App: {}".format(args.app))
+    print("Approximate: {}".format(approximate_model))
+    print("RMax: {}".format(rmax))
+    print("Testing algorithm: {}".format(omalg))
 
     random.seed(args.seed)
 
@@ -159,15 +173,15 @@ def main():
     opt_quotas = optimize_quotas(eval_app, base_conf, args.iters)
 
     # Run final simulation
-    cost,stats = simulate_with_quotas(opt_quotas, app, base_conf, rmax, long_sim=True)
+    cost,stats = simulate_with_quotas(opt_quotas, app, base_conf, rmax, omalg, long_sim=True)
     print("Final cost: {} : {}".format(cost, stats))
 
     # Run baseline simulation
-    cost,stats = simulate_default_slo(app, base_conf, rmax, long_sim=True)
+    cost,stats = simulate_default_slo(app, base_conf, rmax, omalg, long_sim=True)
     print("Baseline cost: {} : {}".format(cost, stats))
 
     # Run heuristic simulation
-    cost,stats = simulate_heuristic (app, base_conf, rmax, long_sim=True)
+    cost,stats = simulate_heuristic (app, base_conf, rmax, omalg, approx=approximate_model, long_sim=True)
     print("Heuristic cost: {} : {}".format(cost, stats))
     
 

@@ -44,7 +44,7 @@ class App:
         for op in self.operators:
             name,stmean,stscv=op
             stscv = 1.0
-            stmean = stmean + 0.1*stmean*random.gauss(0.0,1.0)
+            stmean = stmean + 0.05*stmean*random.gauss(0.0,1.0)
             new_app.operators.append((name, stmean, stscv))
         for e in self.edges:
             new_app.edges.append(e)

@@ -1,5 +1,7 @@
 package it.uniroma2.dspsim.dsp.queueing;
 
+import java.util.Random;
+
 public interface OperatorQueueModel {
 
 	double responseTime (double arrivalRate, double speedup);
@@ -7,4 +9,5 @@ public interface OperatorQueueModel {
 
 	double getServiceTimeMean();
 
+	OperatorQueueModel getApproximateModel (Random r);
 }
