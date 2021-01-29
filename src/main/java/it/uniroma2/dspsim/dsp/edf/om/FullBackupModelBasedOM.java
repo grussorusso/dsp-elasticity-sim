@@ -16,6 +16,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,17 +31,17 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 
 	private double gamma;
 
+	private int offlineObservationsParam = 400000;
+
 	private VariableParameter alpha;
 	private int alphaDecaySteps;
 	private int alphaDecayStepsCounter;
 
-	private final int skipFullBackupAfter = 1000;
-	private final int fullBackupEvery = 20;
+	private final int skipFullBackupAfter = 10000;
+	private final int fullBackupEvery = 50;
 	private int time = 0;
 
 	private Logger logger = LoggerFactory.getLogger(FullBackupModelBasedOM.class);
-
-	private ActionSelectionPolicy greedyActionSelection;
 
 
 	public FullBackupModelBasedOM (Operator operator) {
@@ -56,10 +57,6 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 
 		this.qTable = buildQ();
 		this.gamma = configuration.getDouble(ConfigurationKeys.QL_OM_GAMMA_KEY,0.99);
-		this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
-				ActionSelectionPolicyType.GREEDY,
-				this
-		);
 
 		double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.1);
 		double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 1.0);
@@ -72,6 +69,55 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 		logger.info("Alpha conf: init={}, decay={}, currValue={}", alphaInitValue,
 				alphaDecay, alpha.getValue());
 
+		if (offlineObservationsParam > 0) {
+			offlinePlanning();
+		}
+
+	}
+
+	private void offlinePlanning() {
+		ValueIterationOM viOM = new ValueIterationOM(operator); // TODO we should use a different "wrong" operator model!
+		QTable viQ = viOM.getQTable();
+		DoubleMatrix<Integer,Integer> viP = viOM.getPMatrix();
+
+		// init costs and transition estimates based on offline phase output
+		/* Update cost estimate */
+		StateIterator stateIterator = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
+				ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
+
+		while (stateIterator.hasNext()) {
+			State s = stateIterator.next();
+			double uc = StateUtils.computeSLOCost(s, viOM);
+			unknownCostEst[s.overallParallelism()-1][s.getLambda()] = uc;
+
+			ActionIterator actionIterator = new ActionIterator();
+			while (actionIterator.hasNext()) {
+				Action action = actionIterator.next();
+				if (!validateAction(s, action))
+					continue;
+
+				double oldQ = viQ.getQ(s, action);
+				qTable.setQ(s, action, oldQ);
+			}
+		}
+
+		/* Update transition model */
+		for (int startState = 0; startState < getInputRateLevels(); startState++) {
+			for (int endState = 0; endState < getInputRateLevels(); endState++) {
+				pMatrix[startState][endState] = viP.getValue(startState,endState);
+			}
+		}
+		for (int startState = 0; startState < getInputRateLevels(); startState++) {
+			int totalTrans = offlineObservationsParam;
+			for (int endState = 0; endState < getInputRateLevels(); endState++) {
+				transitionsMatrix[startState][endState] = (int)(pMatrix[startState][endState] * totalTrans);
+			}
+		}
+	}
+
+	@Override
+	protected ActionSelectionPolicy initActionSelectionPolicy() {
+		return  ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.GREEDY, this);
 	}
 
 	private void decrementAlpha() {
