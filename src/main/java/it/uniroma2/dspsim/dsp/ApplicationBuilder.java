@@ -338,6 +338,8 @@ public class ApplicationBuilder {
 
 	private static Map<String, Double> optimizeSLODivisionOnPaths(Application app, double applicationSLO,
 																  double inputRate, boolean approximateModel) {
+		// TODO: this is overly complex and also not correct: check pseudocode on my PhD thesis (Gab)
+		
 		// flag
 		boolean done = false;
 		// create operator parallelism map
