@@ -208,10 +208,10 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 
 		final State pds = StateUtils.computePostDecisionState(oldState, action, this);
 
-		double unknownCost = reward - getwResources()*StateUtils.computeDeploymentCostNormalized(pds,this);
-		if (action.getDelta()!=0)
+		double unknownCost = reward - getwResources() * StateUtils.computeDeploymentCostNormalized(pds, this);
+		if (action.getDelta() != 0)
 			unknownCost -= getwReconf();
-		unknownCost = unknownCost/getwSLO();
+		unknownCost = unknownCost / getwSLO();
 
 		/* Update transition model */
 		final int iLambda = oldState.getLambda();
@@ -223,18 +223,18 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 			totalTrans += transitionsMatrix[iLambda][endState];
 		}
 		for (int endState = 0; endState < getInputRateLevels(); endState++) {
-			final double newP = transitionsMatrix[iLambda][endState]/(double)totalTrans;
+			final double newP = transitionsMatrix[iLambda][endState] / (double) totalTrans;
 			pMatrix[iLambda][endState] = newP;
 		}
 
 		/* Update cost estimate */
 		final int k = currentState.overallParallelism();
-		final double oldval = unknownCostEst[k-1][jLambda];
-		final double newval = (1.0-alpha.getValue())*oldval + alpha.getValue() * unknownCost;
-		//final double newval = (oldval * (offlineObservationsParam + time - 1) + unknownCost) / (offlineObservationsParam + time);
+		final double oldval = unknownCostEst[k - 1][jLambda];
+		//final double newval = (1.0 - alpha.getValue()) * oldval + alpha.getValue() * unknownCost;
+		final double newval = (oldval * (offlineObservationsParam + time - 1) + unknownCost) / (offlineObservationsParam + time);
 		//if (newval != newval2)
 		//	logger.info("Diff: {} - {}", newval, newval2);
-		unknownCostEst[k-1][jLambda] = newval;
+		unknownCostEst[k - 1][jLambda] = newval;
 
 		//int k0,k1;
 		//int l0,l1;
@@ -284,10 +284,6 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 		/* Do a full backup */
 		if (time < skipFullBackupAfter || time % fullBackupEvery == 0)
 			this.fullBackup();
-
-		if (time == 399000)
-			dumpEstimatedCost();
-			//dumpQOnFile("/tmp/fbq");
 	}
 
 
