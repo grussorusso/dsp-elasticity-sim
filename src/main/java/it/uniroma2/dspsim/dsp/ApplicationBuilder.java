@@ -359,7 +359,7 @@ public class ApplicationBuilder {
 		Random r = new Random();
 		for (Operator op : app.getOperators()) {
 			if (approximateModel) {
-				opQueueingModels.put(op.getName(), op.getQueueModel().getApproximateModel(r));
+				opQueueingModels.put(op.getName(), op.getQueueModel().getApproximateModel(r, 0.05, 0.1));
 			} else {
 				opQueueingModels.put(op.getName(), op.getQueueModel());
 			}
