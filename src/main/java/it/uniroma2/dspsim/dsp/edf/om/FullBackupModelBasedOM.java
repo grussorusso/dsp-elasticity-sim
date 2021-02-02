@@ -3,9 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.ArrayBasedQTable;
-import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.*;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
@@ -14,7 +12,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
-import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
@@ -32,23 +29,23 @@ import java.util.Random;
 public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 
 	private QTable qTable;
+	private VTable estimatedCost;
 
 	int[][] transitionsMatrix;
 	double[][] pMatrix;
-	double[][] unknownCostEst;
 
 	private double gamma;
 
 	// TODO: restore contraints in the learning step
 	private boolean initWithApproximateModel = true;
-	private int offlineObservationsParam = 10000;
+	private int offlineObservationsParam = 100;
 
 	private VariableParameter alpha;
 	private int alphaDecaySteps;
 	private int alphaDecayStepsCounter;
 
-	private final int skipFullBackupAfter = 100000;
-	private final int fullBackupEvery = 100;
+	private final int skipFullBackupAfter = 100;//100000;
+	private final int fullBackupEvery = 50;
 	private int time = 0;
 
 	private int onlineVIMaxIter = 3; // TODO configurable
@@ -61,11 +58,6 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 
 		// get configuration instance
 		Configuration configuration = Configuration.getInstance();
-
-		/* Check we are not in the heterogeneous scenario */
-		if (ComputingInfrastructure.getInfrastructure().getNodeTypes().length != 1) {
-			throw new RuntimeException(this.getClass().getName() + " only supports 1 resource type.");
-		}
 
 		this.qTable = buildQ();
 		this.gamma = configuration.getDouble(ConfigurationKeys.QL_OM_GAMMA_KEY,0.99);
@@ -92,14 +84,11 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 	private Operator approximateOperatorModel (Operator op)
 	{
 		Random r = new Random(123); // TODO seed
-		//final double maxErr = 0.2;
-		//final double err = maxErr * r.nextDouble() -maxErr/2.0;
-		//final double stMean = op.getQueueModel().getServiceTimeMean() * (1.0 + err);
-		//final double stVar = Math.pow(stMean,2);
+		final double maxErr = 0.1;
+		final double minErr = 0.05;
 
-		//logger.info("Approximate stMean: {} -> {}", op.getQueueModel().getServiceTimeMean(), stMean);
-		//OperatorQueueModel queueModel = new MG1OperatorQueueModel(stMean, stVar);
 		OperatorQueueModel queueModel = op.getQueueModel().getApproximateModel(r);
+		logger.info("Approximate stMean: {} -> {}", op.getQueueModel().getServiceTimeMean(), queueModel.getServiceTimeMean());
 		Operator tempOperator = new Operator("temp", queueModel, op.getMaxParallelism());
 		tempOperator.setSloRespTime(op.getSloRespTime());
 		return tempOperator;
@@ -119,7 +108,7 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 		while (stateIterator.hasNext()) {
 			State s = stateIterator.next();
 			double uc = StateUtils.computeSLOCost(s, viOM);
-			unknownCostEst[s.overallParallelism()-1][s.getLambda()] = uc;
+			estimatedCost.setV(s, uc);
 
 			ActionIterator actionIterator = new ActionIterator();
 			while (actionIterator.hasNext()) {
@@ -191,7 +180,7 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 			}
 		}
 
-		this.unknownCostEst = new double[operator.getMaxParallelism()][getInputRateLevels()];
+		this.estimatedCost = new ArrayBasedVTable(0.0, maxStateHash);
 
 		//return new GuavaBasedQTable(0.0);
 		return new ArrayBasedQTable(0.0, maxStateHash, maxActionHash);
@@ -228,14 +217,33 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 		}
 
 		/* Update cost estimate */
-		final int k = currentState.overallParallelism();
-		final double oldval = unknownCostEst[k - 1][jLambda];
-		//final double newval = (1.0 - alpha.getValue()) * oldval + alpha.getValue() * unknownCost;
-		final double newval = (oldval * (offlineObservationsParam + time - 1) + unknownCost) / (offlineObservationsParam + time);
+		final double oldval = estimatedCost.getV(currentState);
+		final double newval = (1.0 - alpha.getValue()) * oldval + alpha.getValue() * unknownCost;
+		//final double newval = (oldval * (offlineObservationsParam + time - 1) + unknownCost) / (offlineObservationsParam + time);
 		//if (newval != newval2)
 		//	logger.info("Diff: {} - {}", newval, newval2);
-		unknownCostEst[k - 1][jLambda] = newval;
+		estimatedCost.setV(currentState, newval);
 
+		int l0,l1;
+
+		State s = currentState;
+		if (newval > oldval) {
+			l0 = jLambda;
+			l1 = currentState.getMaxLambda();
+			for (int l = l0+1; l<=l1; ++l) {
+				s.setLambda(l);
+				if (estimatedCost.getV(s) < newval)
+					estimatedCost.setV(s, newval);
+			}
+		} else if (newval < oldval) {
+			l0 = 0;
+			l1 = jLambda;
+			for (int l = l0; l<l1; ++l) {
+				s.setLambda(l);
+				if (estimatedCost.getV(s) > newval)
+					estimatedCost.setV(s, newval);
+			}
+		}
 		//int k0,k1;
 		//int l0,l1;
 
@@ -354,7 +362,7 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 			// get transition probability from s.lambda to lambda level
 			double p = pMatrix[s.getLambda()][lambda];
 			// compute slo violation cost
-			double pdCost = unknownCostEst[pds.overallParallelism()-1][lambda] * this.getwSLO();
+			double pdCost = estimatedCost.getV(pds) * this.getwSLO();
 
 			cost += p * (pdCost + gamma * q);
 		}
@@ -394,11 +402,15 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 
 	public void dumpEstimatedCost () {
 		System.out.println("----------");
-		for (int _k = 1; _k<= operator.getMaxParallelism(); ++_k) {
-			for (int l = 0; l < getInputRateLevels(); ++l) {
-				System.out.print(String.format("%.2f\t",unknownCostEst[_k-1][l]));
-			}
-			System.out.println("");
+		StateIterator stateIterator = new StateIterator(getStateRepresentation(), operator.getMaxParallelism(),
+				ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
+		int lastLambda = -1;
+		while (stateIterator.hasNext()) {
+			State s = stateIterator.next();
+			if (lastLambda != s.getLambda())
+				System.out.println("");
+			System.out.print(String.format("%.2f\t", estimatedCost.getV(s)));
+			lastLambda = s.getLambda();
 		}
 	}
 }
