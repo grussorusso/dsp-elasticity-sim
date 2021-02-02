@@ -87,7 +87,7 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 		final double maxErr = 0.1;
 		final double minErr = 0.05;
 
-		OperatorQueueModel queueModel = op.getQueueModel().getApproximateModel(r);
+		OperatorQueueModel queueModel = op.getQueueModel().getApproximateModel(r, maxErr, minErr);
 		logger.info("Approximate stMean: {} -> {}", op.getQueueModel().getServiceTimeMean(), queueModel.getServiceTimeMean());
 		Operator tempOperator = new Operator("temp", queueModel, op.getMaxParallelism());
 		tempOperator.setSloRespTime(op.getSloRespTime());

@@ -52,7 +52,7 @@ public class MG1OperatorQueueModel implements OperatorQueueModel {
 			sampledValue = sampledValue * 2.0;
 		}
 
-		double error = sign * (maxPercErr - minPercErr) * sampledValue;
+		double error = sign * (minPercErr + (maxPercErr - minPercErr) * sampledValue);
 		double newMean = this.serviceTimeMean + this.serviceTimeMean*error;
 		double newVar = newMean*newMean;
 		return new MG1OperatorQueueModel(newMean, newVar);
