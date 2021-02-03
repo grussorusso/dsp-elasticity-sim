@@ -19,7 +19,7 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
     private double gamma;
 
     // p matrix
-    private DoubleMatrix<Integer, Integer> pMatrix;
+    protected DoubleMatrix<Integer, Integer> pMatrix;
 
     public DynamicProgrammingOM(Operator operator) {
         super(operator);

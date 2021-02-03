@@ -17,6 +17,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,6 +48,16 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
     protected void registerMetrics(Statistics statistics) {
         super.registerMetrics(statistics);
     }
+
+    protected QTable getQTable() {
+        return this.qTable;
+    }
+
+    protected DoubleMatrix<Integer, Integer> getPMatrix() {
+        return pMatrix;
+    }
+
+
 
     /**
      * VALUE ITERATION ALGORITHM

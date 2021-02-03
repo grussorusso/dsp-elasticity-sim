@@ -9,5 +9,5 @@ public interface OperatorQueueModel {
 
 	double getServiceTimeMean();
 
-	OperatorQueueModel getApproximateModel (Random r);
+	OperatorQueueModel getApproximateModel (Random r, double minPercErr, double maxPercErr);
 }

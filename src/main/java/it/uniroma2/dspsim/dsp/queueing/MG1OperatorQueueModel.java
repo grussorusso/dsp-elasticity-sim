@@ -41,8 +41,19 @@ public class MG1OperatorQueueModel implements OperatorQueueModel {
 	}
 
 
-	public OperatorQueueModel getApproximateModel (Random r) {
-		double newMean = this.serviceTimeMean + 0.05*this.serviceTimeMean*r.nextGaussian();
+	public OperatorQueueModel getApproximateModel (Random r, double minPercErr, double maxPercErr) {
+		double sampledValue = r.nextDouble();
+		double sign;
+		if (sampledValue > 0.5) {
+			sign = 1.0;
+			sampledValue = (sampledValue - 0.5)	 * 2.0;
+		} else {
+			sign = -1.0;
+			sampledValue = sampledValue * 2.0;
+		}
+
+		double error = sign * (minPercErr + (maxPercErr - minPercErr) * sampledValue);
+		double newMean = this.serviceTimeMean + this.serviceTimeMean*error;
 		double newVar = newMean*newMean;
 		return new MG1OperatorQueueModel(newMean, newVar);
 	}

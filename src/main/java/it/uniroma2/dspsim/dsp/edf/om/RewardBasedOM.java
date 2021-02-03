@@ -187,4 +187,9 @@ public abstract class RewardBasedOM extends OperatorManager {
     public StateType getStateRepresentation() {
         return stateRepresentation;
     }
+
+    protected void dumpQ()
+    {
+
+    }
 }
