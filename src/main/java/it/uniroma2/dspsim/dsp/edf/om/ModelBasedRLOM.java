@@ -26,7 +26,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Random;
 
-public class FullBackupModelBasedOM extends ReinforcementLearningOM {
+public class ModelBasedRLOM extends ReinforcementLearningOM {
 
 	private QTable qTable;
 	private VTable estimatedCost;
@@ -36,44 +36,54 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 
 	private double gamma;
 
-	// TODO: restore contraints in the learning step
-	private boolean initWithApproximateModel = true;
+	private boolean initWithVI;
+	private boolean useApproximateInitModel;
+	private int APPROXIMATION_SEED;
+	final double maxErr = 0.1;
+	final double minErr = 0.05;
 	private int offlineObservationsParam = 100;
 
 	private VariableParameter alpha;
 	private int alphaDecaySteps;
 	private int alphaDecayStepsCounter;
 
-	private final int skipFullBackupAfter = 100;//100000;
-	private final int fullBackupEvery = 50;
+	private int skipFullBackupAfter;
+	private int fullBackupEvery;
+	private int onlineVIMaxIter;
+
 	private int time = 0;
-
-	private int onlineVIMaxIter = 3; // TODO configurable
-
-	private Logger logger = LoggerFactory.getLogger(FullBackupModelBasedOM.class);
+	private Logger logger = LoggerFactory.getLogger(ModelBasedRLOM.class);
 
 
-	public FullBackupModelBasedOM (Operator operator) {
+	public ModelBasedRLOM(Operator operator) {
 		super(operator);
 
 		// get configuration instance
-		Configuration configuration = Configuration.getInstance();
+		Configuration conf = Configuration.getInstance();
 
 		this.qTable = buildQ();
-		this.gamma = configuration.getDouble(ConfigurationKeys.QL_OM_GAMMA_KEY,0.99);
+		this.gamma = conf.getDouble(ConfigurationKeys.QL_OM_GAMMA_KEY,0.99);
 
-		double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.1);
-		double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 1.0);
-		double alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
+		double alphaInitValue = conf.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.1);
+		double alphaDecay = conf.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 1.0);
+		double alphaMinValue = conf.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
 
 		this.alpha = new VariableParameter(alphaInitValue, alphaMinValue, 1.0, alphaDecay);
-		this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
+		this.alphaDecaySteps = conf.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
 		this.alphaDecayStepsCounter = 0;
 
 		logger.info("Alpha conf: init={}, decay={}, currValue={}", alphaInitValue,
 				alphaDecay, alpha.getValue());
 
-		if (initWithApproximateModel) {
+		this.initWithVI = conf.getBoolean(ConfigurationKeys.MB_INIT_WITH_VI, false);
+		this.useApproximateInitModel = conf.getBoolean(ConfigurationKeys.MB_INIT_VI_APPROX, true);
+		this.skipFullBackupAfter = conf.getInteger(ConfigurationKeys.MB_SKIP_ITER_AFTER, 100);
+		this.fullBackupEvery = conf.getInteger(ConfigurationKeys.MB_REDUCED_ITER_PERIOD, 50);
+		this.onlineVIMaxIter = conf.getInteger(ConfigurationKeys.MB_MAX_ONLINE_ITERS, 1);
+		this.APPROXIMATION_SEED = conf.getInteger(ConfigurationKeys.MB_APPROX_MODEL_SEED, 123);
+
+
+		if (initWithVI) {
 			offlinePlanning();
 		} else {
 			offlineObservationsParam = 0;
@@ -83,9 +93,7 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 
 	private Operator approximateOperatorModel (Operator op)
 	{
-		Random r = new Random(123); // TODO seed
-		final double maxErr = 0.1;
-		final double minErr = 0.05;
+		Random r = new Random(APPROXIMATION_SEED);
 
 		OperatorQueueModel queueModel = op.getQueueModel().getApproximateModel(r, maxErr, minErr);
 		logger.info("Approximate stMean: {} -> {}", op.getQueueModel().getServiceTimeMean(), queueModel.getServiceTimeMean());
@@ -95,8 +103,13 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 	}
 
 	private void offlinePlanning() {
-		ValueIterationOM viOM = new ValueIterationOM(approximateOperatorModel(operator));
-		//ValueIterationOM viOM = new ValueIterationOM(operator);
+		Operator initializationOperator;
+		if (useApproximateInitModel) {
+			initializationOperator = approximateOperatorModel(operator);
+		} else {
+			initializationOperator = operator;
+		}
+		ValueIterationOM viOM = new ValueIterationOM(initializationOperator);
 		QTable viQ = viOM.getQTable();
 		DoubleMatrix<Integer,Integer> viP = viOM.getPMatrix();
 
@@ -244,49 +257,6 @@ public class FullBackupModelBasedOM extends ReinforcementLearningOM {
 					estimatedCost.setV(s, newval);
 			}
 		}
-		//int k0,k1;
-		//int l0,l1;
-
-		//if (newval > oldval) {
-		//	k0 = 1;
-		//	k1 = k;
-		//	l0 = jLambda;
-		//	l1 = currentState.getMaxLambda();
-		//	for (int l = l0; l<=l1; ++l) {
-		//		for (int _k = k0; _k<=k1; ++_k) {
-		//			if (unknownCostEst[_k-1][l] < newval)
-		//				unknownCostEst[_k-1][l] = newval;
-		//		}
-		//	}
-		//} else if (newval < oldval) {
-		//	k0 = k;
-		//	k1 = currentState.getMaxParallelism();
-		//	l0 = 0;
-		//	l1 = jLambda;
-		//	for (int l = l0; l<=l1; ++l) {
-		//		for (int _k = k0; _k<=k1; ++_k) {
-		//			if (unknownCostEst[_k-1][l] > newval)
-		//				unknownCostEst[_k-1][l] = newval;
-		//		}
-		//	}
-		//}
-
-		//System.out.println("----------");
-		//for (int _k = 1; _k<= operator.getMaxParallelism(); ++_k) {
-		//	for (int l = 0; l < getInputRateLevels(); ++l) {
-		//		System.out.print(String.format("%.2f\t",unknownCostEst[_k-1][l]));
-		//	}
-		//	System.out.println("");
-		//}
-		//System.out.println("----------");
-		//for (int _l = 0; _l< getInputRateLevels(); ++_l) {
-		//	for (int l = 0; l < getInputRateLevels(); ++l) {
-		//		System.out.print(String.format("%.2f\t",pMatrix[_l][l]));
-		//	}
-		//	System.out.println("");
-		//}
-		//System.out.println("----------");
-
 		decrementAlpha();
 
 		/* Do a full backup */

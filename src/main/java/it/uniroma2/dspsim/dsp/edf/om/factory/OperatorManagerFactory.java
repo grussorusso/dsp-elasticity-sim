@@ -19,7 +19,7 @@ public class OperatorManagerFactory {
             case OPTIMAL_ALLOCATION:
                 return new OptimalAllocationOM(operator);
             case MODEL_BASED:
-                return new FullBackupModelBasedOM(operator);
+                return new ModelBasedRLOM(operator);
             case Q_LEARNING:
                 return new QLearningOM(operator);
             case Q_LEARNING_PDS:
