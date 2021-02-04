@@ -39,9 +39,9 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 	private boolean initWithVI;
 	private boolean useApproximateInitModel;
 	private int APPROXIMATION_SEED;
-	final double maxErr = 0.1;
-	final double minErr = 0.05;
-	private int offlineObservationsParam = 100;
+	double maxErr;
+	double minErr;
+	private int offlineObservationsParam = 1000;
 
 	private VariableParameter alpha;
 	private int alphaDecaySteps;
@@ -81,6 +81,8 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 		this.fullBackupEvery = conf.getInteger(ConfigurationKeys.MB_REDUCED_ITER_PERIOD, 50);
 		this.onlineVIMaxIter = conf.getInteger(ConfigurationKeys.MB_MAX_ONLINE_ITERS, 1);
 		this.APPROXIMATION_SEED = conf.getInteger(ConfigurationKeys.MB_APPROX_MODEL_SEED, 123);
+		this.maxErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MAX_ERR, 0.1);
+		this.minErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MIN_ERR, 0.05);
 
 
 		if (initWithVI) {

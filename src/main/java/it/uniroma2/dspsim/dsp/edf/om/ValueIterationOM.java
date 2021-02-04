@@ -15,9 +15,13 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
+import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
+import org.nd4j.linalg.api.ops.Op;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -28,6 +32,7 @@ import java.util.*;
 public class ValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
 
     protected QTable qTable;
+    private Logger logger = LoggerFactory.getLogger(ValueIterationOM.class);
 
     public ValueIterationOM(Operator operator) {
         super(operator);
@@ -38,7 +43,14 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         long maxTimeMillis = configuration.getLong(ConfigurationKeys.VI_MAX_TIME_SECONDS_KEY, 60L) * 1000;
         double theta = configuration.getDouble(ConfigurationKeys.VI_THETA_KEY, 1E-5);
 
+        // We can replace the embedded operator if an approximate model is required
+        final boolean useApproximateModel = configuration.getBoolean(ConfigurationKeys.VI_APPROX_MODEL, false);
+        Operator realOperator = this.operator;
+        if (useApproximateModel) {
+            this.operator = approximateOperatorModel(configuration);
+        }
         valueIteration(maxIterations, maxTimeMillis, theta);
+        this.operator = realOperator;
 
         dumpQOnFile(String.format("%s/qtable",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
@@ -58,6 +70,18 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
     }
 
 
+    private Operator approximateOperatorModel (Configuration conf)
+    {
+        Random r = new Random(conf.getInteger(ConfigurationKeys.VI_APPROX_MODEL_SEED, 123));
+        final double maxErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MAX_ERR, 0.1);
+        final double minErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MIN_ERR, 0.05);
+
+        OperatorQueueModel queueModel = operator.getQueueModel().getApproximateModel(r, maxErr, minErr);
+        logger.info("Approximate stMean: {} -> {}", operator.getQueueModel().getServiceTimeMean(), queueModel.getServiceTimeMean());
+        Operator tempOperator = new Operator("temp", queueModel, operator.getMaxParallelism());
+        tempOperator.setSloRespTime(operator.getSloRespTime());
+        return tempOperator;
+    }
 
     /**
      * VALUE ITERATION ALGORITHM
