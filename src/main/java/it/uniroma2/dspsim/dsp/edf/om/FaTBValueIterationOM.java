@@ -17,6 +17,11 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
+import org.slf4j.LoggerFactory;
+
+import java.util.Random;
+import java.util.logging.Logger;
 
 public class FaTBValueIterationOM extends BaseTBValueIterationOM {
 
@@ -27,9 +32,29 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
     public FaTBValueIterationOM(Operator operator) {
         super(operator);
 
-        this.alpha = Configuration.getInstance().getDouble(ConfigurationKeys.TBVI_FA_ALPHA_KEY, 0.1);
+        Configuration conf = Configuration.getInstance();
+        this.alpha = conf.getDouble(ConfigurationKeys.TBVI_FA_ALPHA_KEY, 0.1);
 
+        final boolean useApproximateModel = conf.getBoolean(ConfigurationKeys.VI_APPROX_MODEL, false);
+        Operator realOperator = this.operator;
+        if (useApproximateModel) {
+            this.operator = approximateOperatorModel(conf);
+        }
         tbvi(this.tbviIterations, this.tbviMillis,this.tbviTrajectoryLength);
+        this.operator = realOperator;
+    }
+
+    private Operator approximateOperatorModel (Configuration conf)
+    {
+        Random r = new Random(conf.getInteger(ConfigurationKeys.VI_APPROX_MODEL_SEED, 123));
+        final double maxErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MAX_ERR, 0.1);
+        final double minErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MIN_ERR, 0.05);
+
+        OperatorQueueModel queueModel = operator.getQueueModel().getApproximateModel(r, maxErr, minErr);
+        LoggerFactory.getLogger(FaTBValueIterationOM.class).info("Approximate stMean: {} -> {}", operator.getQueueModel().getServiceTimeMean(), queueModel.getServiceTimeMean());
+        Operator tempOperator = new Operator("temp", queueModel, operator.getMaxParallelism());
+        tempOperator.setSloRespTime(operator.getSloRespTime());
+        return tempOperator;
     }
 
     @Override

@@ -69,7 +69,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         long iterationCompleted = 0L;
 
         while ((iterations <= 0L || iterationCompleted < iterations) && (millis <= 0L || elapsedMillis < millis)) {
-            if (iterationCompleted % 1000 == 0)
+            if (iterationCompleted % 10000 == 0)
                 System.out.println("TBVI: " + iterationCompleted + " iteration completed");
 
             long startIteration = System.currentTimeMillis();
