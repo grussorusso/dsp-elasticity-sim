@@ -95,6 +95,8 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
             iterationCompleted++;
         }
+
+        System.out.println("TBVI Total Iters: " + iterationCompleted);
     }
 
     protected State tbviIteration(State s, Action a) {

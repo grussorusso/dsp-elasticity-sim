@@ -19,5 +19,5 @@ echo "output.log = $OUT_DIR/simLog.log" >> $conf_file
 # Running simulator
 #--------------------
 echo "Running experiment: ${EXPERIMENT_TAG}"
-java -Xmx12g -jar out/artifacts/dspelasticitysimulator_jar/dspelasticitysimulator.jar $conf_file
+java -Xmx12g -jar out/artifacts/dsp_elasticity_simulator_jar/dsp-elasticity-simulator.jar $conf_file
 [[ $? -eq 0 ]] || exit 1
