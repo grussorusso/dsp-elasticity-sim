@@ -8,10 +8,9 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.*;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import org.apache.commons.lang3.tuple.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -32,16 +31,16 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Collection;
+import java.util.Set;
 
 public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     private int inputLayerNodesNumber;
     private int outputLayerNodesNumber;
 
-    private INDArray training = null;
-    private INDArray labels = null;
-
-    private int memoryBatch;
+    private ExperienceReplay expReplay;
+    private int batchSize;
 
     private Logger log = LoggerFactory.getLogger(DeepTBValueIterationOM.class);
 
@@ -54,7 +53,8 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             startNetworkUIServer();
         }
 
-        this.memoryBatch = Configuration.getInstance().getInteger(ConfigurationKeys.TBVI_DEEP_MEMORY_BATCH_KEY,32);
+        this.batchSize = Configuration.getInstance().getInteger(ConfigurationKeys.TBVI_DEEP_MEMORY_BATCH_KEY,32);
+        this.expReplay = new ExperienceReplay(10000);
 
         tbvi(this.tbviIterations, this.tbviMillis, this.tbviTrajectoryLength);
 
@@ -175,9 +175,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void resetTrajectoryData() {
-        // reset memory
-        //this.training = null;
-        //this.labels = null;
     }
 
     @Override
@@ -187,35 +184,53 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void learn(double tbviDelta, double newQ, State state, Action action) {
-        // compute post decision state
-        State pds = StateUtils.computePostDecisionState(state, action, this);
+        // not used
+    }
 
-        // transform post decision state in network input
-        INDArray trainingInput = buildInput(pds);
-        // set label to reward (it already contains gamma * q)
-        INDArray label = Nd4j.create(1).put(0, 0, newQ - computeActionCost(action));
+    @Override
+    protected State tbviIteration(State s, Action a) {
+        //double oldQ = computeQ(s, a);
+        //double newQ = evaluateNewQ(s, a);
+        //double delta = newQ - oldQ;
+        //learn(delta, newQ, s, a);
+        //return sampleNextState(s, a);
 
-        // init memory if it is null or add example and label to memory
-        if (this.training == null && this.labels == null) {
-            this.training = trainingInput;
-            this.labels = label;
-        } else {
-            training = Nd4j.concat(0, training, trainingInput);
-            labels = Nd4j.concat(0, labels, label);
+        Transition t = new Transition(s, a, null, 0.0);
+        expReplay.add(t);
+
+        // check if u want to perform an update
+        if (tbviIterations % 10 == 0 && tbviIterations > 100) {
+            Collection<Transition> batch = expReplay.sampleBatch(this.batchSize);
+            if (batch != null) {
+                Pair<INDArray, INDArray> targets = getTargets(batch);
+                this.network.fit(targets.getLeft(), targets.getRight());
+            }
         }
-        // shuffle memory and get first memory batch elements
-        DataSet memory = new DataSet(this.training, this.labels);
-        log.info("memory contains {} entries", memory.numExamples());
 
-        //memory.shuffle();
-        //List<DataSet> batches = memory.batchBy(this.memoryBatch);
-        //log.info("memory batchBy returned {} data sets", batches.size());
-        //ListDataSetIterator iterator = new ListDataSetIterator<>(batches);
-        //// train network
-        //this.network.fit(iterator);
-        DataSet batch = memory.sample(this.memoryBatch);
-        this.network.fit(batch);
+        return sampleNextState(s,a);
+    }
 
+    private Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
+        INDArray inputs = null;
+        INDArray labels = null;
+
+        for (Transition t : batch) {
+            State pds = StateUtils.computePostDecisionState(t.getS(), t.getA(), this);
+            // transform post decision state in network input
+            INDArray trainingInput = buildInput(pds);
+            // set label to reward
+            double targetValue = evaluateNewQ(t.getS(), t.getA()) - computeActionCost(t.getA());
+            INDArray label = Nd4j.create(1).put(0, 0, targetValue);
+
+            if (inputs == null) {
+                inputs = trainingInput;
+                labels = label;
+            } else {
+                inputs = Nd4j.concat(0, inputs, trainingInput);
+                labels = Nd4j.concat(0, labels, label);
+            }
+        }
+        return Pair.of(inputs, labels);
     }
 
     private double computeActionCost(Action action) {
