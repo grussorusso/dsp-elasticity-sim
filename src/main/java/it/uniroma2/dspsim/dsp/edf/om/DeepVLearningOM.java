@@ -9,6 +9,8 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
+import org.apache.commons.lang3.tuple.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -21,6 +23,7 @@ import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * Deep Q Learning variant.
@@ -32,6 +35,7 @@ import java.util.Arrays;
  * To chose best action it selects min Q(s,a) for each a
  * In learning step phase it subtracts c(a) from Q(s,a) to obtain V(s) as label to train the neural network
  */
+@Deprecated
 public class DeepVLearningOM extends DeepLearningOM {
 
     // this asp is used to select action in learning step
@@ -41,6 +45,11 @@ public class DeepVLearningOM extends DeepLearningOM {
         super(operator);
 
         this.greedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.GREEDY, this);
+    }
+
+    @Override
+    protected Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
+        return null;
     }
 
     @Override
@@ -61,7 +70,7 @@ public class DeepVLearningOM extends DeepLearningOM {
         INDArray trainingInput = buildInput(pdState);
 
         // training step
-        this.learn(trainingInput, v);
+        this.learn();
 
         // decrement gamma if necessary
         decrementGamma();
