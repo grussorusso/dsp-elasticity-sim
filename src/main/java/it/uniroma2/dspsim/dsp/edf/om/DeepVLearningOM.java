@@ -19,6 +19,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
@@ -48,32 +49,44 @@ public class DeepVLearningOM extends DeepLearningOM {
     }
 
     @Override
-    protected Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
-        return null;
-    }
-
-    @Override
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
-        // get post decision state from old state and action
-        State pdState = StateUtils.computePostDecisionState(oldState, action, this);
-
-        // unknown cost
-        double cU = reward - computeActionCost(action) - (StateUtils.computeDeploymentCostNormalized(pdState, this) * this.getwResources());
-        Action greedyAction = this.greedyASP.selectAction(currentState);
-        double newQ = getQ(currentState, greedyAction);
-        newQ = gamma.getValue() * newQ + cU;
-
-        INDArray v = getV(pdState);
-        v.put(0, 0, newQ);
-
-        // get post decision input array
-        INDArray trainingInput = buildInput(pdState);
+        this.expReplay.add(new Transition(oldState, action, currentState, reward));
 
         // training step
         this.learn();
+    }
 
-        // decrement gamma if necessary
-        decrementGamma();
+    @Override
+    protected Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
+        INDArray inputs = null;
+        INDArray labels = null;
+
+        for (Transition t : batch) {
+            // get post decision state from old state and action
+            State pdState = StateUtils.computePostDecisionState(t.getS(), t.getA(), this);
+
+            // unknown cost
+            double cU = t.getReward() - computeActionCost(t.getA()) -
+                    (StateUtils.computeDeploymentCostNormalized(pdState, this) * this.getwResources());
+            Action greedyAction = this.greedyASP.selectAction(t.getNextS());
+            double newV = getQ(t.getNextS(), greedyAction) * gamma.getValue() + cU;
+
+            INDArray v = getV(pdState); // TODO: this seems unnecessary
+            v.put(0, 0, newV);
+
+            // get post decision input array
+            INDArray trainingInput = buildInput(pdState);
+
+            if (inputs == null) {
+                inputs = trainingInput;
+                labels = v;
+            } else {
+                inputs = Nd4j.concat(0, inputs, trainingInput);
+                labels = Nd4j.concat(0, labels, v);
+            }
+        }
+
+        return Pair.of(inputs, labels);
     }
 
     private INDArray getV(State state) {

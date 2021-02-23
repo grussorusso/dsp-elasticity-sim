@@ -64,15 +64,17 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
     @Override
     public Action selectAction(State s) {
         Action chosenAction;
-        if (this.rng.nextDouble() <= this.epsilon)
+        if (this.rng.nextDouble() <= this.epsilon) {
             // select random action
             chosenAction = this.policies.get(1).selectAction(s);
-        else
+        } else {
             // select greedy action
             chosenAction = this.policies.get(0).selectAction(s);
+        }
 
         // decrement epsilon if necessary
         decrementEpsilon();
+
 
         return chosenAction;
     }

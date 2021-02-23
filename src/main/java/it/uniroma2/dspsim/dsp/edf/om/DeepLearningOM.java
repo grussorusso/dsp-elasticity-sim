@@ -135,8 +135,8 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         //    }
         //}
         ++iterations;
-        //if (iterations % 5 != 0) // TODO
-        //    return;
+        if (iterations % 5 != 0) // TODO
+            return;
 
         Collection<Transition> batch = expReplay.sampleBatch(this.batchSize);
         if (batch != null) {
