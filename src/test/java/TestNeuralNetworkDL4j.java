@@ -52,6 +52,31 @@ public class TestNeuralNetworkDL4j {
     }
 
     @Test
+    public void neuralNetworkTestDatasetAndCache () {
+        Nd4j.getRandom().setSeed(12345);
+
+        MultiLayerNetwork network = buildNetwork();
+
+        INDArray label = getLabel(7);
+
+        INDArray dataset = getDataset1(4);
+
+        network.fit(dataset, label);
+
+        INDArray input = network.getInput();
+        INDArray input2 = input.dup();
+        input2 = input2.put(0, 0, 5);
+        System.out.println(input);
+        System.out.println(input2);
+
+        INDArray output = network.output(input);
+        INDArray output1 = network.output(input2);
+        System.out.println(output.toString());
+        System.out.println(output1.toString());
+
+    }
+
+    @Test
     public void neuralNetworkTestDataset1And2() throws IOException {
         Nd4j.getRandom().setSeed(12345);
 
@@ -92,12 +117,12 @@ public class TestNeuralNetworkDL4j {
                                 .activation(new ActivationReLU())
                                 .build(),
                         new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .activation(Activation.SOFTMAX)
+                                .activation(Activation.IDENTITY)
                                 .nIn(32)
                                 .nOut(7)
                                 .build()
                 )
-                //.backprop(true)
+                .backprop(true)
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(networkConf);

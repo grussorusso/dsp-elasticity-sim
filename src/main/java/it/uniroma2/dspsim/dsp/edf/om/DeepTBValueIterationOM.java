@@ -89,21 +89,20 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         INDArray output = this.network.output(input, false);
 
         if (networkCache != null)
-            networkCache.put(state, output);
+            networkCache.put(state, output.dup());
 
         return output;
     }
 
-    private INDArray getQ(State state, Action action) {
+    private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
         INDArray v = getV(postDecisionState);
-        v.put(0, 0, v.getDouble(0) + computeActionCost(action));
-        return v;
+        return v.getDouble(0) + computeActionCost(action);
     }
 
     @Override
     public double evaluateAction(State s, Action a) {
-        return getQ(s, a).getDouble(0);
+        return getQ(s, a);
     }
 
     @Override
@@ -198,7 +197,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected double computeQ(State s, Action a) {
-        return this.getQ(s, a).getDouble(0);
+        return this.getQ(s, a);
     }
 
     @Override
