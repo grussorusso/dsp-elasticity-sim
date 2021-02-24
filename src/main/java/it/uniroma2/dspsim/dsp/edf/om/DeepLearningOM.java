@@ -35,7 +35,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     protected double gamma;
     protected int fitNetworkEvery;
 
-    protected HashCache<State, INDArray> networkCache = null;
+    protected HashCache<State, Object> networkCache = null;
 
     protected ExperienceReplay expReplay;
     private int batchSize;

@@ -86,22 +86,24 @@ public class DeepVLearningOM extends DeepLearningOM {
         return Pair.of(inputs, labels);
     }
 
-    private INDArray getV(State state) {
+    private double getV(State state) {
         if (hasNetworkCache() && networkCache.containsKey(state))
-            return (INDArray)networkCache.get(state);
+            return (double)networkCache.get(state);
 
         INDArray input = buildInput(state);
         INDArray output = this.network.output(input);
 
-        if (hasNetworkCache())
-            networkCache.put(state, output.dup());
+        double v = output.getDouble(0);
 
-        return output;
+        if (hasNetworkCache())
+            networkCache.put(state, v);
+
+        return v;
     }
 
     private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
-        double v = getV(postDecisionState).getDouble(0);
+        double v = getV(postDecisionState);
         return v + computeActionCost(action) + (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
     }
 

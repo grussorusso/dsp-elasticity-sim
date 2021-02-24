@@ -16,6 +16,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class TestNeuralNetworkDL4j {
 
@@ -73,6 +74,9 @@ public class TestNeuralNetworkDL4j {
         INDArray output1 = network.output(input2);
         System.out.println(output.toString());
         System.out.println(output1.toString());
+
+        double arr[] = output.data().asDouble();
+        System.out.println(Arrays.toString(arr));
 
     }
 

@@ -81,23 +81,25 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         return state.arrayRepresentation(this.inputLayerNodesNumber);
     }
 
-    private INDArray getV (State state) {
+    private double getV (State state) {
         if (networkCache != null && networkCache.containsKey(state))
-            return (INDArray)networkCache.get(state);
+            return (double)networkCache.get(state);
 
         INDArray input = buildInput(state);
         INDArray output = this.network.output(input, false);
 
-        if (networkCache != null)
-            networkCache.put(state, output.dup());
+        double v = output.getDouble(0);
 
-        return output;
+        if (networkCache != null)
+            networkCache.put(state, v);
+
+        return v;
     }
 
     private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
-        INDArray v = getV(postDecisionState);
-        return v.getDouble(0) + computeActionCost(action);
+        final double v = getV(postDecisionState);
+        return v + computeActionCost(action);
     }
 
     @Override
