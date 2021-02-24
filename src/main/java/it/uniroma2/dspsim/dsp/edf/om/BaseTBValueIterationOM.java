@@ -30,8 +30,10 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     protected int statesCount;
     protected int actionsCount;
 
+    protected long tbviIterations = 0l;
+
     // tbvi parameters
-    protected long tbviIterations;
+    protected long tbviMaxIterations;
     protected long tbviMillis;
     protected long tbviTrajectoryLength;
 
@@ -43,16 +45,16 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
         Configuration configuration = Configuration.getInstance();
 
-        this.tbviIterations = configuration.getLong(ConfigurationKeys.TBVI_EXEC_ITERATIONS_KEY, 300000L);
+        this.tbviMaxIterations = configuration.getLong(ConfigurationKeys.TBVI_EXEC_ITERATIONS_KEY, 300000L);
         this.tbviMillis = configuration.getLong(ConfigurationKeys.TBVI_EXEC_SECONDS_KEY, 60L) * 1000;
         this.tbviTrajectoryLength = configuration.getLong(ConfigurationKeys.TBVI_TRAJECTORY_LENGTH_KEY, 512L);
 
         this.rng = new Random();
     }
 
-    protected void tbvi(long iterations, long millis, long trajectoryLength) {
+    protected void tbvi(long maxIterations, long millis, long trajectoryLength) {
         ActionSelectionPolicy epsGreedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.EPSILON_GREEDY, this);
-        ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilon(0.1);
+        ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilon(0.3);
         ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilonDecaySteps(-1);
         // get initial state
         State state = null;
@@ -65,12 +67,9 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         // elapsed millis
         long elapsedMillis = 0L;
 
-        // iteration counter
-        long iterationCompleted = 0L;
-
-        while ((iterations <= 0L || iterationCompleted < iterations) && (millis <= 0L || elapsedMillis < millis)) {
-            if (iterationCompleted % 10000 == 0)
-                System.out.println("TBVI: " + iterationCompleted + " iteration completed");
+        while ((maxIterations <= 0L || tbviIterations < maxIterations) && (millis <= 0L || elapsedMillis < millis)) {
+            if (tbviIterations % 10000 == 0)
+                System.out.println("TBVI: " + tbviIterations + " iteration completed");
 
             long startIteration = System.currentTimeMillis();
 
@@ -78,7 +77,6 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
                 tl = 0L;
             if (tl == 0L) {
                 resetTrajectoryData();
-                // start new trajectory
                 state = randomState();
 
                 trajectoriesComputed++;
@@ -93,8 +91,11 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
             elapsedMillis += (System.currentTimeMillis() - startIteration);
 
-            iterationCompleted++;
+            tbviIterations++;
         }
+
+        System.out.println("TBVI Total Trajectories: " + trajectoriesComputed);
+        System.out.println("TBVI Total Iters: " + tbviIterations);
     }
 
     protected State tbviIteration(State s, Action a) {
@@ -146,7 +147,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         return s;
     }
 
-    private State sampleNextState(State s, Action a) {
+    protected State sampleNextState(State s, Action a) {
         // TODO view sampling
         State pds = StateUtils.computePostDecisionState(s, a, this);
         List<Double> pArray = new ArrayList<>();
@@ -168,7 +169,31 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
                 getInputRateLevels() - 1, this.operator.getMaxParallelism());
     }
 
-    private double evaluateNewQ(State s, Action a) {
+    protected double evaluateNewImmediateCost (State s, Action a) {
+        double cost = 0.0;
+        // compute reconfiguration cost
+        if (a.getDelta() != 0)
+            cost += this.getwReconf();
+        // from s,a compute pds
+        State pds = StateUtils.computePostDecisionState(s, a, this);
+        // compute deployment cost using pds wighted on wRes
+        cost += StateUtils.computeDeploymentCostNormalized(pds, this) * this.getwResources();
+        // for each lambda level with p != 0 in s.getLambda() row
+        Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
+        for (int lambda : possibleLambdas) {
+            // change pds.lambda to lambda
+            pds.setLambda(lambda);
+            // get transition probability from s.lambda to lambda level
+            double p = this.getpMatrix().getValue(s.getLambda(), lambda);
+            // compute slo violation cost
+            double sloCost = StateUtils.computeSLOCost(pds, this) * this.getwSLO();
+
+            cost += p * sloCost;
+        }
+
+        return cost;
+    }
+    protected double evaluateNewQ(State s, Action a) {
         double cost = 0.0;
         // compute reconfiguration cost
         if (a.getDelta() != 0)

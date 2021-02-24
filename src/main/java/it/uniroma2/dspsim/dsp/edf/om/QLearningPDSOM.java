@@ -50,7 +50,7 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
         this.alphaDecayStepsCounter = 0;
 
-        this.gamma = configuration.getDouble(ConfigurationKeys.QL_OM_GAMMA_KEY,0.99);
+        this.gamma = configuration.getDouble(ConfigurationKeys.DP_GAMMA_KEY,0.99);
 
         this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.GREEDY,

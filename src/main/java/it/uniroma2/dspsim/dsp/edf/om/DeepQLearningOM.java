@@ -1,28 +1,24 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
-import it.uniroma2.dspsim.Configuration;
-import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
-import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
+import org.apache.commons.lang3.tuple.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Iterator;
+import java.util.Collection;
+
 
 public class DeepQLearningOM extends DeepLearningOM {
 
@@ -32,24 +28,10 @@ public class DeepQLearningOM extends DeepLearningOM {
 
     @Override
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
-        // get old state network output
-        INDArray oldQ = getQ(oldState);
-        // get current state network output
-        INDArray newQ = getQ(currentState);
-
-        // update old state output in actionIndex position with new estimation
-        // we get min(newQ) because we want to minimize cost
-        // reward = cost -> minimize Q equals minimize cost
-        oldQ.put(0, action.getIndex(), reward + gamma.getValue() * (double) newQ.minNumber());
-
-        // get old state input array
-        INDArray trainingInput = buildInput(oldState);
+        this.expReplay.add(new Transition(oldState, action, currentState, reward));
 
         // training step
-        this.learn(trainingInput, oldQ);
-
-        // decrement gamma if necessary
-        decrementGamma();
+        this.learn();
     }
 
     private INDArray getQ(State state) {
@@ -102,6 +84,37 @@ public class DeepQLearningOM extends DeepLearningOM {
                 .pretrain(false)
                 .backprop(true)
                 .build();
+    }
+
+    @Override
+    protected Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
+        INDArray inputs = null;
+        INDArray labels = null;
+
+        for (Transition t : batch) {
+            // get old state network output
+            INDArray qs = getQ(t.getS());
+            // get current state network output
+            INDArray qns = getQ(t.getNextS());
+
+            //System.out.println("qs has shape: " + qs.shapeInfoToString());
+
+            // update Q(s,a)with new estimation
+            // we get min(qns) because we want to minimize cost
+            // reward = cost -> minimize Q equals minimize cost
+            qs.put(0, t.getA().getIndex(), t.getReward() + gamma * (double) qns.minNumber());
+
+            INDArray trainingInput = buildInput(t.getS());
+
+            if (inputs == null) {
+                inputs = trainingInput;
+                labels = qs;
+            } else {
+                inputs = Nd4j.concat(0, inputs, trainingInput);
+                labels = Nd4j.concat(0, labels, qs);
+            }
+        }
+        return Pair.of(inputs, labels);
     }
 
     /**

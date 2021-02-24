@@ -31,8 +31,8 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 	private QTable qTable;
 	private VTable estimatedCost;
 
-	int[][] transitionsMatrix;
-	double[][] pMatrix;
+	private int[][] transitionsMatrix;
+	private double[][] pMatrix;
 
 	private double gamma;
 
@@ -62,7 +62,7 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 		Configuration conf = Configuration.getInstance();
 
 		this.qTable = buildQ();
-		this.gamma = conf.getDouble(ConfigurationKeys.QL_OM_GAMMA_KEY,0.99);
+		this.gamma = conf.getDouble(ConfigurationKeys.DP_GAMMA_KEY,0.99);
 
 		double alphaInitValue = conf.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.1);
 		double alphaDecay = conf.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 1.0);
