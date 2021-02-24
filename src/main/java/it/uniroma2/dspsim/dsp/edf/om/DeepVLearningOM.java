@@ -19,6 +19,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -70,7 +71,7 @@ public class DeepVLearningOM extends DeepLearningOM {
             Action greedyAction = this.greedyASP.selectAction(t.getNextS());
             double newV = getQ(t.getNextS(), greedyAction) * gamma + cU;
 
-            INDArray v = getV(pdState); // TODO: this seems unnecessary
+            INDArray v = new NDArray(1,1);
             v.put(0, 0, newV);
 
             // get post decision input array
