@@ -35,8 +35,16 @@ public class DeepQLearningOM extends DeepLearningOM {
     }
 
     private INDArray getQ(State state) {
+        if (hasNetworkCache() && networkCache.containsKey(state))
+            return (INDArray)networkCache.get(state);
+
         INDArray input = buildInput(state);
-        return this.network.output(input);
+        INDArray output = this.network.output(input);
+
+        if (hasNetworkCache())
+            networkCache.put(state, output.dup());
+
+        return output;
     }
 
     private INDArray buildInput(State state) {
@@ -102,6 +110,7 @@ public class DeepQLearningOM extends DeepLearningOM {
             // update Q(s,a)with new estimation
             // we get min(qns) because we want to minimize cost
             // reward = cost -> minimize Q equals minimize cost
+            qs = qs.dup();
             qs.put(0, t.getA().getIndex(), t.getReward() + gamma * (double) qns.minNumber());
 
             INDArray trainingInput = buildInput(t.getS());

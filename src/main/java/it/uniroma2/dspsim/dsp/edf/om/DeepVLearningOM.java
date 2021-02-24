@@ -6,8 +6,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
 import org.apache.commons.lang3.tuple.Pair;
@@ -17,14 +15,12 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
-import org.nd4j.linalg.activations.impl.ActivationReLU;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -41,6 +37,7 @@ public class DeepVLearningOM extends DeepLearningOM {
 
     // this asp is used to select action in learning step
     private ActionSelectionPolicy greedyASP;
+
 
     public DeepVLearningOM(Operator operator) {
         super(operator);
@@ -89,14 +86,24 @@ public class DeepVLearningOM extends DeepLearningOM {
         return Pair.of(inputs, labels);
     }
 
-    private INDArray getV(State state) {
+    private double getV(State state) {
+        if (hasNetworkCache() && networkCache.containsKey(state))
+            return (double)networkCache.get(state);
+
         INDArray input = buildInput(state);
-        return this.network.output(input);
+        INDArray output = this.network.output(input);
+
+        double v = output.getDouble(0);
+
+        if (hasNetworkCache())
+            networkCache.put(state, v);
+
+        return v;
     }
 
     private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
-        double v = getV(postDecisionState).getDouble(0);
+        double v = getV(postDecisionState);
         return v + computeActionCost(action) + (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
     }
 

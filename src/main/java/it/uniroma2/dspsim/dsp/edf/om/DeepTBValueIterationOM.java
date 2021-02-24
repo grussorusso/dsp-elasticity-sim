@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelection
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.*;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.utils.HashCache;
 import org.apache.commons.lang3.tuple.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -40,6 +41,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     private ExperienceReplay expReplay;
     private int batchSize;
     private int fitNetworkEvery;
+    private HashCache<State,INDArray> networkCache = null;
 
     private Logger log = LoggerFactory.getLogger(DeepTBValueIterationOM.class);
 
@@ -60,7 +62,14 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
         tbvi(this.tbviIterations, this.tbviMillis, this.tbviTrajectoryLength);
 
-       // dumpQOnFile(String.format("%s/%s/%s/policy",
+        // Only used online
+        int cacheSize = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_NETWORK_CACHE_SIZE, 0);
+        if (cacheSize > 0) {
+            this.networkCache = new HashCache<>(cacheSize);
+        }
+
+
+        // dumpQOnFile(String.format("%s/%s/%s/policy",
        //         Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
        //         Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
        //         "others"));
@@ -72,21 +81,30 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         return state.arrayRepresentation(this.inputLayerNodesNumber);
     }
 
-    private INDArray getV(State state) {
+    private double getV (State state) {
+        if (networkCache != null && networkCache.containsKey(state))
+            return (double)networkCache.get(state);
+
         INDArray input = buildInput(state);
-        return this.network.output(input, false);
+        INDArray output = this.network.output(input, false);
+
+        double v = output.getDouble(0);
+
+        if (networkCache != null)
+            networkCache.put(state, v);
+
+        return v;
     }
 
-    private INDArray getQ(State state, Action action) {
+    private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
-        INDArray v = getV(postDecisionState);
-        v.put(0, 0, v.getDouble(0) + computeActionCost(action));
-        return v;
+        final double v = getV(postDecisionState);
+        return v + computeActionCost(action);
     }
 
     @Override
     public double evaluateAction(State s, Action a) {
-        return getQ(s, a).getDouble(0);
+        return getQ(s, a);
     }
 
     @Override
@@ -181,7 +199,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected double computeQ(State s, Action a) {
-        return this.getQ(s, a).getDouble(0);
+        return this.getQ(s, a);
     }
 
     @Override
@@ -200,6 +218,9 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             if (batch != null) {
                 Pair<INDArray, INDArray> targets = getTargets(batch);
                 this.network.fit(targets.getLeft(), targets.getRight());
+
+                if (this.networkCache != null)
+                    this.networkCache.clear();
             }
         }
 
