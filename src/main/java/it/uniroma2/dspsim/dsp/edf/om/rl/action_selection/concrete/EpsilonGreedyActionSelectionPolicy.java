@@ -56,9 +56,7 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
         this.epsilonDecayStepsCounter = 0;
 
         // init random number generator
-        // TODO create unique seed for each operator manager
-        //this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_EG_RANDOM_SEED_KEY, 1234L));
-        this.rng = new Random();
+        this.rng = new Random(configuration.getLong(ConfigurationKeys.EPSGREEDY_SEED, 5234L));
     }
 
     @Override
@@ -108,5 +106,9 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
 
     public void setEpsilonDecayStepsCounter(int epsilonDecayStepsCounter) {
         this.epsilonDecayStepsCounter = epsilonDecayStepsCounter;
+    }
+
+    public void setSeed (int seed) {
+        this.rng.setSeed(seed);
     }
 }

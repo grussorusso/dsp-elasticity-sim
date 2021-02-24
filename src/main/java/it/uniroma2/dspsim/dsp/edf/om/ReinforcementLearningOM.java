@@ -3,14 +3,13 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.EpsilonGreedyActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.stats.Statistics;
 
 public abstract class ReinforcementLearningOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
 
@@ -23,7 +22,15 @@ public abstract class ReinforcementLearningOM extends RewardBasedOM implements A
         // action selection policy
         ActionSelectionPolicyType aspType = ActionSelectionPolicyType.fromString(
         Configuration.getInstance().getString(ConfigurationKeys.ASP_TYPE_KEY, "e-greedy"));
-        return  ActionSelectionPolicyFactory.getPolicy(aspType, this);
+
+
+        ActionSelectionPolicy asp =  ActionSelectionPolicyFactory.getPolicy(aspType, this);
+        if (asp instanceof EpsilonGreedyActionSelectionPolicy)  {
+            EpsilonGreedyActionSelectionPolicy egp = (EpsilonGreedyActionSelectionPolicy) asp;
+            int baseSeed = Configuration.getInstance().getInteger(ConfigurationKeys.EPSGREEDY_SEED, 5234);
+            egp.setSeed(baseSeed + this.operator.getName().hashCode());
+        }
+        return asp;
     }
 
     @Override

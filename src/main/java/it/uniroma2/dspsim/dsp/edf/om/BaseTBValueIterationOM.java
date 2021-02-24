@@ -148,51 +148,26 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     }
 
     protected State sampleNextState(State s, Action a) {
-        // TODO view sampling
         State pds = StateUtils.computePostDecisionState(s, a, this);
-        List<Double> pArray = new ArrayList<>();
-        for (int l : this.getpMatrix().getColLabels(s.getLambda())) {
-            int times = (int) Math.floor(100 * this.getpMatrix().getValue(s.getLambda(), l));
-            times = times > 0 ? times : 1;
-            for (int i = 0; i < times; i++) {
-                pArray.add((double) l);
-            }
+
+        double randomN = rng.nextDouble();
+        double totalProb = 0.0;
+        int nextLambda = 0;
+        Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
+        for (int lambda : possibleLambdas) {
+            nextLambda = lambda;
+            // get transition probability from s.lambda to lambda level
+            final double p = this.getpMatrix().getValue(s.getLambda(), lambda);
+            totalProb += p;
+
+            if (totalProb > randomN)
+                break;
         }
-        double[] lambdas = new double[pArray.size()];
-        for (int i = 0; i < lambdas.length; i++) {
-            lambdas[i] = pArray.get(i);
-        }
-        INDArray lambdaArray = Nd4j.create(lambdas);
-        Nd4j.shuffle(lambdaArray, 0);
-        int nextLambda = lambdaArray.getInt(new Random().nextInt(lambdaArray.length()));
+
         return StateFactory.createState(getStateRepresentation(), -1, pds.getActualDeployment(), nextLambda,
                 getInputRateLevels() - 1, this.operator.getMaxParallelism());
     }
 
-    protected double evaluateNewImmediateCost (State s, Action a) {
-        double cost = 0.0;
-        // compute reconfiguration cost
-        if (a.getDelta() != 0)
-            cost += this.getwReconf();
-        // from s,a compute pds
-        State pds = StateUtils.computePostDecisionState(s, a, this);
-        // compute deployment cost using pds wighted on wRes
-        cost += StateUtils.computeDeploymentCostNormalized(pds, this) * this.getwResources();
-        // for each lambda level with p != 0 in s.getLambda() row
-        Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
-        for (int lambda : possibleLambdas) {
-            // change pds.lambda to lambda
-            pds.setLambda(lambda);
-            // get transition probability from s.lambda to lambda level
-            double p = this.getpMatrix().getValue(s.getLambda(), lambda);
-            // compute slo violation cost
-            double sloCost = StateUtils.computeSLOCost(pds, this) * this.getwSLO();
-
-            cost += p * sloCost;
-        }
-
-        return cost;
-    }
     protected double evaluateNewQ(State s, Action a) {
         double cost = 0.0;
         // compute reconfiguration cost
