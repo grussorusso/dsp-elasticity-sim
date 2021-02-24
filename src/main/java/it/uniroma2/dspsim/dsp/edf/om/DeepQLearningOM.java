@@ -102,7 +102,7 @@ public class DeepQLearningOM extends DeepLearningOM {
             // update Q(s,a)with new estimation
             // we get min(qns) because we want to minimize cost
             // reward = cost -> minimize Q equals minimize cost
-            qs.put(0, t.getA().getIndex(), t.getReward() + gamma.getValue() * (double) qns.minNumber());
+            qs.put(0, t.getA().getIndex(), t.getReward() + gamma * (double) qns.minNumber());
 
             INDArray trainingInput = buildInput(t.getS());
 

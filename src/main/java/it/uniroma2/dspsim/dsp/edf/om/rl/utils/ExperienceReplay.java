@@ -1,5 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.utils;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
 import java.util.*;
@@ -11,7 +13,9 @@ public class ExperienceReplay {
 
 	public ExperienceReplay (int maxSize) {
 		this.transitions = new CircularFifoQueue<>(maxSize);
-		this.r = new Random(); // TODO seed
+
+		final int seed = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 123);
+		this.r = new Random(seed);
 	}
 
 	public void add (Transition transition) {

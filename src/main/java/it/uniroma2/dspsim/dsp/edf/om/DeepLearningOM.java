@@ -31,9 +31,8 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     protected MultiLayerConfiguration networkConf;
     protected MultiLayerNetwork network;
 
-    protected VariableParameter gamma;
-    protected int gammaDecaySteps = -1;
-    protected int gammaDecayStepsCounter = 0;
+    protected double gamma;
+    protected int fitNetworkEvery;
 
     protected ExperienceReplay expReplay;
     private int batchSize;
@@ -47,18 +46,14 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         Configuration configuration = Configuration.getInstance();
 
         // memory size
-        this.batchSize = Configuration.getInstance().getInteger(ConfigurationKeys.TBVI_DEEP_MEMORY_BATCH_KEY,32);
+        this.batchSize = configuration.getInteger(ConfigurationKeys.DL_OM_SAMPLES_MEMORY_BATCH_KEY,32);
         int memorySize = configuration.getInteger(ConfigurationKeys.DL_OM_SAMPLES_MEMORY_SIZE_KEY, 512);
         this.expReplay = new ExperienceReplay(memorySize);
 
-        // gamma initial value
-        double gammaInitValue = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_KEY, 0.99);
-        // gamma decay
-        double gammaDecay = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_DECAY_KEY, 0.9);
-        // gamma min value
-        double gammaMinValue = configuration.getDouble(ConfigurationKeys.DL_OM_GAMMA_MIN_VALUE_KEY, 0.01);
+        this.fitNetworkEvery = configuration.getInteger(ConfigurationKeys.DL_OM_FIT_EVERY_ITERS, 5);
 
-        this.gamma = new VariableParameter(gammaInitValue, gammaMinValue, 1.0, gammaDecay);
+        // gamma initial value
+        this.gamma = configuration.getDouble(ConfigurationKeys.DP_GAMMA_KEY, 0.99);
 
         this.stateFeatures = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
                 ComputingInfrastructure.getInfrastructure(),
@@ -109,33 +104,9 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         return count;
     }
 
-    protected void decrementGamma() {
-        if (this.gammaDecaySteps > 0) {
-            this.gammaDecayStepsCounter++;
-            if (this.gammaDecayStepsCounter >= this.gammaDecaySteps) {
-                this.gamma.update();
-                this.gammaDecayStepsCounter = 0;
-            }
-        }
-    }
-
     protected void learn () {
-        //if (this.training == null) {
-        //    this.training = input;
-        //    this.labels = label;
-        //} else {
-        //    // add new element to memory
-        //    this.training = Nd4j.concat(0, this.training, input);
-        //    this.labels = Nd4j.concat(0, this.labels, label);
-
-        //    if (this.training.rows() > this.memorySize) {
-        //        //drop first memory element
-        //        this.training = this.training.get(NDArrayIndex.interval(1, this.training.length()));
-        //        this.labels = this.labels.get(NDArrayIndex.interval(1, this.labels.length()));
-        //    }
-        //}
         ++iterations;
-        if (iterations % 5 != 0) // TODO
+        if (fitNetworkEvery > 1 && iterations % fitNetworkEvery != 0)
             return;
 
         Collection<Transition> batch = expReplay.sampleBatch(this.batchSize);

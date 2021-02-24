@@ -36,7 +36,6 @@ import java.util.Collection;
  * To chose best action it selects min Q(s,a) for each a
  * In learning step phase it subtracts c(a) from Q(s,a) to obtain V(s) as label to train the neural network
  */
-@Deprecated
 public class DeepVLearningOM extends DeepLearningOM {
 
     // this asp is used to select action in learning step
@@ -69,7 +68,7 @@ public class DeepVLearningOM extends DeepLearningOM {
             double cU = t.getReward() - computeActionCost(t.getA()) -
                     (StateUtils.computeDeploymentCostNormalized(pdState, this) * this.getwResources());
             Action greedyAction = this.greedyASP.selectAction(t.getNextS());
-            double newV = getQ(t.getNextS(), greedyAction) * gamma.getValue() + cU;
+            double newV = getQ(t.getNextS(), greedyAction) * gamma + cU;
 
             INDArray v = getV(pdState); // TODO: this seems unnecessary
             v.put(0, 0, newV);

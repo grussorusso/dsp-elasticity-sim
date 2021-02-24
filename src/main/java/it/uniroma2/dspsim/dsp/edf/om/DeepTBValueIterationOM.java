@@ -20,7 +20,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
@@ -32,7 +31,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collection;
-import java.util.Set;
 
 public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
@@ -41,6 +39,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     private ExperienceReplay expReplay;
     private int batchSize;
+    private int fitNetworkEvery;
 
     private Logger log = LoggerFactory.getLogger(DeepTBValueIterationOM.class);
 
@@ -53,8 +52,11 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             startNetworkUIServer();
         }
 
-        this.batchSize = Configuration.getInstance().getInteger(ConfigurationKeys.TBVI_DEEP_MEMORY_BATCH_KEY,32);
-        this.expReplay = new ExperienceReplay(10000);
+        this.batchSize = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_SAMPLES_MEMORY_BATCH_KEY,32);
+        final int memory = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_SAMPLES_MEMORY_SIZE_KEY, 10000);
+        this.expReplay = new ExperienceReplay(memory);
+
+        this.fitNetworkEvery = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_FIT_EVERY_ITERS, 5);
 
         tbvi(this.tbviIterations, this.tbviMillis, this.tbviTrajectoryLength);
 
@@ -189,17 +191,11 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected State tbviIteration(State s, Action a) {
-        //double oldQ = computeQ(s, a);
-        //double newQ = evaluateNewQ(s, a);
-        //double delta = newQ - oldQ;
-        //learn(delta, newQ, s, a);
-        //return sampleNextState(s, a);
-
         Transition t = new Transition(s, a, null, 0.0);
         expReplay.add(t);
 
         // check if u want to perform an update
-        if (tbviIterations % 10 == 0 && tbviIterations > 100) {
+        if (fitNetworkEvery <= 1 || tbviIterations % fitNetworkEvery == 0) {
             Collection<Transition> batch = expReplay.sampleBatch(this.batchSize);
             if (batch != null) {
                 Pair<INDArray, INDArray> targets = getTargets(batch);
