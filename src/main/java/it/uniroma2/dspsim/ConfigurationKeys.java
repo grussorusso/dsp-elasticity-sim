@@ -147,6 +147,7 @@ public abstract class ConfigurationKeys {
 	public static final String DL_OM_SAMPLES_MEMORY_SIZE_KEY = "edf.dl.samples.memory.size";
 	public static final String DL_OM_SAMPLES_MEMORY_BATCH_KEY = "edf.dl.samples.memory.batch";
 	public static final String DL_OM_FIT_EVERY_ITERS = "edf.dl.fit.every";
+	public static final String DL_OM_NETWORK_CACHE_SIZE = "edf.dl.network.cache.size";
 
 	/**
 	 * Type of ActionSelectionPolicy (ASP) to use
@@ -163,4 +164,5 @@ public abstract class ConfigurationKeys {
 	public static final String ASP_EG_EPSILON_DECAY_KEY = "asp.eg.epsilon.decay";
 	public static final String ASP_EG_EPSILON_MIN_VALUE_KEY = "asp.eg.epsilon.min.value";
 	public static final String ASP_EG_EPSILON_DECAY_STEPS_KEY = "asp.eg.om.epsilon.decay.steps";
+	public static final String EPSGREEDY_SEED = "asp.eg.seed";
 }

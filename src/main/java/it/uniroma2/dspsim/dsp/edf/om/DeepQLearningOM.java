@@ -35,8 +35,16 @@ public class DeepQLearningOM extends DeepLearningOM {
     }
 
     private INDArray getQ(State state) {
+        if (hasNetworkCache() && networkCache.containsKey(state))
+            return (INDArray)networkCache.get(state);
+
         INDArray input = buildInput(state);
-        return this.network.output(input);
+        INDArray output = this.network.output(input);
+
+        if (hasNetworkCache())
+            networkCache.put(state, output);
+
+        return output;
     }
 
     private INDArray buildInput(State state) {

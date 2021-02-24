@@ -3,12 +3,13 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ExperienceReplay;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
-import it.uniroma2.dspsim.utils.parameter.VariableParameter;
+import it.uniroma2.dspsim.utils.HashCache;
 import org.apache.commons.lang3.tuple.Pair;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -34,8 +35,12 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     protected double gamma;
     protected int fitNetworkEvery;
 
+    protected HashCache<State, INDArray> networkCache = null;
+
     protected ExperienceReplay expReplay;
     private int batchSize;
+
+
 
     private int iterations = 0;
 
@@ -69,6 +74,11 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         this.network = new MultiLayerNetwork(this.networkConf);
         this.network.init();
 
+        int cacheSize = configuration.getInteger(ConfigurationKeys.DL_OM_NETWORK_CACHE_SIZE, 0);
+        if (cacheSize > 0) {
+            this.networkCache = new HashCache<>(cacheSize);
+        }
+
         dumpPolicyOnFile(String.format("%s/%s/%s/policy",
                 Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
                 Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
@@ -77,6 +87,11 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         if (configuration.getBoolean(ConfigurationKeys.DL_OM_ENABLE_NETWORK_UI_KEY, false)) {
             startNetworkUIServer();
         }
+    }
+
+    protected boolean hasNetworkCache()
+    {
+        return this.networkCache != null;
     }
 
     private void startNetworkUIServer() {
@@ -113,6 +128,9 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         if (batch != null) {
             Pair<INDArray, INDArray> targets = getTargets(batch);
             this.network.fit(targets.getLeft(), targets.getRight());
+
+            if (hasNetworkCache())
+                this.networkCache.clear();
         }
     }
 

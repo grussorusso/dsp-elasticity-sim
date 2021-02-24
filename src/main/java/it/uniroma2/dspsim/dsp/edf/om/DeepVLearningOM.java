@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
+import it.uniroma2.dspsim.utils.HashCache;
 import org.apache.commons.lang3.tuple.Pair;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -41,6 +42,7 @@ public class DeepVLearningOM extends DeepLearningOM {
 
     // this asp is used to select action in learning step
     private ActionSelectionPolicy greedyASP;
+
 
     public DeepVLearningOM(Operator operator) {
         super(operator);
@@ -90,8 +92,16 @@ public class DeepVLearningOM extends DeepLearningOM {
     }
 
     private INDArray getV(State state) {
+        if (hasNetworkCache() && networkCache.containsKey(state))
+            return (INDArray)networkCache.get(state);
+
         INDArray input = buildInput(state);
-        return this.network.output(input);
+        INDArray output = this.network.output(input);
+
+        if (hasNetworkCache())
+            networkCache.put(state, output);
+
+        return output;
     }
 
     private double getQ(State state, Action action) {
