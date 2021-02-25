@@ -152,6 +152,7 @@ public abstract class ConfigurationKeys {
 	public static final String DL_OM_NETWORK_HIDDEN_NODES2_COEFF = "edf.dl.network.hidden2.nodes.coeff";
 	public static final String DL_OM_NETWORK_SAMPLE_SCORE = "edf.dl.network.score.sample";
 	public static final String DL_OM_NETWORK_ALPHA = "edf.dl.network.alpha";
+	public static final String DL_OM_NETWORK_LAMBDA_ONE_HOT = "edf.dl.network.lambda.onehot";
 
 	/**
 	 * Type of ActionSelectionPolicy (ASP) to use

@@ -1,5 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
@@ -9,13 +11,21 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public class KLambdaState extends State {
 
+    private boolean ONE_HOT_LAMBDA = true;
+
     public KLambdaState(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
         super(index, k, lambda, maxLambda, maxParallelism);
     }
 
     @Override
     public int getArrayRepresentationLength() {
-        return (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
+        ONE_HOT_LAMBDA = Configuration.getInstance().getBoolean(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, true);
+
+        if (ONE_HOT_LAMBDA) {
+            return (this.getTotalStates() / (this.getMaxLambda() + 1)) + (this.getMaxLambda() + 1);
+        } else {
+            return (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
+        }
     }
 
     private int getTotalStates() {
@@ -46,10 +56,21 @@ public class KLambdaState extends State {
         if (this.index < 0)
             throw new IllegalArgumentException("State must be indexed to extract it as array");
 
-        INDArray input = kToOneHotVector(features - 1);
-        // append lambda level normalized value to input array
-        input = Nd4j.append(input, 1, this.getNormalizedLambda(), 1);
+        int kFeatures = ONE_HOT_LAMBDA? features - (this.getMaxLambda() + 1) : features-1;
+        INDArray input = kToOneHotVector(kFeatures);
+        if (!ONE_HOT_LAMBDA) {
+            // append lambda level normalized value to input array
+            input = Nd4j.append(input, 1, this.getNormalizedLambda(), 1);
+        } else {
+            input = Nd4j.concat(1, input, lambda2OneHotVector());
+        }
         return input;
+    }
+
+    private INDArray lambda2OneHotVector() {
+        INDArray oneHotVector = Nd4j.zeros(this.getMaxLambda()+1);
+        oneHotVector.put(0, this.getLambda(), 1);
+        return oneHotVector;
     }
 
     private INDArray kToOneHotVector(int features) {

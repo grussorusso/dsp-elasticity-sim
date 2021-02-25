@@ -87,10 +87,6 @@ public abstract class State {
         return str.toString();
     }
 
-    public INDArray arrayRepresentation() throws IllegalArgumentException {
-        return arrayRepresentation(getArrayRepresentationLength());
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
