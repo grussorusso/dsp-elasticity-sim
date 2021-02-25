@@ -8,6 +8,11 @@ Stream Processing applications.
 	mvn install package -DskipTests
 	java -jar target/dsp-elasticity-simulator-1.0-SNAPSHOT-shaded.jar
 
+To reduce the size of the JAR, you can add the following flag, excluding native
+libraries for platforms different than Linux x86-64:
+
+	 -Djavacpp.platform=linux-x86_64
+
 
 
 ## Configuration ##
