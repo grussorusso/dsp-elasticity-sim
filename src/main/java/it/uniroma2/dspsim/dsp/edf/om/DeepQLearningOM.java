@@ -67,34 +67,6 @@ public class DeepQLearningOM extends DeepLearningOM {
     }
 
     @Override
-    protected MultiLayerConfiguration buildNeuralNetwork() {
-        return new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Sgd(0.1))
-                .list(
-                        new DenseLayer.Builder()
-                                .nIn(this.inputLayerNodesNumber)
-                                .nOut(this.inputLayerNodesNumber * 2)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(this.inputLayerNodesNumber * 2)
-                                .nOut(this.inputLayerNodesNumber)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .nIn(this.inputLayerNodesNumber)
-                                .nOut(this.outputLayerNodesNumber)
-                                .activation(Activation.IDENTITY)
-                                .build()
-                )
-                .pretrain(false)
-                .backprop(true)
-                .build();
-    }
-
-    @Override
     protected Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
         INDArray inputs = null;
         INDArray labels = null;

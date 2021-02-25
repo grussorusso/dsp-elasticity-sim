@@ -148,6 +148,10 @@ public abstract class ConfigurationKeys {
 	public static final String DL_OM_SAMPLES_MEMORY_BATCH_KEY = "edf.dl.samples.memory.batch";
 	public static final String DL_OM_FIT_EVERY_ITERS = "edf.dl.fit.every";
 	public static final String DL_OM_NETWORK_CACHE_SIZE = "edf.dl.network.cache.size";
+	public static final String DL_OM_NETWORK_HIDDEN_NODES1_COEFF = "edf.dl.network.hidden1.nodes.coeff";
+	public static final String DL_OM_NETWORK_HIDDEN_NODES2_COEFF = "edf.dl.network.hidden2.nodes.coeff";
+	public static final String DL_OM_NETWORK_SAMPLE_SCORE = "edf.dl.network.score.sample";
+	public static final String DL_OM_NETWORK_ALPHA = "edf.dl.network.alpha";
 
 	/**
 	 * Type of ActionSelectionPolicy (ASP) to use

@@ -120,31 +120,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
         this.outputLayerNodesNumber = 1;
 
-        MultiLayerConfiguration config = new NeuralNetConfiguration.Builder()
-                .weightInit(WeightInit.XAVIER)
-                .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-                .updater(new Sgd(0.1))
-                //.updater(new RmsProp())
-                .list(
-                        new DenseLayer.Builder()
-                                .nIn(this.inputLayerNodesNumber)
-                                .nOut(this.inputLayerNodesNumber * 2)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new DenseLayer.Builder()
-                                .nIn(this.inputLayerNodesNumber * 2)
-                                .nOut(this.inputLayerNodesNumber)
-                                .activation(Activation.RELU)
-                                .build(),
-                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                .nIn(this.inputLayerNodesNumber)
-                                .nOut(this.outputLayerNodesNumber)
-                                .activation(Activation.IDENTITY)
-                                .build()
-                )
-                .pretrain(false)
-                .backprop(true)
-                .build();
+        MultiLayerConfiguration config = NeuralNetworkConfigurator.configure(inputLayerNodesNumber,outputLayerNodesNumber);
 
         this.network = new MultiLayerNetwork(config);
         network.init();

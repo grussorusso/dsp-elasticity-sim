@@ -96,6 +96,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
         System.out.println("TBVI Total Trajectories: " + trajectoriesComputed);
         System.out.println("TBVI Total Iters: " + tbviIterations);
+        this.trainingEpochsCount.update((int)tbviIterations);
     }
 
     protected State tbviIteration(State s, Action a) {

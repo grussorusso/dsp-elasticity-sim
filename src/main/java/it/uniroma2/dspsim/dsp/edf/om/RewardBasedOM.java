@@ -16,11 +16,14 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.stats.metrics.CountMetric;
 
 public abstract class RewardBasedOM extends OperatorManager {
 
     protected Action lastChosenAction;
     protected State lastState;
+
+    protected CountMetric trainingEpochsCount;
 
     private int maxInputRate;
     private int inputRateLevels;
@@ -60,6 +63,8 @@ public abstract class RewardBasedOM extends OperatorManager {
     }
 
     protected void registerMetrics(Statistics statistics) {
+        this.trainingEpochsCount = new CountMetric("TrainingCount_" + this.operator.getName());
+        statistics.registerMetric(this.trainingEpochsCount);
     }
 
     protected String getOperatorMetricName(String metricName) {
