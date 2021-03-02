@@ -39,7 +39,9 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     protected int outputLayerNodesNumber;
 
     protected MultiLayerConfiguration networkConf;
-    protected MultiLayerNetwork network;
+    protected MultiLayerNetwork network, targetNetwork;
+    private boolean useDoubleNetwork;
+    private int doubleNetworkSyncPeriod;
 
     protected double gamma;
     protected int fitNetworkEvery;
@@ -67,6 +69,8 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         this.expReplay = new ExperienceReplay(memorySize);
 
         this.fitNetworkEvery = configuration.getInteger(ConfigurationKeys.DL_OM_FIT_EVERY_ITERS, 5);
+        this.useDoubleNetwork = configuration.getBoolean(ConfigurationKeys.DL_OM_DOUBLE_NETWORK, false);
+        this.doubleNetworkSyncPeriod = configuration.getInteger(ConfigurationKeys.DL_OM_DOUBLE_NETWORK_SYNC_PERIOD, 10);
 
         // gamma initial value
         this.gamma = configuration.getDouble(ConfigurationKeys.DP_GAMMA_KEY, 0.99);
@@ -84,6 +88,12 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
         this.network = new MultiLayerNetwork(this.networkConf);
         this.network.init();
+
+        if (useDoubleNetwork) {
+            this.targetNetwork = network.clone();
+        } else {
+            this.targetNetwork = network;
+        }
 
         boolean sampleScore = configuration.getBoolean(ConfigurationKeys.DL_OM_NETWORK_SAMPLE_SCORE, false);
         if (sampleScore) {
@@ -145,10 +155,10 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         if (batch != null) {
             Pair<INDArray, INDArray> targets = getTargets(batch);
 
-            this.network.fit(targets.getLeft(), targets.getRight());
+            this.targetNetwork.fit(targets.getLeft(), targets.getRight());
 
             if (this.networkScoreMetric != null) {
-                final double score = this.network.score();
+                final double score = this.targetNetwork.score();
                 this.networkScoreMetric.update(score);
             }
 
@@ -156,6 +166,11 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
                 this.networkCache.clear();
 
             this.trainingEpochsCount.update(1);
+
+            // sync models
+            if (useDoubleNetwork && this.trainingEpochsCount.getCount().intValue() % this.doubleNetworkSyncPeriod == 0 ) {
+                this.network.setParameters(this.targetNetwork.params());
+            }
         }
     }
 

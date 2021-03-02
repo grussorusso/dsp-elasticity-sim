@@ -1,3 +1,5 @@
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -81,6 +83,33 @@ public class TestNeuralNetworkDL4j {
     }
 
     @Test
+    public void testDoubleNetwork () {
+        Nd4j.getRandom().setSeed(12345);
+
+        MultiLayerNetwork network = buildNetwork();
+        MultiLayerNetwork network2 = network.clone();
+
+        INDArray label = getLabel(7);
+
+        INDArray dataset = getDataset1(4);
+
+        network.fit(dataset, label);
+
+        network2.setParameters(network.params());
+
+        INDArray input = network.getInput();
+        input = input.put(0, 0, 5);
+        System.out.println(input);
+
+        INDArray output = network.output(input);
+        INDArray output1 = network2.output(input);
+        System.out.println(output.toString());
+        System.out.println(output1.toString());
+
+
+    }
+
+    @Test
     public void neuralNetworkTestDataset1And2() throws IOException {
         Nd4j.getRandom().setSeed(12345);
 
@@ -111,6 +140,7 @@ public class TestNeuralNetworkDL4j {
 
     private MultiLayerNetwork buildNetwork() {
         MultiLayerConfiguration networkConf = new NeuralNetConfiguration.Builder()
+                .seed(Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 12345))
                 .weightInit(WeightInit.XAVIER)
                 .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
                 .updater(new Sgd(0.05))

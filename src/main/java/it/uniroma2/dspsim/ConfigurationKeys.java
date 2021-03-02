@@ -153,6 +153,8 @@ public abstract class ConfigurationKeys {
 	public static final String DL_OM_NETWORK_SAMPLE_SCORE = "edf.dl.network.score.sample";
 	public static final String DL_OM_NETWORK_ALPHA = "edf.dl.network.alpha";
 	public static final String DL_OM_NETWORK_LAMBDA_ONE_HOT = "edf.dl.network.lambda.onehot";
+	public static final String DL_OM_DOUBLE_NETWORK = "edf.dl.network.double.enabled";
+	public static final String DL_OM_DOUBLE_NETWORK_SYNC_PERIOD = "edf.dl.network.double.sync.period";
 
 	/**
 	 * Type of ActionSelectionPolicy (ASP) to use

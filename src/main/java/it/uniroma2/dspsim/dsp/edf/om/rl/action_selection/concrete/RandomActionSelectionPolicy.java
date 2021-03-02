@@ -1,7 +1,5 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete;
 
-import it.uniroma2.dspsim.Configuration;
-import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
@@ -18,11 +16,6 @@ public class RandomActionSelectionPolicy extends ActionSelectionPolicy {
     public RandomActionSelectionPolicy(ActionSelectionPolicyCallback aspCallback) {
         super(aspCallback);
 
-        // get configuration instance
-        Configuration configuration = Configuration.getInstance();
-
-        // TODO create unique seed for each operator manager
-        //this.rng = new Random(configuration.getLong(ConfigurationKeys.ASP_R_RANDOM_SEED_KEY, 1234L));
         this.rng = new Random();
     }
 
@@ -38,5 +31,9 @@ public class RandomActionSelectionPolicy extends ActionSelectionPolicy {
         }
 
         return actions.get(this.rng.nextInt(actions.size()));
+    }
+
+    public void setSeed(long seed) {
+        this.rng.setSeed(seed);
     }
 }

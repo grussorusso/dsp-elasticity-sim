@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyComposition;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
@@ -56,7 +57,8 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
         this.epsilonDecayStepsCounter = 0;
 
         // init random number generator
-        this.rng = new Random(configuration.getLong(ConfigurationKeys.EPSGREEDY_SEED, 5234L));
+        this.rng = new Random();
+        this.setSeed(configuration.getLong(ConfigurationKeys.EPSGREEDY_SEED, 5234L));
     }
 
     @Override
@@ -108,7 +110,16 @@ public class EpsilonGreedyActionSelectionPolicy extends ActionSelectionPolicyCom
         this.epsilonDecayStepsCounter = epsilonDecayStepsCounter;
     }
 
-    public void setSeed (int seed) {
+    public void setSeed (long seed) {
         this.rng.setSeed(seed);
+
+        int i = 1;
+        for (ActionSelectionPolicy asp : this.policies) {
+            if (asp instanceof RandomActionSelectionPolicy) {
+                RandomActionSelectionPolicy rp = (RandomActionSelectionPolicy) asp;
+                ((RandomActionSelectionPolicy) asp).setSeed(seed+i);
+                i++;
+            }
+        }
     }
 }

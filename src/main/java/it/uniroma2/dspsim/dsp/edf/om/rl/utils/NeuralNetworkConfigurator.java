@@ -31,6 +31,7 @@ public class NeuralNetworkConfigurator {
 
 		if (hiddenNodes2 > 0) {
 			netConf = new NeuralNetConfiguration.Builder()
+					.seed(conf.getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 12345))
 					.weightInit(WeightInit.XAVIER)
 					.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
 					.updater(new Sgd(learningRate))
@@ -58,6 +59,7 @@ public class NeuralNetworkConfigurator {
 					inputLayerNodesNumber, hiddenNodes1, hiddenNodes2, outputLayerNodesNumber);
 		} else {
 			netConf = new NeuralNetConfiguration.Builder()
+					.seed(conf.getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 12345))
 					.weightInit(WeightInit.XAVIER)
 					.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
 					.updater(new Sgd(learningRate))
