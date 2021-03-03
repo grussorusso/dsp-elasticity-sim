@@ -94,15 +94,23 @@ public class TestNeuralNetworkDL4j {
         INDArray dataset = getDataset1(4);
 
         network.fit(dataset, label);
-
-        network2.setParameters(network.params());
-
         INDArray input = network.getInput();
         input = input.put(0, 0, 5);
         System.out.println(input);
 
         INDArray output = network.output(input);
         INDArray output1 = network2.output(input);
+        System.out.println(output.toString());
+        System.out.println(output1.toString());
+
+        network2.setParameters(network.params());
+
+        input = network.getInput();
+        input = input.put(0, 0, 5);
+        System.out.println(input);
+
+        output = network.output(input);
+        output1 = network2.output(input);
         System.out.println(output.toString());
         System.out.println(output1.toString());
 

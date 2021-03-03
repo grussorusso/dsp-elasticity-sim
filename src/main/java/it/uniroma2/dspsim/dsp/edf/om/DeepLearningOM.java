@@ -3,7 +3,6 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.ArrayBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.*;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
@@ -11,17 +10,9 @@ import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.RealValuedMetric;
 import it.uniroma2.dspsim.utils.HashCache;
 import org.apache.commons.lang3.tuple.Pair;
-import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.DenseLayer;
-import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.learning.config.Sgd;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -183,7 +174,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
             // sync models
             if (useDoubleNetwork && this.trainingEpochsCount.getCount().intValue() % this.doubleNetworkSyncPeriod == 0 ) {
-                this.network.setParameters(this.targetNetwork.params());
+                this.network = targetNetwork.clone();
             }
         }
     }

@@ -24,5 +24,5 @@ Available configuration options are currently described in `ConfigurationKeys` c
 
 ## Known Issues ##
 
-- Double Q Network (`edf.dl.network.double.enabled`) has issues 
+- Double Q Network (`edf.dl.network.double.enabled`) does not work well with `deep-v-learning` OM
 - Deeplearning4j beyond version `0.9.x` is not supported
