@@ -76,6 +76,7 @@ public abstract class ConfigurationKeys {
 
 	public static final String OM_POLICY_DUMP_DIR = "edf.om.policy.dump.dir";
 	public static final String OM_POLICY_LOAD_DIR = "edf.om.policy.load.dir";
+	public static final String OM_ENABLE_LEARNING = "edf.om.learning.enabled";
 
 	/**
 	 * Threshold based operator manager params.

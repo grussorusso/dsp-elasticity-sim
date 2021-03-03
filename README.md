@@ -20,3 +20,9 @@ libraries for platforms different than Linux x86-64:
 The default configuration file `conf.properties` is in `resources` directory.
 
 Available configuration options are currently described in `ConfigurationKeys` class.
+
+
+## Known Issues ##
+
+- Double Q Network (`edf.dl.network.double.enabled`) has issues 
+- Deeplearning4j beyond version `0.9.x` is not supported

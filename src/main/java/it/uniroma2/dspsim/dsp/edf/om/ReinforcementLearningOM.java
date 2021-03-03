@@ -13,9 +13,13 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 public abstract class ReinforcementLearningOM extends RewardBasedOM implements ActionSelectionPolicyCallback {
 
+    private boolean enabledLearning;
+
     protected ReinforcementLearningOM(Operator operator) {
         super(operator);
+        this.enabledLearning = Configuration.getInstance().getBoolean(ConfigurationKeys.OM_ENABLE_LEARNING, true);
     }
+
 
     @Override
     protected ActionSelectionPolicy initActionSelectionPolicy() {
@@ -36,7 +40,8 @@ public abstract class ReinforcementLearningOM extends RewardBasedOM implements A
     @Override
     protected void useReward(double reward, State lastState, Action lastChosenAction, State currentState, OMMonitoringInfo monitoringInfo) {
         // learning step
-        learningStep(lastState, lastChosenAction, currentState, reward);
+        if (enabledLearning)
+            learningStep(lastState, lastChosenAction, currentState, reward);
     }
 
     /**
