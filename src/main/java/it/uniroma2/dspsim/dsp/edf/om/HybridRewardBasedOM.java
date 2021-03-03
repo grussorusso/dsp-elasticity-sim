@@ -23,6 +23,9 @@ public abstract class HybridRewardBasedOM extends RewardBasedOM implements Actio
         super(operator);
 
         this.offLineOM = buildOffLineOM(approximateOperatorModel(Configuration.getInstance()));
+
+        // prevent from loading from file
+        Configuration.getInstance().setString(ConfigurationKeys.OM_POLICY_LOAD_DIR, "");
         this.onLineOM = buildOnLineOM(operator);
 
         transferKnowledge();

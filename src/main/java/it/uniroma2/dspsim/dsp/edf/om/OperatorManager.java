@@ -18,4 +18,8 @@ public abstract class OperatorManager {
 		return operator;
 	}
 
+	public void savePolicy()
+	{
+
+	}
 }

@@ -17,6 +17,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 
@@ -39,6 +40,9 @@ public class FAQLearningOM extends ReinforcementLearningOM {
         Configuration configuration = Configuration.getInstance();
 
         this.functionApproximationManager = initFunctionApproximationManager();
+        if (PolicyIOUtils.shouldLoadPolicy(configuration)) {
+            this.functionApproximationManager.load(PolicyIOUtils.getFileForLoading(this.operator, "fa"));
+        }
 
         double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 1.0);
         double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.98);
@@ -56,6 +60,13 @@ public class FAQLearningOM extends ReinforcementLearningOM {
                 this
         );
     }
+
+    @Override
+    public void savePolicy()
+    {
+        this.functionApproximationManager.dump(PolicyIOUtils.getFileForDumping(this.operator, "fa"));
+    }
+
 
     @Override
     protected void registerMetrics(Statistics statistics) {

@@ -24,8 +24,7 @@ public abstract class DynamicProgrammingOM extends RewardBasedOM {
     public DynamicProgrammingOM(Operator operator) {
         super(operator);
 
-        this.trainingInputRateFilePath = Configuration.getInstance()
-                .getString(ConfigurationKeys.TRAINING_INPUT_FILE_PATH_KEY, "/Users/simone/Documents/Tesi/profile_last_month.dat");
+        this.trainingInputRateFilePath = Configuration.getInstance().getString(ConfigurationKeys.TRAINING_INPUT_FILE_PATH_KEY, "");
 
         try {
             this.pMatrix = buildPMatrix(this.trainingInputRateFilePath, this.getMaxInputRate(), this.getInputRateLevels());

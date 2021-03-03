@@ -11,6 +11,7 @@ import it.uniroma2.dspsim.dsp.edf.am.ApplicationManagerType;
 import it.uniroma2.dspsim.dsp.edf.am.centralized.CentralizedAM;
 import it.uniroma2.dspsim.dsp.edf.om.*;
 import it.uniroma2.dspsim.dsp.edf.om.factory.OperatorManagerFactory;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,4 +81,12 @@ public class EDF {
 		return applicationManager.planReconfigurations(omMonitoringInfo, operatorManagers);
 	}
 
+	public void dumpPolicies() {
+		if (!PolicyIOUtils.shouldSavePolicy(Configuration.getInstance()))
+			return;
+
+		for (OperatorManager om : operatorManagers.values()) {
+			om.savePolicy();
+		}
+	}
 }

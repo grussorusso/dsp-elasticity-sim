@@ -5,7 +5,9 @@ import it.uniroma2.dspsim.utils.Coordinate2D;
 import it.uniroma2.dspsim.utils.Coordinate3D;
 import it.uniroma2.dspsim.utils.Geometry2DUtils;
 
-public class StripeTilingShape extends TilingShape {
+import java.io.Serializable;
+
+public class StripeTilingShape extends TilingShape implements Serializable {
     private int stripesNum;
     private double stripesSlope;
     private int zTiles;

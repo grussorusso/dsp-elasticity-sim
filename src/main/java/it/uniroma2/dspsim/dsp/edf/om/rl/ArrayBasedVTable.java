@@ -4,7 +4,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 import java.io.*;
 
-public class ArrayBasedVTable implements VTable {
+public class ArrayBasedVTable implements VTable, Serializable {
 
 	private double arr[];
 	private int size;

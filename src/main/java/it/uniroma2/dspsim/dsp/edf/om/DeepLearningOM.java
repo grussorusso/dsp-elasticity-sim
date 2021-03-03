@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.ArrayBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.*;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
@@ -24,10 +25,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Collection;
 import java.util.Iterator;
 
@@ -89,6 +87,22 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         this.network = new MultiLayerNetwork(this.networkConf);
         this.network.init();
 
+        if (PolicyIOUtils.shouldLoadPolicy(configuration)) {
+            try {
+                File f = PolicyIOUtils.getFileForLoading(this.operator, "network");
+                FileInputStream fileIn = new FileInputStream(f.getAbsolutePath());
+                ObjectInputStream in = new ObjectInputStream(fileIn);
+                INDArray params = (INDArray)  in.readObject();
+                in.close();
+                fileIn.close();
+                this.network.setParameters(params);
+            } catch (IOException i) {
+                i.printStackTrace();
+            } catch (ClassNotFoundException c) {
+                c.printStackTrace();
+            }
+        }
+
         if (useDoubleNetwork) {
             this.targetNetwork = network.clone();
         } else {
@@ -106,10 +120,10 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             this.networkCache = new HashCache<>(cacheSize);
         }
 
-        dumpPolicyOnFile(String.format("%s/%s/%s/policy",
-                Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-                Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
-                "others"));
+        //dumpPolicyOnFile(String.format("%s/%s/%s/policy",
+        //        Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
+        //        Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
+        //        "others"));
 
         if (configuration.getBoolean(ConfigurationKeys.DL_OM_ENABLE_NETWORK_UI_KEY, false)) {
             startNetworkUIServer();
@@ -188,6 +202,23 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             printWriter.print(this.network.getLayerWiseConfigurations().toJson());
             printWriter.flush();
             printWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void savePolicy()
+    {
+        try {
+            File f = PolicyIOUtils.getFileForDumping(this.operator, "network");
+            FileOutputStream fileOut = new FileOutputStream(f.getAbsolutePath());
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(this.network.params());
+            out.close();
+            fileOut.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

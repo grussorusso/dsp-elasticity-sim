@@ -7,10 +7,11 @@ import it.uniroma2.dspsim.utils.Coordinate3D;
 import it.uniroma2.dspsim.utils.Tuple2;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Feature {
+public abstract class Feature implements Serializable {
 
     public Feature() {
         initWeights();

@@ -10,7 +10,9 @@ import it.uniroma2.dspsim.utils.Coordinate3D;
 import it.uniroma2.dspsim.utils.MathUtils;
 import it.uniroma2.dspsim.utils.Tuple2;
 
-public class KLambdaResTypeTiling extends Tiling {
+import java.io.Serializable;
+
+public class KLambdaResTypeTiling extends Tiling implements Serializable {
     public KLambdaResTypeTiling(TilingShape shape, Tuple2<Double, Double> xRange, Tuple2<Double, Double> yRange) {
         super(shape, xRange, yRange);
     }

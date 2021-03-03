@@ -74,6 +74,9 @@ public abstract class ConfigurationKeys {
 	 */
 	public static final String OM_TYPE_KEY = "edf.om.type";
 
+	public static final String OM_POLICY_DUMP_DIR = "edf.om.policy.dump.dir";
+	public static final String OM_POLICY_LOAD_DIR = "edf.om.policy.load.dir";
+
 	/**
 	 * Threshold based operator manager params.
 	 */

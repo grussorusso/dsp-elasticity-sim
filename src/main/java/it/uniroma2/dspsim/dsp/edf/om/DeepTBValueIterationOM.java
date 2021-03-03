@@ -19,10 +19,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Collection;
 
 public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
@@ -52,7 +49,9 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
         this.fitNetworkEvery = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_FIT_EVERY_ITERS, 5);
 
-        tbvi(this.tbviIterations, this.tbviMillis, this.tbviTrajectoryLength);
+        if (!PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
+            tbvi(this.tbviIterations, this.tbviMillis, this.tbviTrajectoryLength);
+        }
 
         // Only used online
         int cacheSize = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_NETWORK_CACHE_SIZE, 0);
@@ -116,6 +115,22 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
         this.network = new MultiLayerNetwork(config);
         network.init();
+
+        if (PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
+            try {
+                File f = PolicyIOUtils.getFileForLoading(this.operator, "network");
+                FileInputStream fileIn = new FileInputStream(f.getAbsolutePath());
+                ObjectInputStream in = new ObjectInputStream(fileIn);
+                INDArray params = (INDArray)  in.readObject();
+                in.close();
+                fileIn.close();
+                this.network.setParameters(params);
+            } catch (IOException i) {
+                i.printStackTrace();
+            } catch (ClassNotFoundException c) {
+                c.printStackTrace();
+            }
+        }
     }
 
     @Override
@@ -131,6 +146,23 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             printWriter.print(this.network.getLayerWiseConfigurations().toJson());
             printWriter.flush();
             printWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    @Override
+    public void savePolicy()
+    {
+        try {
+            File f = PolicyIOUtils.getFileForDumping(this.operator, "network");
+            FileOutputStream fileOut = new FileOutputStream(f.getAbsolutePath());
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(this.network.params());
+            out.close();
+            fileOut.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }

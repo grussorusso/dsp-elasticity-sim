@@ -103,6 +103,10 @@ public class Configuration {
 		return defaultValue;
 	}
 
+	public void setString (String key, String value) {
+		properties.setProperty(key, value);
+	}
+
 	/**
 	 * Prints currently loaded properties
 	 * @param os OutputStream to be used.

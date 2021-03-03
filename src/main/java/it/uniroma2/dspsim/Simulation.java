@@ -6,6 +6,7 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.*;
@@ -164,6 +165,8 @@ public class Simulation {
 			time++;
 		}
 		System.out.print('\n');
+
+		edf.dumpPolicies();
 	}
 
 	private boolean checkReconfigurationPresence(Map<Operator, Reconfiguration> reconfigurations) {

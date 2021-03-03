@@ -10,10 +10,11 @@ import it.uniroma2.dspsim.utils.Tuple2;
 import it.uniroma2.dspsim.utils.matrix.Matrix;
 import it.uniroma2.dspsim.utils.matrix.cube.DoubleCube;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Tiling extends Feature {
+public abstract class Tiling extends Feature implements Serializable {
     private TilingShape shape;
     private double[] xRange;
     private double[] yRange;

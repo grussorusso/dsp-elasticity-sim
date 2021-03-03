@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelection
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
@@ -20,10 +21,7 @@ import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Random;
 
 public class ModelBasedRLOM extends ReinforcementLearningOM {
@@ -198,7 +196,52 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 		this.estimatedCost = new ArrayBasedVTable(0.0, maxStateHash);
 
 		//return new GuavaBasedQTable(0.0);
-		return new ArrayBasedQTable(0.0, maxStateHash, maxActionHash);
+		QTable q = new ArrayBasedQTable(0.0, maxStateHash, maxActionHash);
+
+		if (PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
+			q.load(PolicyIOUtils.getFileForLoading(this.operator, "qTable"));
+			estimatedCost.load(PolicyIOUtils.getFileForLoading(this.operator, "cost"));
+			loadProbabilityMatrix(PolicyIOUtils.getFileForLoading(this.operator, "matrix"));
+		}
+
+		return q;
+	}
+
+	private void dumpProbabilityMatrix (File f) {
+		try {
+			FileOutputStream fileOut = new FileOutputStream(f.getAbsolutePath());
+			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+			out.writeObject(this.pMatrix);
+			out.close();
+			fileOut.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void loadProbabilityMatrix (File f) {
+		try {
+			FileInputStream fileIn = new FileInputStream(f.getAbsolutePath());
+			ObjectInputStream in = new ObjectInputStream(fileIn);
+			this.pMatrix = (double[][])  in.readObject();
+			in.close();
+			fileIn.close();
+
+		} catch (IOException i) {
+			i.printStackTrace();
+		} catch (ClassNotFoundException c) {
+			c.printStackTrace();
+		}
+	}
+
+	@Override
+	public void savePolicy()
+	{
+		this.qTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "qTable"));
+		this.estimatedCost.dump(PolicyIOUtils.getFileForDumping(this.operator, "cost"));
+		dumpProbabilityMatrix(PolicyIOUtils.getFileForDumping(this.operator, "matrix"));
 	}
 
 	@Override

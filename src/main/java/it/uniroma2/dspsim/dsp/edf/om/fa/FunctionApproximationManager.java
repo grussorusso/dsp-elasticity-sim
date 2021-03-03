@@ -5,6 +5,7 @@ import it.uniroma2.dspsim.dsp.edf.om.fa.features.Feature;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,5 +39,34 @@ public class FunctionApproximationManager {
 
     public List<Feature> getFeatures() {
         return features;
+    }
+
+    public void dump(File f) {
+        try {
+            FileOutputStream fileOut = new FileOutputStream(f.getAbsolutePath());
+            ObjectOutputStream out = new ObjectOutputStream(fileOut);
+            out.writeObject(this.features);
+            out.close();
+            fileOut.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void load(File f) {
+        try {
+            FileInputStream fileIn = new FileInputStream(f.getAbsolutePath());
+            ObjectInputStream in = new ObjectInputStream(fileIn);
+            this.features = (List<Feature>) in.readObject();
+            in.close();
+            fileIn.close();
+
+        } catch (IOException i) {
+            i.printStackTrace();
+        } catch (ClassNotFoundException c) {
+            c.printStackTrace();
+        }
     }
 }

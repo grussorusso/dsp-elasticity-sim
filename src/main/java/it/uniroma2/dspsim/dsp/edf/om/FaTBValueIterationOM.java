@@ -17,6 +17,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,11 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         if (useApproximateModel) {
             this.operator = approximateOperatorModel(conf);
         }
-        tbvi(this.tbviIterations, this.tbviMillis,this.tbviTrajectoryLength);
+
+        if (!PolicyIOUtils.shouldLoadPolicy(conf)) {
+            tbvi(this.tbviIterations, this.tbviMillis,this.tbviTrajectoryLength);
+        }
+
         this.operator = realOperator;
     }
 
@@ -137,12 +142,23 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
                         resourcesInUseRange
                 )
         );
+
+        if (PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
+            this.functionApproximationManager.load(PolicyIOUtils.getFileForLoading(this.operator, "fa"));
+        }
     }
 
     @Override
     protected void dumpQOnFile(String filename) {
         // TODO
     }
+
+    @Override
+    public void savePolicy()
+    {
+        this.functionApproximationManager.dump(PolicyIOUtils.getFileForDumping(this.operator, "fa"));
+    }
+
 
     @Override
     protected ActionSelectionPolicy initActionSelectionPolicy() {

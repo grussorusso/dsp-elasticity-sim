@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
@@ -36,6 +37,9 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         Configuration configuration = Configuration.getInstance();
 
         this.qTable = new GuavaBasedQTable(0.0);
+        if (PolicyIOUtils.shouldLoadPolicy(configuration)) {
+            this.qTable.load(PolicyIOUtils.getFileForLoading(this.operator, "qTable"));
+        }
 
         double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.1);
         double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 1.0);
@@ -89,6 +93,12 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
                 this.alphaDecayStepsCounter = 0;
             }
         }
+    }
+
+    @Override
+    public void savePolicy()
+    {
+        this.qTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "qTable"));
     }
 
     /**

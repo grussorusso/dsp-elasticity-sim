@@ -4,7 +4,9 @@ import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.Tiling;
 import it.uniroma2.dspsim.utils.Coordinate3D;
 import it.uniroma2.dspsim.utils.Geometry2DUtils;
 
-public class RectangleTilingShape extends TilingShape {
+import java.io.Serializable;
+
+public class RectangleTilingShape extends TilingShape implements Serializable  {
 
     protected int xTiles;
     protected int yTiles;

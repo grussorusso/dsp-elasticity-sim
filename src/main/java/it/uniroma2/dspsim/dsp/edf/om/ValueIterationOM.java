@@ -13,6 +13,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelection
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
@@ -49,7 +50,11 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         if (useApproximateModel) {
             this.operator = approximateOperatorModel(configuration);
         }
-        valueIteration(maxIterations, maxTimeMillis, theta);
+
+        if (!PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
+            valueIteration(maxIterations, maxTimeMillis, theta);
+        }
+
         this.operator = realOperator;
 
         dumpQOnFile(String.format("%s/qtable",
@@ -197,6 +202,10 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
         //this.qTable = new GuavaBasedQTable(0.0);
     	this.qTable = new ArrayBasedQTable(0.0, maxStateHash, maxActionHash);
+
+        if (PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
+            this.qTable.load(PolicyIOUtils.getFileForLoading(this.operator, "qTable"));
+        }
     }
 
     @Override
@@ -262,4 +271,9 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         }
     }
 
+    @Override
+    public void savePolicy()
+    {
+        this.qTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "qTable"));
+    }
 }

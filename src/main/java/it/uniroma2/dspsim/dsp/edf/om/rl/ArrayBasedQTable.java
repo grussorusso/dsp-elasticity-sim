@@ -1,6 +1,5 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl;
 
-import com.google.common.collect.Table;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 import java.io.*;
