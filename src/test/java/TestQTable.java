@@ -13,6 +13,8 @@ import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
+
 public class TestQTable {
 
     @Test
@@ -46,6 +48,77 @@ public class TestQTable {
             }
         }
     }
+
+    @Test
+    public void testDumpingAndLoading ()
+    {
+        ComputingInfrastructure.initDefaultInfrastructure(3);
+        Operator operator = new Operator("rank", new MG1OperatorQueueModel(1.0, 0.0), 6);
+
+
+        int maxActionHash = -1;
+        int maxStateHash = -1;
+        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), 30);
+        while (stateIterator.hasNext()) {
+            State state = stateIterator.next();
+            int h = state.hashCode();
+            if (h  > maxStateHash)
+                maxStateHash = h;
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action action = actionIterator.next();
+                h = action.hashCode();
+                if (h > maxActionHash)
+                    maxActionHash = h;
+            }
+        }
+
+        QTable qTable = new ArrayBasedQTable(4.0, maxStateHash, maxActionHash);
+        qTable.dump(new File("/tmp/provaQ.ser"));
+        QTable qTable2 = new ArrayBasedQTable(0.0, maxStateHash, maxActionHash);
+        qTable2.load(new File("/tmp/provaQ.ser"));
+
+        stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), 30);
+        while (stateIterator.hasNext()) {
+            State state = stateIterator.next();
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action action = actionIterator.next();
+                Assert.assertEquals(4.0, qTable.getQ(state, action), 0.0);
+                //System.out.println(qTable.getQ(state, action));
+            }
+        }
+
+        qTable = new GuavaBasedQTable(4.0);
+        stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), 30);
+        while (stateIterator.hasNext()) {
+            State state = stateIterator.next();
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action action = actionIterator.next();
+                qTable.setQ(state, action, 4.0);
+            }
+        }
+        qTable.dump(new File("/tmp/provaQ.ser"));
+        qTable2 = new GuavaBasedQTable(0.0);
+        qTable2.load(new File("/tmp/provaQ.ser"));
+
+        stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), 30);
+        while (stateIterator.hasNext()) {
+            State state = stateIterator.next();
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action action = actionIterator.next();
+                Assert.assertEquals(4.0, qTable.getQ(state, action), 0.0);
+                //System.out.println(qTable.getQ(state, action));
+            }
+        }
+    }
+
 
     private void arrayBasedQTableHashingTest(int nodesNumber, int opMaxParallelism) {
         ComputingInfrastructure.initDefaultInfrastructure(nodesNumber);

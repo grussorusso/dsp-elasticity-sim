@@ -1,8 +1,11 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl;
 
+import com.google.common.collect.Table;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
-public class ArrayBasedQTable implements QTable {
+import java.io.*;
+
+public class ArrayBasedQTable implements QTable, Serializable {
 
 	private double arr[];
 	private int size;
@@ -30,4 +33,38 @@ public class ArrayBasedQTable implements QTable {
 		arr[index]	= value;
 	}
 
+	@Override
+	public void dump(File f) {
+		try {
+			FileOutputStream fileOut = new FileOutputStream(f.getAbsolutePath());
+			ObjectOutputStream out = new ObjectOutputStream(fileOut);
+			out.writeObject(this);
+			out.close();
+			fileOut.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	@Override
+	public void load(File f) {
+		try {
+			FileInputStream fileIn = new FileInputStream(f.getAbsolutePath());
+			ObjectInputStream in = new ObjectInputStream(fileIn);
+			ArrayBasedQTable loaded = (ArrayBasedQTable)  in.readObject();
+			if (loaded.size != this.size || loaded.maxActionHash != this.maxActionHash) {
+				throw new RuntimeException("Trying to load malformed QTable");
+			}
+			in.close();
+			fileIn.close();
+
+			this.arr = loaded.arr;
+		} catch (IOException i) {
+			i.printStackTrace();
+		} catch (ClassNotFoundException c) {
+			c.printStackTrace();
+		}
+	}
 }
