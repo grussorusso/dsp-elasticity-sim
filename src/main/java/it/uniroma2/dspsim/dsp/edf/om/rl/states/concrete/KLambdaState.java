@@ -11,7 +11,7 @@ import org.nd4j.linalg.factory.Nd4j;
 
 public class KLambdaState extends State {
 
-    private boolean ONE_HOT_LAMBDA = true;
+    private static boolean ONE_HOT_LAMBDA = true;
 
     public KLambdaState(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
         super(index, k, lambda, maxLambda, maxParallelism);
@@ -21,11 +21,15 @@ public class KLambdaState extends State {
     public int getArrayRepresentationLength() {
         ONE_HOT_LAMBDA = Configuration.getInstance().getBoolean(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, true);
 
+        int features;
+
         if (ONE_HOT_LAMBDA) {
-            return (this.getTotalStates() / (this.getMaxLambda() + 1)) + (this.getMaxLambda() + 1);
+            features = (this.getTotalStates() / (this.getMaxLambda() + 1)) + (this.getMaxLambda() + 1);
         } else {
-            return (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
+            features = (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
         }
+
+        return features;
     }
 
     private int getTotalStates() {
@@ -56,7 +60,7 @@ public class KLambdaState extends State {
         if (this.index < 0)
             throw new IllegalArgumentException("State must be indexed to extract it as array");
 
-        int kFeatures = ONE_HOT_LAMBDA? features - (this.getMaxLambda() + 1) : features-1;
+        final int kFeatures = ONE_HOT_LAMBDA? (features - (this.getMaxLambda() + 1)) : (features-1);
         INDArray input = kToOneHotVector(kFeatures);
         if (!ONE_HOT_LAMBDA) {
             // append lambda level normalized value to input array
