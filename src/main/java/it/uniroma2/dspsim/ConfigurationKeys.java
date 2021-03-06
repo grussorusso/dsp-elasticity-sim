@@ -31,6 +31,8 @@ public abstract class ConfigurationKeys {
 	 */
 	public static final String SIMULATION_STOP_TIME = "simulation.stoptime";
 	public static final String SIMULATION_DETAILED_SCALING_LOG = "simulation.log.detailedscaling";
+	public static final String STATS_SAMPLE_COST_VALUES = "output.stats.sample.cost";
+	public static final String STATS_SAMPLE_AVG_COST_VALUES = "output.stats.sample.avgcost";
 
 
 	/**

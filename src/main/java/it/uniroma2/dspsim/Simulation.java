@@ -58,10 +58,6 @@ public class Simulation {
 		logger.info("SLO latency: {}", LATENCY_SLO);
 	}
 
-	public void run() throws IOException {
-		run(-1l);
-	}
-
 	private void registerMetrics () {
 		Statistics statistics = Statistics.getInstance();
 
@@ -73,7 +69,11 @@ public class Simulation {
 		this.metricViolations = new CountMetric(STAT_LATENCY_VIOLATIONS);
 		statistics.registerMetric(metricViolations);
 
-		this.metricAvgCost = new RealValuedMetric(STAT_APPLICATION_COST_AVG, true, true);
+		Configuration conf = Configuration.getInstance();
+		boolean sampleCostValues = conf.getBoolean(ConfigurationKeys.STATS_SAMPLE_COST_VALUES, false);
+		boolean sampleAvgCost = conf.getBoolean(ConfigurationKeys.STATS_SAMPLE_AVG_COST_VALUES, true);
+
+		this.metricAvgCost = new RealValuedMetric(STAT_APPLICATION_COST_AVG, sampleCostValues, sampleAvgCost);
 		statistics.registerMetric(metricAvgCost);
 
 		this.metricReconfigurations = new CountMetric(STAT_RECONFIGURATIONS);
@@ -91,7 +91,6 @@ public class Simulation {
 
 	public void run (long stopTime) throws IOException {
 		registerMetrics();
-		Statistics stats = Statistics.getInstance();
 
 		logger.warn("Starting simulation");
 
