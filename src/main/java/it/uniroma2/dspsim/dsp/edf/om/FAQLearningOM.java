@@ -79,8 +79,6 @@ public class FAQLearningOM extends ReinforcementLearningOM {
         final double newQ = (reward + this.gamma * functionApproximationManager
                         .evaluateQ(currentState, greedyActionSelection.selectAction(currentState), this));
 
-        final double bellmanError = Math.abs(newQ - oldQ);
-
         updateWeights(newQ - oldQ, oldState, action);
 
         decrementAlpha();

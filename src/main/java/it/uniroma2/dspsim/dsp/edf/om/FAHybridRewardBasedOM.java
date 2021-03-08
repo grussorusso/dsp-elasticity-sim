@@ -1,7 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 
 public class FAHybridRewardBasedOM extends HybridRewardBasedOM {
 

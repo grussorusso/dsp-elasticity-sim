@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.KLambdaState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
 import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;

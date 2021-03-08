@@ -1,12 +1,6 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
-import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 public class DeepHybridRewardBasedOM extends HybridRewardBasedOM {
 

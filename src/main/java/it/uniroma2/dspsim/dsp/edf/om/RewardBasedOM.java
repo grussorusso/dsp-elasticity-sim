@@ -59,12 +59,16 @@ public abstract class RewardBasedOM extends OperatorManager {
         this.actionSelectionPolicy = initActionSelectionPolicy();
 
         // register statistics
-        this.registerMetrics(Statistics.getInstance());
+        try {
+            this.registerMetrics(Statistics.getInstance());
+        } catch (Statistics.MetricExistsException e ){
+            e.printStackTrace();
+        }
     }
 
     protected void registerMetrics(Statistics statistics) {
         this.trainingEpochsCount = new CountMetric("TrainingCount_" + this.operator.getName());
-        statistics.registerMetric(this.trainingEpochsCount);
+        statistics.registerMetricIfNotExists(this.trainingEpochsCount);
     }
 
     protected String getOperatorMetricName(String metricName) {

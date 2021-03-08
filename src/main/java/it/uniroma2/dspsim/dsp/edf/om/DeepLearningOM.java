@@ -111,11 +111,6 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             this.networkCache = new HashCache<>(cacheSize);
         }
 
-        //dumpPolicyOnFile(String.format("%s/%s/%s/policy",
-        //        Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-        //        Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
-        //        "others"));
-
         if (configuration.getBoolean(ConfigurationKeys.DL_OM_ENABLE_NETWORK_UI_KEY, false)) {
             startNetworkUIServer();
         }
@@ -180,23 +175,6 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     }
 
     protected abstract Pair<INDArray, INDArray> getTargets(Collection<Transition> batch);
-
-    private void dumpPolicyOnFile(String filename) {
-        // create file
-        File file = new File(filename);
-        try {
-            if (!file.exists()) {
-                file.getParentFile().mkdirs();
-                file.createNewFile();
-            }
-            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
-            printWriter.print(this.network.getLayerWiseConfigurations().toJson());
-            printWriter.flush();
-            printWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     @Override
     public void savePolicy()
