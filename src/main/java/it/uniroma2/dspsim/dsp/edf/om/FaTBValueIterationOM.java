@@ -43,7 +43,7 @@ public class FaTBValueIterationOM extends BaseTBValueIterationOM {
         }
 
         if (!PolicyIOUtils.shouldLoadPolicy(conf)) {
-            tbvi(this.tbviIterations, this.tbviMillis,this.tbviTrajectoryLength);
+            tbvi(this.tbviMaxIterations, this.tbviMillis,this.tbviTrajectoryLength);
         }
 
         this.operator = realOperator;

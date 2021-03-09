@@ -121,8 +121,8 @@ public abstract class ConfigurationKeys {
 	/**
 	 * TBVI operator manager params
 	 */
-	public static final String TBVI_EXEC_ITERATIONS_KEY = "edf.tbvi.exec.iterations";
-	public static final String TBVI_EXEC_SECONDS_KEY = "edf.tbvi.exec.seconds";
+	public static final String TBVI_EXEC_ITERATIONS_KEY = VI_MAX_ITERATIONS_KEY;
+	public static final String TBVI_EXEC_SECONDS_KEY = VI_MAX_TIME_SECONDS_KEY;
 	public static final String TBVI_TRAJECTORY_LENGTH_KEY = "edf.tbvi.trajectory.length";
 	/** Function Approximation **/
 	public static final String TBVI_FA_ALPHA_KEY = "edf.tbvi.fa.alpha";

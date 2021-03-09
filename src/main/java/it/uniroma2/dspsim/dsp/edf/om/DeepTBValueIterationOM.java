@@ -50,7 +50,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         this.fitNetworkEvery = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_FIT_EVERY_ITERS, 5);
 
         if (!PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
-            tbvi(this.tbviIterations, this.tbviMillis, this.tbviTrajectoryLength);
+            tbvi(this.tbviMaxIterations, this.tbviMillis, this.tbviTrajectoryLength);
         }
 
         // Only used online

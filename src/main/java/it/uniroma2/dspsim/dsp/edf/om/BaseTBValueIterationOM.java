@@ -45,7 +45,8 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         this.tbviMillis = configuration.getLong(ConfigurationKeys.TBVI_EXEC_SECONDS_KEY, 60L) * 1000;
         this.tbviTrajectoryLength = configuration.getLong(ConfigurationKeys.TBVI_TRAJECTORY_LENGTH_KEY, 512L);
 
-        this.rng = new Random();
+        final int seed = configuration.getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 1) + 5;
+        this.rng = new Random(seed);
     }
 
     protected void tbvi(long maxIterations, long millis, long trajectoryLength) {
@@ -85,14 +86,15 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
             tl++;
 
-            elapsedMillis += (System.currentTimeMillis() - startIteration);
 
             tbviIterations++;
+            elapsedMillis += (System.currentTimeMillis() - startIteration);
         }
 
         System.out.println("TBVI Total Trajectories: " + trajectoriesComputed);
         System.out.println("TBVI Total Iters: " + tbviIterations);
         this.trainingEpochsCount.update((int)tbviIterations);
+        this.planningTimeMetric.update((int)(elapsedMillis));
     }
 
     protected State tbviIteration(State s, Action a) {

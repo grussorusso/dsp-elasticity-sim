@@ -17,6 +17,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.CountMetric;
+import it.uniroma2.dspsim.stats.metrics.RealValuedMetric;
 
 public abstract class RewardBasedOM extends OperatorManager {
 
@@ -24,6 +25,7 @@ public abstract class RewardBasedOM extends OperatorManager {
     protected State lastState;
 
     protected CountMetric trainingEpochsCount;
+    protected RealValuedMetric planningTimeMetric;
 
     private int maxInputRate;
     private int inputRateLevels;
@@ -69,6 +71,9 @@ public abstract class RewardBasedOM extends OperatorManager {
     protected void registerMetrics(Statistics statistics) {
         this.trainingEpochsCount = new CountMetric("TrainingCount_" + this.operator.getName());
         statistics.registerMetricIfNotExists(this.trainingEpochsCount);
+
+        this.planningTimeMetric = new RealValuedMetric("PlanningTime_" + this.operator.getName());
+        statistics.registerMetricIfNotExists(this.planningTimeMetric);
     }
 
     protected String getOperatorMetricName(String metricName) {

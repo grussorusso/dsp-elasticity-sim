@@ -106,15 +106,14 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);
-            // if max iterations is greater than 0 increment counter
-            if (maxIterations > 0) {
-                stepsCounter++;
-                if (stepsCounter == maxIterations) {
-                    break;
-                }
+            stepsCounter++;
+            if (maxIterations > 0 && stepsCounter == maxIterations) {
+                break;
             }
         }
 
+        this.trainingEpochsCount.update(stepsCounter);
+        this.planningTimeMetric.update((int)(System.currentTimeMillis() - startIterationTime));
     }
 
     private double vi() {
