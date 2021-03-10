@@ -24,12 +24,47 @@ public class NeuralNetworkConfigurator {
 				2.0));
 		int hiddenNodes2 = (int)Math.round(hiddenNodes1*conf.getDouble(ConfigurationKeys.DL_OM_NETWORK_HIDDEN_NODES2_COEFF,
 				0.5));
+		int hiddenNodes3 = (int)Math.round(hiddenNodes2*conf.getDouble(ConfigurationKeys.DL_OM_NETWORK_HIDDEN_NODES3_COEFF,
+				0.0));
 
 		final double learningRate = conf.getDouble(ConfigurationKeys.DL_OM_NETWORK_ALPHA, 0.1);
 
 		MultiLayerConfiguration netConf;
 
-		if (hiddenNodes2 > 0) {
+		if (hiddenNodes3 > 0) {
+			netConf = new NeuralNetConfiguration.Builder()
+					.seed(conf.getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 12345))
+					.weightInit(WeightInit.XAVIER)
+					.optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
+					.updater(new Sgd(learningRate))
+					.list(
+							new DenseLayer.Builder()
+									.nIn(inputLayerNodesNumber)
+									.nOut(hiddenNodes1)
+									.activation(Activation.RELU)
+									.build(),
+							new DenseLayer.Builder()
+									.nIn(hiddenNodes1)
+									.nOut(hiddenNodes2)
+									.activation(Activation.RELU)
+									.build(),
+							new DenseLayer.Builder()
+									.nIn(hiddenNodes2)
+									.nOut(hiddenNodes3)
+									.activation(Activation.RELU)
+									.build(),
+							new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
+									.nIn(hiddenNodes3)
+									.nOut(outputLayerNodesNumber)
+									.activation(Activation.IDENTITY)
+									.build()
+					)
+					.pretrain(false)
+					.backprop(true)
+					.build();
+			LoggerFactory.getLogger(NeuralNetworkConfigurator.class).info("NeuralNet: {}-{}-{}-{}-{}",
+					inputLayerNodesNumber, hiddenNodes1, hiddenNodes2, hiddenNodes3, outputLayerNodesNumber);
+		}else if (hiddenNodes2 > 0) {
 			netConf = new NeuralNetConfiguration.Builder()
 					.seed(conf.getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 12345))
 					.weightInit(WeightInit.XAVIER)

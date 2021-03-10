@@ -12,6 +12,7 @@ import org.nd4j.linalg.factory.Nd4j;
 public class KLambdaState extends State {
 
     private static boolean ONE_HOT_LAMBDA = true;
+    private static boolean REDUCED_K_REPRESENTATION = true;
 
     public KLambdaState(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
         super(index, k, lambda, maxLambda, maxParallelism);
@@ -23,10 +24,22 @@ public class KLambdaState extends State {
 
         int features;
 
-        if (ONE_HOT_LAMBDA) {
-            features = (this.getTotalStates() / (this.getMaxLambda() + 1)) + (this.getMaxLambda() + 1);
+        if (REDUCED_K_REPRESENTATION) {
+            final int nodeTypes = ComputingInfrastructure.getInfrastructure().getNodeTypes().length;
+
+            features = maxParallelism * nodeTypes;
+            features += Math.pow(2, nodeTypes)-1;
+            if (ONE_HOT_LAMBDA) {
+                features += this.getMaxLambda() + 1;
+            } else {
+                features += 1;
+            }
         } else {
-            features = (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
+            if (ONE_HOT_LAMBDA) {
+                features = (this.getTotalStates() / (this.getMaxLambda() + 1)) + (this.getMaxLambda() + 1);
+            } else {
+                features = (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
+            }
         }
 
         return features;
@@ -45,7 +58,7 @@ public class KLambdaState extends State {
 
     @Override
     public INDArray arrayRepresentation(int features) throws IllegalArgumentException {
-        if (this.getIndex() < 0) {
+        if (!REDUCED_K_REPRESENTATION && this.getIndex() < 0) {
             StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
                     ComputingInfrastructure.getInfrastructure(), this.getMaxLambda() + 1);
             while (stateIterator.hasNext()) {
@@ -55,13 +68,19 @@ public class KLambdaState extends State {
                     break;
                 }
             }
+
+            if (this.index < 0)
+                throw new IllegalArgumentException("State must be indexed to extract it as array");
         }
 
-        if (this.index < 0)
-            throw new IllegalArgumentException("State must be indexed to extract it as array");
+        INDArray input;
+        if (!REDUCED_K_REPRESENTATION) {
+            final int kFeatures = ONE_HOT_LAMBDA ? (features - (this.getMaxLambda() + 1)) : (features - 1);
+            input = kToOneHotVector(kFeatures);
+        } else {
+            input = kToReducedOneHotVector();
+        }
 
-        final int kFeatures = ONE_HOT_LAMBDA? (features - (this.getMaxLambda() + 1)) : (features-1);
-        INDArray input = kToOneHotVector(kFeatures);
         if (!ONE_HOT_LAMBDA) {
             // append lambda level normalized value to input array
             input = Nd4j.append(input, 1, this.getNormalizedLambda(), 1);
@@ -85,8 +104,23 @@ public class KLambdaState extends State {
         // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
         INDArray oneHotVector = Nd4j.create(features);
         oneHotVector.put(0, Math.floorDiv(this.getIndex(), this.getMaxLambda() + 1), 1);
-        //oneHotVector.put(0, this.getIndex(), 1);
         return oneHotVector;
     }
 
+    private INDArray kToReducedOneHotVector () {
+        final int size = maxParallelism * actualDeployment.length + (1 << actualDeployment.length) - 1;
+        INDArray oneHotVector = Nd4j.zeros(size);
+
+        int setOfTypesIndex = 0;
+        for (int i = 0; i < this.actualDeployment.length; i++)  {
+            final int toSetIndex = i * maxParallelism + (this.actualDeployment[i] - 1);
+            oneHotVector.put(0, toSetIndex, 1);
+            if (this.actualDeployment[i] > 0)
+                setOfTypesIndex += (1 << i);
+        }
+        oneHotVector.put(0, maxParallelism * actualDeployment.length + setOfTypesIndex-1, 1);
+
+
+        return oneHotVector;
+    }
 }

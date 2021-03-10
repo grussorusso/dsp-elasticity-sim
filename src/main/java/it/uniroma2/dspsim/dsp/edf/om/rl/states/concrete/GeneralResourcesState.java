@@ -1,6 +1,5 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete;
 
-import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
@@ -8,9 +7,7 @@ import it.uniroma2.dspsim.utils.MathUtils;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
-import java.util.Objects;
-
+@Deprecated
 public class GeneralResourcesState extends State {
 
     private double normalizedCPUSpeedup;

@@ -1,5 +1,6 @@
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.NeuralNetworkConfigurator;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -134,6 +135,7 @@ public class TestNeuralNetworkDL4j {
         for (Layer layer : network.getLayers())
             printWeights(layer, 10, "Dataset 1 and 2");
     }
+
 
     private void printWeights(Layer layer, int paramsToRead, String printTitle) {
         StringBuilder str = new StringBuilder(String.format("%s\n\nLayer: %d\n", printTitle, layer.getIndex()));

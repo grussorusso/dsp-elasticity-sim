@@ -9,7 +9,7 @@ import java.util.Arrays;
 public abstract class State {
 
     protected int index;
-    private int [] actualDeployment;
+    protected int [] actualDeployment;
     private int lambda;
     private int maxLambda;
 
