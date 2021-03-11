@@ -3,7 +3,6 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.KLambdaState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
 import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -40,8 +39,7 @@ public class DeepQLearningOM extends DeepLearningOM {
     }
 
     private INDArray buildInput(State state) {
-        //State indexedState = getIndexedState(state);
-        return state.arrayRepresentation(this.stateFeatures);
+        return state.arrayRepresentation(this.neuralStateRepresentation);
     }
 
     /**
@@ -55,7 +53,7 @@ public class DeepQLearningOM extends DeepLearningOM {
 
     @Override
     protected int computeInputLayerNodesNumber() {
-        return this.stateFeatures;
+        return this.neuralStateRepresentation.getRepresentationLength();
     }
 
     @Override

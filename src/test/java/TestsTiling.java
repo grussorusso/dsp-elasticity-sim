@@ -8,7 +8,7 @@ import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.shape.RectangleTilingSha
 import it.uniroma2.dspsim.dsp.edf.om.fa.features.tiling.shape.StripeTilingShape;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete.KLambdaState;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.KLambdaState;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.utils.Coordinate3D;

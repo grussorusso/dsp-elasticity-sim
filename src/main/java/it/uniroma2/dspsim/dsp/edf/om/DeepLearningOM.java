@@ -4,8 +4,8 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.NeuralStateRepresentation;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.*;
-import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.RealValuedMetric;
 import it.uniroma2.dspsim.utils.HashCache;
@@ -21,7 +21,6 @@ import java.util.Collection;
 import java.util.Iterator;
 
 public abstract class DeepLearningOM extends ReinforcementLearningOM {
-    protected int stateFeatures;
     protected int numActions;
 
     protected int inputLayerNodesNumber;
@@ -30,6 +29,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     protected MultiLayerConfiguration networkConf;
     protected MultiLayerNetwork network, targetNetwork;
     private boolean useDoubleNetwork;
+    protected NeuralStateRepresentation neuralStateRepresentation;
     private int doubleNetworkSyncPeriod;
 
     protected double gamma;
@@ -64,9 +64,8 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         // gamma initial value
         this.gamma = configuration.getDouble(ConfigurationKeys.DP_GAMMA_KEY, 0.99);
 
-        this.stateFeatures = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(),
-                this.getInputRateLevels()).next().getArrayRepresentationLength();
+        this.neuralStateRepresentation = new NeuralStateRepresentation(this.operator.getMaxParallelism(),
+                this.getInputRateLevels());
         this.numActions = this.getTotalActions();
 
         // input and output layer nodes number

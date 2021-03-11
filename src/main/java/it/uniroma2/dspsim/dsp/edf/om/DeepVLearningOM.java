@@ -114,8 +114,7 @@ public class DeepVLearningOM extends DeepLearningOM {
     }
 
     private INDArray buildInput(State state) {
-        //State indexedState = getIndexedState(state);
-        return state.arrayRepresentation(this.stateFeatures);
+        return state.arrayRepresentation(this.neuralStateRepresentation);
     }
 
     /**
@@ -127,7 +126,7 @@ public class DeepVLearningOM extends DeepLearningOM {
 
     @Override
     protected int computeInputLayerNodesNumber() {
-        return this.stateFeatures;
+        return this.neuralStateRepresentation.getRepresentationLength();
     }
 
 

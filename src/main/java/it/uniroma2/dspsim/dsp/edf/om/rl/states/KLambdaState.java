@@ -1,64 +1,25 @@
-package it.uniroma2.dspsim.dsp.edf.om.rl.states.concrete;
+package it.uniroma2.dspsim.dsp.edf.om.rl.states;
 
-import it.uniroma2.dspsim.Configuration;
-import it.uniroma2.dspsim.ConfigurationKeys;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+// TODO: the current class hierarchy should be revised
+// There is no reason to keep this class distinct from State any more
 public class KLambdaState extends State {
-
-    private static boolean ONE_HOT_LAMBDA = true;
-    private static boolean REDUCED_K_REPRESENTATION = true;
 
     public KLambdaState(int index, int[] k, int lambda, int maxLambda, int maxParallelism) {
         super(index, k, lambda, maxLambda, maxParallelism);
     }
 
-    @Override
-    public int getArrayRepresentationLength() {
-        ONE_HOT_LAMBDA = Configuration.getInstance().getBoolean(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, true);
 
-        int features;
-
-        if (REDUCED_K_REPRESENTATION) {
-            final int nodeTypes = ComputingInfrastructure.getInfrastructure().getNodeTypes().length;
-
-            features = maxParallelism * nodeTypes;
-            features += Math.pow(2, nodeTypes)-1;
-            if (ONE_HOT_LAMBDA) {
-                features += this.getMaxLambda() + 1;
-            } else {
-                features += 1;
-            }
-        } else {
-            if (ONE_HOT_LAMBDA) {
-                features = (this.getTotalStates() / (this.getMaxLambda() + 1)) + (this.getMaxLambda() + 1);
-            } else {
-                features = (this.getTotalStates() / (this.getMaxLambda() + 1)) + 1;
-            }
-        }
-
-        return features;
-    }
-
-    private int getTotalStates() {
-        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
-                ComputingInfrastructure.getInfrastructure(), this.getMaxLambda() + 1);
-        int count = 0;
-        while (stateIterator.hasNext()) {
-            stateIterator.next();
-            count++;
-        }
-        return count;
-    }
 
     @Override
-    public INDArray arrayRepresentation(int features) throws IllegalArgumentException {
-        if (!REDUCED_K_REPRESENTATION && this.getIndex() < 0) {
+    public INDArray arrayRepresentation(NeuralStateRepresentation repr) throws IllegalArgumentException {
+        final int features = repr.getRepresentationLength();
+
+        if (!repr.reducedDeploymentRepresentation && this.getIndex() < 0) {
             StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
                     ComputingInfrastructure.getInfrastructure(), this.getMaxLambda() + 1);
             while (stateIterator.hasNext()) {
@@ -74,14 +35,14 @@ public class KLambdaState extends State {
         }
 
         INDArray input;
-        if (!REDUCED_K_REPRESENTATION) {
-            final int kFeatures = ONE_HOT_LAMBDA ? (features - (this.getMaxLambda() + 1)) : (features - 1);
+        if (!repr.reducedDeploymentRepresentation) {
+            final int kFeatures = repr.oneHotForLambda ? (features - (this.getMaxLambda() + 1)) : (features - 1);
             input = kToOneHotVector(kFeatures);
         } else {
-            input = kToReducedOneHotVector();
+            input = kToReducedOneHotVector(repr.useResourceSetInReducedRepr);
         }
 
-        if (!ONE_HOT_LAMBDA) {
+        if (!repr.oneHotForLambda) {
             // append lambda level normalized value to input array
             input = Nd4j.append(input, 1, this.getNormalizedLambda(), 1);
         } else {
@@ -107,8 +68,11 @@ public class KLambdaState extends State {
         return oneHotVector;
     }
 
-    private INDArray kToReducedOneHotVector () {
-        final int size = maxParallelism * actualDeployment.length + (1 << actualDeployment.length) - 1;
+    private INDArray kToReducedOneHotVector (boolean useResourceSet) {
+        int size = maxParallelism * actualDeployment.length;
+        if (useResourceSet)
+            size += (1 << actualDeployment.length) - 1;
+
         INDArray oneHotVector = Nd4j.zeros(size);
 
         int setOfTypesIndex = 0;
@@ -118,7 +82,9 @@ public class KLambdaState extends State {
             if (this.actualDeployment[i] > 0)
                 setOfTypesIndex += (1 << i);
         }
-        oneHotVector.put(0, maxParallelism * actualDeployment.length + setOfTypesIndex-1, 1);
+
+        if (useResourceSet)
+            oneHotVector.put(0, maxParallelism * actualDeployment.length + setOfTypesIndex-1, 1);
 
 
         return oneHotVector;

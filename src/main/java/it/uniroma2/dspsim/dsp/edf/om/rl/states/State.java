@@ -110,7 +110,5 @@ public abstract class State {
         return h;
     }
 
-    public abstract INDArray arrayRepresentation(int features) throws IllegalArgumentException;
-
-    public abstract int getArrayRepresentationLength();
+    public abstract INDArray arrayRepresentation(NeuralStateRepresentation repr) throws IllegalArgumentException;
 }

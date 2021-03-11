@@ -8,6 +8,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.NeuralStateRepresentation;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.*;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.utils.HashCache;
@@ -30,6 +31,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     private ExperienceReplay expReplay;
     private int batchSize;
     private int fitNetworkEvery;
+    protected NeuralStateRepresentation neuralStateRepresentation;
     private HashCache<State,INDArray> networkCache = null;
 
     private Logger log = LoggerFactory.getLogger(DeepTBValueIterationOM.class);
@@ -59,7 +61,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             this.networkCache = new HashCache<>(cacheSize);
         }
 
-
         // dumpQOnFile(String.format("%s/%s/%s/policy",
        //         Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
        //         Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
@@ -69,7 +70,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     }
 
     private INDArray buildInput(State state) {
-        return state.arrayRepresentation(this.inputLayerNodesNumber);
+        return state.arrayRepresentation(this.neuralStateRepresentation);
     }
 
     private double getV (State state) {
@@ -105,9 +106,10 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void buildQ() {
-        this.inputLayerNodesNumber = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(),
-                this.getInputRateLevels()).next().getArrayRepresentationLength();
+        this.neuralStateRepresentation = new NeuralStateRepresentation(this.operator.getMaxParallelism(),
+                this.getInputRateLevels());
+
+        this.inputLayerNodesNumber = this.neuralStateRepresentation.getRepresentationLength();
 
         this.outputLayerNodesNumber = 1;
 
