@@ -246,8 +246,10 @@ public class Simulation {
 					is.close();
 				} catch (FileNotFoundException e) {
 					e.printStackTrace();
+					System.exit(1);
 				} catch (IOException e) {
 					e.printStackTrace();
+					System.exit(1);
 				}
 			}
 		}
@@ -258,24 +260,31 @@ public class Simulation {
 				new double[]{1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5},
 				conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
 
+		Simulation simulation = null;
+
 		try {
 			final String inputFile = conf
 					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
 			Application app = ApplicationBuilder.buildApplication();
-			Simulation simulation = new Simulation(inputRateFileReader, app);
+			simulation = new Simulation(inputRateFileReader, app);
 
 			long stopTime = conf.getLong(ConfigurationKeys.SIMULATION_STOP_TIME, -1l);
 			simulation.run(stopTime);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
 
+
+		try {
 			/* Dump used configuration in output folder. */
 			simulation.dumpConfigs();
 
 			/* Dump statistics in output folder. */
 			simulation.dumpStats();
-
-		} catch (IOException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
