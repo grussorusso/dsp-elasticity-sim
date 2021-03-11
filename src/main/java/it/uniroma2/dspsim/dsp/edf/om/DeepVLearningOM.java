@@ -33,8 +33,15 @@ public class DeepVLearningOM extends DeepLearningOM {
 
     public DeepVLearningOM(Operator operator) {
         super(operator);
+    }
 
-        this.greedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.GREEDY, this);
+    @Override
+    protected ActionSelectionPolicy initActionSelectionPolicy() {
+        this.greedyASP = ActionSelectionPolicyFactory.getPolicy(
+                ActionSelectionPolicyType.GREEDY,
+                this
+        );
+        return this.greedyASP;
     }
 
     @Override

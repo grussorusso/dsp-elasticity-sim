@@ -55,11 +55,15 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         this.alphaDecayStepsCounter = 0;
 
         this.gamma = configuration.getDouble(ConfigurationKeys.DP_GAMMA_KEY,0.99);
+    }
 
+    @Override
+    protected ActionSelectionPolicy initActionSelectionPolicy() {
         this.greedyActionSelection = ActionSelectionPolicyFactory.getPolicy(
                 ActionSelectionPolicyType.GREEDY,
                 this
         );
+        return this.greedyActionSelection;
     }
 
     @Override
