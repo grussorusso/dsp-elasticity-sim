@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
@@ -28,7 +29,7 @@ import java.util.Collection;
 public class DeepVLearningOM extends DeepLearningOM {
 
     // this asp is used to select action in learning step
-    private ActionSelectionPolicy greedyASP;
+    private ActionSelectionPolicy greedyASP, targetGreedyASP;
 
 
     public DeepVLearningOM(Operator operator) {
@@ -41,6 +42,26 @@ public class DeepVLearningOM extends DeepLearningOM {
                 ActionSelectionPolicyType.GREEDY,
                 this
         );
+
+        if (!useDoubleNetwork) {
+            this.targetGreedyASP = this.greedyASP;
+        } else {
+            this.targetGreedyASP = ActionSelectionPolicyFactory.getPolicy(
+                    ActionSelectionPolicyType.GREEDY,
+                    new ActionSelectionPolicyCallback() {
+                        @Override
+                        public boolean validateAction(State s, Action a) {
+                            return this.validateAction(s,a);
+                        }
+
+                        @Override
+                        public double evaluateAction(State s, Action a) {
+                            return getTargetQ(s, a);
+                        }
+                    }
+            );
+
+        }
         return this.greedyASP;
     }
 
@@ -64,8 +85,8 @@ public class DeepVLearningOM extends DeepLearningOM {
             // unknown cost
             double cU = t.getReward() - computeActionCost(t.getA()) -
                     (StateUtils.computeDeploymentCostNormalized(pdState, this) * this.getwResources());
-            Action greedyAction = this.greedyASP.selectAction(t.getNextS());
-            double newV = getQ(t.getNextS(), greedyAction) * gamma + cU;
+            Action greedyAction = this.targetGreedyASP.selectAction(t.getNextS());
+            double newV = getTargetQ(t.getNextS(), greedyAction) * gamma + cU;
 
             INDArray v = new NDArray(1,1);
             v.put(0, 0, newV);
@@ -86,11 +107,18 @@ public class DeepVLearningOM extends DeepLearningOM {
     }
 
     private double getV(State state) {
+        INDArray input = buildInput(state);
+        INDArray output = this.network.output(input);
+
+        return output.getDouble(0);
+    }
+
+    private double getTargetV (State state) {
         if (hasNetworkCache() && networkCache.containsKey(state))
             return (double)networkCache.get(state);
 
         INDArray input = buildInput(state);
-        INDArray output = this.network.output(input);
+        INDArray output = this.targetNetwork.output(input);
 
         double v = output.getDouble(0);
 
@@ -103,6 +131,12 @@ public class DeepVLearningOM extends DeepLearningOM {
     private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
         double v = getV(postDecisionState);
+        return v + computeActionCost(action) + (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
+    }
+
+    private double getTargetQ(State state, Action action) {
+        State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
+        double v = getTargetV(postDecisionState);
         return v + computeActionCost(action) + (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
     }
 

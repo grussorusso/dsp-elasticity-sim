@@ -26,11 +26,18 @@ public class DeepQLearningOM extends DeepLearningOM {
     }
 
     private INDArray getQ(State state) {
+        INDArray input = buildInput(state);
+        INDArray output = this.network.output(input);
+
+        return output;
+    }
+
+    private INDArray getTargetQ(State state) {
         if (hasNetworkCache() && networkCache.containsKey(state))
             return (INDArray)networkCache.get(state);
 
         INDArray input = buildInput(state);
-        INDArray output = this.network.output(input);
+        INDArray output = this.targetNetwork.output(input);
 
         if (hasNetworkCache())
             networkCache.put(state, output.dup());
@@ -65,7 +72,7 @@ public class DeepQLearningOM extends DeepLearningOM {
             // get old state network output
             INDArray qs = getQ(t.getS());
             // get current state network output
-            INDArray qns = getQ(t.getNextS());
+            INDArray qns = getTargetQ(t.getNextS());
 
             //System.out.println("qs has shape: " + qs.shapeInfoToString());
 

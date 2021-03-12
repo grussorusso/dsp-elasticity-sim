@@ -28,7 +28,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
     protected MultiLayerConfiguration networkConf;
     protected MultiLayerNetwork network, targetNetwork;
-    private boolean useDoubleNetwork;
+    protected boolean useDoubleNetwork;
     protected NeuralStateRepresentation neuralStateRepresentation;
     private int doubleNetworkSyncPeriod;
 
@@ -154,21 +154,23 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         if (batch != null) {
             Pair<INDArray, INDArray> targets = getTargets(batch);
 
-            this.targetNetwork.fit(targets.getLeft(), targets.getRight());
+            this.network.fit(targets.getLeft(), targets.getRight());
 
             if (this.networkScoreMetric != null) {
-                final double score = this.targetNetwork.score();
+                final double score = this.network.score();
                 this.networkScoreMetric.update(score);
             }
-
-            if (hasNetworkCache())
-                this.networkCache.clear();
 
             this.trainingEpochsCount.update(1);
 
             // sync models
             if (useDoubleNetwork && this.trainingEpochsCount.getCount().intValue() % this.doubleNetworkSyncPeriod == 0 ) {
-                this.network = targetNetwork.clone();
+                this.targetNetwork = network.clone();
+                if (hasNetworkCache())
+                    this.networkCache.clear();
+            } else if (!useDoubleNetwork) {
+                if (hasNetworkCache())
+                    this.networkCache.clear();
             }
         }
     }
