@@ -31,6 +31,9 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     private int fitNetworkEvery;
     protected NeuralStateRepresentation neuralStateRepresentation;
 
+    private INDArray inputs;
+    private INDArray labels;
+
     private Logger log = LoggerFactory.getLogger(DeepTBValueIterationOM.class);
 
     protected CachedNeuralNetwork network;
@@ -45,6 +48,9 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         this.batchSize = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_SAMPLES_MEMORY_BATCH_KEY,32);
         final int memory = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_SAMPLES_MEMORY_SIZE_KEY, 10000);
         this.expReplay = new ExperienceReplay(memory);
+
+        this.inputs = Nd4j.create(batchSize, neuralStateRepresentation.getRepresentationLength());
+        this.labels = Nd4j.create(batchSize, 1);
 
         this.fitNetworkEvery = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_FIT_EVERY_ITERS, 5);
 
@@ -208,24 +214,17 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     }
 
     private Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
-        INDArray inputs = null;
-        INDArray labels = null;
-
+        int row = 0;
         for (Transition t : batch) {
             State pds = StateUtils.computePostDecisionState(t.getS(), t.getA(), this);
             // transform post decision state in network input
             INDArray trainingInput = buildInput(pds);
+            inputs.putRow(row, trainingInput);
             // set label to reward
-            double targetValue = evaluateNewQ(t.getS(), t.getA()) - computeActionCost(t.getA());
-            INDArray label = Nd4j.create(1).put(0, 0, targetValue);
+            final double targetValue = evaluateNewQ(t.getS(), t.getA()) - computeActionCost(t.getA());
+            labels.put(row, 0, targetValue);
 
-            if (inputs == null) {
-                inputs = trainingInput;
-                labels = label;
-            } else {
-                inputs = Nd4j.concat(0, inputs, trainingInput);
-                labels = Nd4j.concat(0, labels, label);
-            }
+            row++;
         }
         return Pair.of(inputs, labels);
     }

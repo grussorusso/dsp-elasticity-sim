@@ -34,59 +34,48 @@ public class KLambdaState extends State {
                 throw new IllegalArgumentException("State must be indexed to extract it as array");
         }
 
-        INDArray input;
+        INDArray input = Nd4j.zeros(1, features);
+        int offset = 0;
         if (!repr.reducedDeploymentRepresentation) {
+            kToOneHotVector(input);
             final int kFeatures = repr.oneHotForLambda ? (features - (this.getMaxLambda() + 1)) : (features - 1);
-            input = kToOneHotVector(kFeatures);
+            offset += kFeatures;
         } else {
-            input = kToReducedOneHotVector(repr.useResourceSetInReducedRepr);
+            kToReducedOneHotVector(input, repr.useResourceSetInReducedRepr);
+            offset = maxParallelism * actualDeployment.length;
+            if (repr.useResourceSetInReducedRepr)
+                offset += (1 << actualDeployment.length) - 1;
         }
 
         if (!repr.oneHotForLambda) {
             // append lambda level normalized value to input array
-            input = Nd4j.append(input, 1, this.getNormalizedLambda(), 1);
+            input.put(0, offset, this.getNormalizedLambda());
         } else {
-            input = Nd4j.concat(1, input, lambda2OneHotVector());
+            input.put(0, offset + this.getLambda(), 1);
         }
         return input;
     }
 
-    private INDArray lambda2OneHotVector() {
-        INDArray oneHotVector = Nd4j.zeros(this.getMaxLambda()+1);
-        oneHotVector.put(0, this.getLambda(), 1);
-        return oneHotVector;
-    }
-
-    private INDArray kToOneHotVector(int features) {
+    private void kToOneHotVector(INDArray input) {
         // generate one hot vector starting from (1, 0, 0, ... , 0)
         // to represent (1, 0, ... , 0) state
         // and proceed with (0, 1, 0, ... , 0)
         // to represent (2, 0, 0) state and so on until
         // (0, 0, 0, ... , 1) to represent (0, 0, ... , maxParallelism) state
-        INDArray oneHotVector = Nd4j.create(features);
-        oneHotVector.put(0, Math.floorDiv(this.getIndex(), this.getMaxLambda() + 1), 1);
-        return oneHotVector;
+        input.put(0, Math.floorDiv(this.getIndex(), this.getMaxLambda() + 1), 1);
     }
 
-    private INDArray kToReducedOneHotVector (boolean useResourceSet) {
-        int size = maxParallelism * actualDeployment.length;
-        if (useResourceSet)
-            size += (1 << actualDeployment.length) - 1;
-
-        INDArray oneHotVector = Nd4j.zeros(size);
+    private void kToReducedOneHotVector (INDArray input, boolean useResourceSet) {
 
         int setOfTypesIndex = 0;
         for (int i = 0; i < this.actualDeployment.length; i++)  {
             final int toSetIndex = i * maxParallelism + (this.actualDeployment[i] - 1);
-            oneHotVector.put(0, toSetIndex, 1);
+            input.put(0, toSetIndex, 1);
             if (this.actualDeployment[i] > 0)
                 setOfTypesIndex += (1 << i);
         }
 
         if (useResourceSet)
-            oneHotVector.put(0, maxParallelism * actualDeployment.length + setOfTypesIndex-1, 1);
-
-
-        return oneHotVector;
+            input.put(0, maxParallelism * actualDeployment.length + setOfTypesIndex-1, 1);
     }
 }

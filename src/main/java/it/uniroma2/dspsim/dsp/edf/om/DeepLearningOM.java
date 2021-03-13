@@ -36,7 +36,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
 
     protected ExperienceReplay expReplay;
-    private int batchSize;
+    protected int batchSize;
     private RealValuedMetric networkScoreMetric = null;
 
     static private Logger log = LoggerFactory.getLogger(DeepLearningOM.class);

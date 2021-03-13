@@ -11,10 +11,8 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
 import org.apache.commons.lang3.tuple.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -32,9 +30,14 @@ public class DeepVLearningOM extends DeepLearningOM {
     // this asp is used to select action in learning step
     private ActionSelectionPolicy greedyASP, targetGreedyASP;
 
+    private INDArray inputs;
+    private INDArray labels;
 
     public DeepVLearningOM(Operator operator) {
         super(operator);
+
+        this.inputs = Nd4j.create(batchSize, neuralStateRepresentation.getRepresentationLength());
+        this.labels = Nd4j.create(batchSize, 1);
     }
 
     @Override
@@ -76,9 +79,6 @@ public class DeepVLearningOM extends DeepLearningOM {
 
     @Override
     protected Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
-        INDArray inputs = Nd4j.create(batch.size(), neuralStateRepresentation.getRepresentationLength());
-        INDArray labels = Nd4j.create(batch.size(), 1);
-
         int row = 0;
         for (Transition t : batch) {
             // get post decision state from old state and action
