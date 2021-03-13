@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 /**
@@ -75,9 +76,10 @@ public class DeepVLearningOM extends DeepLearningOM {
 
     @Override
     protected Pair<INDArray, INDArray> getTargets(Collection<Transition> batch) {
-        INDArray inputs = null;
-        INDArray labels = null;
+        INDArray inputs = Nd4j.create(batch.size(), neuralStateRepresentation.getRepresentationLength());
+        INDArray labels = Nd4j.create(batch.size(), 1);
 
+        int row = 0;
         for (Transition t : batch) {
             // get post decision state from old state and action
             State pdState = StateUtils.computePostDecisionState(t.getS(), t.getA(), this);
@@ -88,19 +90,13 @@ public class DeepVLearningOM extends DeepLearningOM {
             Action greedyAction = this.targetGreedyASP.selectAction(t.getNextS());
             double newV = getTargetQ(t.getNextS(), greedyAction) * gamma + cU;
 
-            INDArray v = new NDArray(1,1);
-            v.put(0, 0, newV);
+            labels.put(row, 0, newV);
 
             // get post decision input array
             INDArray trainingInput = buildInput(pdState);
+            inputs.putRow(row, trainingInput);
 
-            if (inputs == null) {
-                inputs = trainingInput;
-                labels = v;
-            } else {
-                inputs = Nd4j.concat(0, inputs, trainingInput);
-                labels = Nd4j.concat(0, labels, v);
-            }
+            ++row;
         }
 
         return Pair.of(inputs, labels);
