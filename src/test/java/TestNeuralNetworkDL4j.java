@@ -1,6 +1,15 @@
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
+import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.NeuralStateRepresentation;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.NeuralNetworkConfigurator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
+import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
+import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -19,6 +28,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 public class TestNeuralNetworkDL4j {
@@ -134,6 +144,43 @@ public class TestNeuralNetworkDL4j {
 
         for (Layer layer : network.getLayers())
             printWeights(layer, 10, "Dataset 1 and 2");
+    }
+
+    @Test
+    public void hashingStates() {
+        ComputingInfrastructure.initDefaultInfrastructure(5);
+        Operator operator = new Operator("rank",
+                new MG1OperatorQueueModel(1.0, 0.0), 12);
+
+
+        final int lambdaLevels = 20;
+        ArrayList<State> states = new ArrayList<>();
+        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), lambdaLevels);
+        while (stateIterator.hasNext()) {
+            State state = stateIterator.next();
+            states.add(state);
+        }
+
+        NeuralStateRepresentation repr = new NeuralStateRepresentation(operator.getMaxParallelism(), lambdaLevels);
+        ArrayList<INDArray> inputs = new ArrayList<>(states.size());
+        for (State s : states) {
+            inputs.add(s.arrayRepresentation(repr));
+        }
+
+        long t0 = System.currentTimeMillis();
+        long result = 123;
+        for (State s : states) {
+            result = (result + s.hashCode()) % 145;
+        }
+        System.out.println(System.currentTimeMillis()-t0);
+
+        t0 = System.currentTimeMillis();
+        result = 123;
+        for (INDArray s : inputs) {
+            result = (result + s.hashCode()) % 145;
+        }
+        System.out.println(System.currentTimeMillis()-t0);
     }
 
 

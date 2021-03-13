@@ -26,27 +26,11 @@ public class DeepQLearningOM extends DeepLearningOM {
     }
 
     private INDArray getQ(State state) {
-        INDArray input = buildInput(state);
-        INDArray output = this.network.output(input);
-
-        return output;
+        return this.network.output(state);
     }
 
     private INDArray getTargetQ(State state) {
-        if (hasNetworkCache() && networkCache.containsKey(state))
-            return (INDArray)networkCache.get(state);
-
-        INDArray input = buildInput(state);
-        INDArray output = this.targetNetwork.output(input);
-
-        if (hasNetworkCache())
-            networkCache.put(state, output.dup());
-
-        return output;
-    }
-
-    private INDArray buildInput(State state) {
-        return state.arrayRepresentation(this.neuralStateRepresentation);
+        return this.targetNetwork.output(state);
     }
 
     /**

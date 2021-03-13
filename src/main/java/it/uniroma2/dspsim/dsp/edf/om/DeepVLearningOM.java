@@ -107,25 +107,11 @@ public class DeepVLearningOM extends DeepLearningOM {
     }
 
     private double getV(State state) {
-        INDArray input = buildInput(state);
-        INDArray output = this.network.output(input);
-
-        return output.getDouble(0);
+        return network.output(state).getDouble(0);
     }
 
     private double getTargetV (State state) {
-        if (hasNetworkCache() && networkCache.containsKey(state))
-            return (double)networkCache.get(state);
-
-        INDArray input = buildInput(state);
-        INDArray output = this.targetNetwork.output(input);
-
-        double v = output.getDouble(0);
-
-        if (hasNetworkCache())
-            networkCache.put(state, v);
-
-        return v;
+        return targetNetwork.output(state).getDouble(0);
     }
 
     private double getQ(State state, Action action) {
@@ -147,9 +133,6 @@ public class DeepVLearningOM extends DeepLearningOM {
             return 0;
     }
 
-    private INDArray buildInput(State state) {
-        return state.arrayRepresentation(this.neuralStateRepresentation);
-    }
 
     /**
      * DEEP LEARNING OM

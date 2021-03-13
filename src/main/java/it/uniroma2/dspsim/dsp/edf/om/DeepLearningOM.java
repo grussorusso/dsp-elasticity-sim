@@ -3,12 +3,11 @@ package it.uniroma2.dspsim.dsp.edf.om;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.NeuralStateRepresentation;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.*;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.RealValuedMetric;
-import it.uniroma2.dspsim.utils.HashCache;
 import org.apache.commons.lang3.tuple.Pair;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -27,15 +26,14 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
     protected int outputLayerNodesNumber;
 
     protected MultiLayerConfiguration networkConf;
-    protected MultiLayerNetwork network, targetNetwork;
+    protected CachedNeuralNetwork network, targetNetwork;
     protected boolean useDoubleNetwork;
-    protected NeuralStateRepresentation neuralStateRepresentation;
     private int doubleNetworkSyncPeriod;
+    protected NeuralStateRepresentation neuralStateRepresentation;
 
     protected double gamma;
     protected int fitNetworkEvery;
 
-    protected HashCache<State, Object> networkCache = null;
 
     protected ExperienceReplay expReplay;
     private int batchSize;
@@ -74,7 +72,8 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
         this.networkConf = buildNeuralNetwork();
 
-        this.network = new MultiLayerNetwork(this.networkConf);
+        final int cacheSize = configuration.getInteger(ConfigurationKeys.DL_OM_NETWORK_CACHE_SIZE, 0);
+        this.network = new CachedNeuralNetwork(this.networkConf, cacheSize, neuralStateRepresentation);
         this.network.init();
 
         if (PolicyIOUtils.shouldLoadPolicy(configuration)) {
@@ -94,7 +93,8 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
         }
 
         if (useDoubleNetwork) {
-            this.targetNetwork = network.clone();
+            this.targetNetwork = new CachedNeuralNetwork(this.networkConf, cacheSize, neuralStateRepresentation);
+            this.targetNetwork.setParameters(this.network.params());
         } else {
             this.targetNetwork = network;
         }
@@ -105,19 +105,13 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             Statistics.getInstance().registerMetric(this.networkScoreMetric);
         }
 
-        int cacheSize = configuration.getInteger(ConfigurationKeys.DL_OM_NETWORK_CACHE_SIZE, 0);
-        if (cacheSize > 0) {
-            this.networkCache = new HashCache<>(cacheSize);
-        }
-
         if (configuration.getBoolean(ConfigurationKeys.DL_OM_ENABLE_NETWORK_UI_KEY, false)) {
             startNetworkUIServer();
         }
     }
 
-    protected boolean hasNetworkCache()
-    {
-        return this.networkCache != null;
+    protected INDArray buildInput(State state) {
+        return state.arrayRepresentation(this.neuralStateRepresentation);
     }
 
     private void startNetworkUIServer() {
@@ -165,12 +159,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
             // sync models
             if (useDoubleNetwork && this.trainingEpochsCount.getCount().intValue() % this.doubleNetworkSyncPeriod == 0 ) {
-                this.targetNetwork = network.clone();
-                if (hasNetworkCache())
-                    this.networkCache.clear();
-            } else if (!useDoubleNetwork) {
-                if (hasNetworkCache())
-                    this.networkCache.clear();
+                this.targetNetwork.setParameters(this.network.params());
             }
         }
     }
