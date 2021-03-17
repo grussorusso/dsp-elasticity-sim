@@ -26,22 +26,14 @@ public class OperatorManagerFactory {
                 return new QLearningPDSOM(operator);
             case FA_Q_LEARNING:
                 return new FAQLearningOM(operator);
-            case DEEP_Q_LEARNING:
-                return new DeepQLearningOM(operator);
-            case DEEP_V_LEARNING:
-                return new DeepVLearningOM(operator);
             case VALUE_ITERATION:
                 return new ValueIterationOM(operator);
             case VALUE_ITERATION_SPLITQ:
                 return new ValueIterationSplitQOM(operator);
             case FA_TRAJECTORY_BASED_VALUE_ITERATION:
                 return new FaTBValueIterationOM(operator);
-            case DEEP_TRAJECTORY_BASED_VALUE_ITERATION:
-                return new DeepTBValueIterationOM(operator);
             case FA_HYBRID:
                 return new FAHybridRewardBasedOM(operator);
-            case DEEP_HYBRID:
-                return new DeepHybridRewardBasedOM(operator);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not valid operator manager type: " + operatorManagerType.toString());
