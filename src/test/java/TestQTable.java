@@ -1,15 +1,20 @@
+import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.edf.om.FAQLearningOM;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.ArrayBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.NeuralStateRepresentation;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.NeuralNetworkConfigurator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
+import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,6 +35,66 @@ public class TestQTable {
         //doubleMatrixAsQTableHashingTest(5, 10);
         //doubleMatrixAsQTableHashingTest(10, 5);
         //doubleMatrixAsQTableHashingTest(10, 10);
+    }
+
+    @Test
+    public void qSizeTest() {
+        int arrResTypes[] = {1, 2, 4, 6, 8, 10};
+        int parallelism[] = {5,10,15,20};
+        int lambdaLevels = 20;
+
+        for (int p : parallelism)  {
+            for (int resTypes : arrResTypes) {
+            ComputingInfrastructure.initDefaultInfrastructure(resTypes);
+                long qEntries = 0;
+
+                StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, p,
+                        ComputingInfrastructure.getInfrastructure(), lambdaLevels);
+                while (stateIterator.hasNext()) {
+                    State state = stateIterator.next();
+                    //int h = state.hashCode();
+                    ActionIterator actionIterator = new ActionIterator();
+                    while (actionIterator.hasNext()) {
+                        Action action = actionIterator.next();
+                        //h = action.hashCode();
+                        if (state.validateAction(action))
+                            qEntries++;
+                    }
+                }
+
+                // Comparison
+                Operator operator = new Operator("rank",
+                        new MG1OperatorQueueModel(1.0, 0.0), p);
+                FAQLearningOM faq = new FAQLearningOM(operator);
+                final int faFeatures = faq.getFeaturesCount();
+
+                // NOTE: configuration is used here:
+                NeuralStateRepresentation repr = new NeuralStateRepresentation(p, lambdaLevels);
+                int deepInput = repr.getRepresentationLength();
+                int layerNeurons = (int)(deepInput * 0.75);
+                // 1st hidden
+                long weights = layerNeurons * deepInput + layerNeurons;
+                deepInput = layerNeurons;
+                layerNeurons = (int)(layerNeurons * 0.75);
+                // 2nd hidden
+                weights += layerNeurons * deepInput + layerNeurons;
+                deepInput = layerNeurons;
+                layerNeurons = (int)(layerNeurons * 0.75);
+                // 3rd hidden
+                weights += layerNeurons * deepInput + layerNeurons;
+                deepInput = layerNeurons;
+                // output
+                weights += deepInput;
+
+                String out = String.format("%d;%d;%d;%d;%d;%.2f;%.2f;%.2f", resTypes, p, qEntries, faFeatures, weights,
+                        usedMemory(qEntries), usedMemory(faFeatures), usedMemory(weights));
+                System.out.println(out);
+            }
+        }
+    }
+
+    private  double usedMemory(long params) {
+        return (double)params/1024.0/1024.0*Double.BYTES;
     }
 
     private void doubleMatrixAsQTableHashingTest(int nodesNumber, int opMaxParallelism) {
@@ -218,4 +283,5 @@ public class TestQTable {
             }
         }
     }
+
 }

@@ -30,4 +30,9 @@ public class RectangleTilingShape extends TilingShape implements Serializable  {
 
         return new Coordinate3D(x, y, z);
     }
+
+    @Override
+    public int getTiles() {
+        return xTiles*yTiles * ((zTiles > 0) ? zTiles : 1);
+    }
 }

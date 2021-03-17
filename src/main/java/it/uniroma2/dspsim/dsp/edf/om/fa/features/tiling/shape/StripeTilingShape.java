@@ -51,4 +51,9 @@ public class StripeTilingShape extends TilingShape implements Serializable {
 
         return new Coordinate3D(delta, offset, z);
     }
+
+    @Override
+    public int getTiles() {
+        return this.stripesNum * (zTiles > 0? zTiles : 1);
+    }
 }

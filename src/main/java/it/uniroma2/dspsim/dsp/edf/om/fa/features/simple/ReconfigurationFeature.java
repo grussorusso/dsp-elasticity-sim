@@ -46,4 +46,9 @@ public class ReconfigurationFeature extends Feature {
     public List<Tuple2<Object, Double>> getWeights() {
         return Collections.singletonList(new Tuple2<>(0, this.weights[0]));
     }
+
+    @Override
+    public int getWeightsCount() {
+        return this.weights.length;
+    }
 }

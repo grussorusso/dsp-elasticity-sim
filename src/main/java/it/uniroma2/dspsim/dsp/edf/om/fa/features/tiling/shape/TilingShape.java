@@ -11,4 +11,6 @@ public abstract class TilingShape implements Serializable {
      * map Coordinate3D given by (state, action) couple in a tile described by a Coordinate3D
      */
     public abstract Coordinate3D map(Coordinate3D coordinate3D, Tiling tiling);
+
+    public abstract int getTiles();
 }

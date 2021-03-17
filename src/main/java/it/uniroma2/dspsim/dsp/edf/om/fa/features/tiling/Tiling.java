@@ -112,4 +112,9 @@ public abstract class Tiling extends Feature implements Serializable {
     public double getMaxY() { return yRange[1]; }
     public double getMinZ() { return zRange[0]; }
     public double getMaxZ() { return zRange[1]; }
+
+    @Override
+    public int getWeightsCount() {
+        return this.shape.getTiles();
+    }
 }

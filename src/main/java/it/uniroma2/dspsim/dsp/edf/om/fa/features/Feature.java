@@ -27,4 +27,6 @@ public abstract class Feature implements Serializable {
     public abstract boolean isActive(State state, Action action, RewardBasedOM om);
     public abstract double evaluate(State state, Action action, RewardBasedOM om);
     public abstract List<Tuple2<Object, Double>> getWeights();
+
+    public abstract int getWeightsCount();
 }

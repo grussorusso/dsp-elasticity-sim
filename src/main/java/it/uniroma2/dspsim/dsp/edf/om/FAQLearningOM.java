@@ -18,6 +18,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyTy
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
+import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 
@@ -94,6 +95,16 @@ public class FAQLearningOM extends ReinforcementLearningOM {
         }
     }
 
+    public int getFeaturesCount()
+    {
+        int w = 0;
+        for (Feature f : this.functionApproximationManager.getFeatures()) {
+            w += f.getWeightsCount();
+        }
+
+        return w;
+    }
+
     private FunctionApproximationManager initFunctionApproximationManager() {
         FunctionApproximationManager fa = new FunctionApproximationManager();
 
@@ -103,7 +114,7 @@ public class FAQLearningOM extends ReinforcementLearningOM {
 
 
         // compute max resource types in use in the same moment
-        int resTypesNumber = Configuration.getInstance().getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3);
+        int resTypesNumber = ComputingInfrastructure.getInfrastructure().getNodeTypes().length;// Configuration.getInstance().getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3);
 
         // compute first tiling parameters
         double[] parallelismRange = new double[] {1, this.operator.getMaxParallelism() + 1};
