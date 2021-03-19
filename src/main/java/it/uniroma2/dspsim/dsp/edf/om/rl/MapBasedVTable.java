@@ -1,32 +1,34 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl;
 
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+import it.unimi.dsi.fastutil.Hash;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 import java.io.*;
+import java.util.HashMap;
+import java.util.Map;
 
-public class GuavaBasedQTable implements QTable {
+public class MapBasedVTable implements VTable {
 
-	private Table<Integer, Integer, Double> table = HashBasedTable.create();
+	private Map<Integer, Double> table = new HashMap<>();
 	private double initializationValue;
 
-	public GuavaBasedQTable(double initializationValue) {
+	public MapBasedVTable(double initializationValue) {
 		this.initializationValue = initializationValue;
 	}
 
 	@Override
-	public double getQ(State s, AbstractAction a) {
-		Double q = table.get(s.hashCode(),a.hashCode());
+	public double getV(State s) {
+		Double q = table.get(s.hashCode());
 		if (q == null)
-			return initializationValue; // TODO put() before returning?
+			return initializationValue;
 
 		return q;
 	}
 
 	@Override
-	public void setQ(State s, AbstractAction a, double value) {
-		table.put(s.hashCode(), a.hashCode(), value);
+	public void setV(State s, double value) {
+		table.put(s.hashCode(), value);
 	}
 
 	@Override
@@ -49,7 +51,7 @@ public class GuavaBasedQTable implements QTable {
 		try {
 			FileInputStream fileIn = new FileInputStream(f.getAbsolutePath());
 			ObjectInputStream in = new ObjectInputStream(fileIn);
-			this.table = (Table<Integer, Integer, Double>)in.readObject();
+			this.table = (HashMap<Integer, Double>)in.readObject();
 			in.close();
 			fileIn.close();
 		} catch (IOException i) {

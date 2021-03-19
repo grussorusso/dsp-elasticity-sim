@@ -4,8 +4,8 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
-import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.VTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.VTableFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class QLearningPDSOM extends ReinforcementLearningOM {
-    private QTable qTable;
+    private VTable vTable;
 
     private VariableParameter alpha;
     private int alphaDecaySteps;
@@ -36,9 +36,9 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         // get configuration instance
         Configuration configuration = Configuration.getInstance();
 
-        this.qTable = new GuavaBasedQTable(0.0);
+        this.vTable = VTableFactory.newVTable(operator.getMaxParallelism(), getInputRateLevels());
         if (PolicyIOUtils.shouldLoadPolicy(configuration)) {
-            this.qTable.load(PolicyIOUtils.getFileForLoading(this.operator, "qTable"));
+            this.vTable.load(PolicyIOUtils.getFileForLoading(this.operator, "vTable"));
         }
 
         double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 0.1);
@@ -73,18 +73,17 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
 
     @Override
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
-        Action nullA = new Action(0,0,0);
         final State pds = StateUtils.computePostDecisionState(oldState, action, this);
 
         double unknownCost = reward - getwResources()*StateUtils.computeDeploymentCostNormalized(pds,this);
         if (action.getDelta()!=0)
             unknownCost -= getwReconf();
 
-        final double oldV  = qTable.getQ(oldState, nullA);
+        final double oldV  = vTable.getV(oldState);
         final double newV = (1.0 - alpha.getValue()) * oldV + alpha.getValue() * (unknownCost +
                         this.gamma * evaluateAction(currentState, greedyActionSelection.selectAction(currentState)));
 
-        qTable.setQ(pds, nullA, newV);
+        vTable.setV(pds, newV);
 
         decrementAlpha();
     }
@@ -102,7 +101,7 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
     @Override
     public void savePolicy()
     {
-        this.qTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "qTable"));
+        this.vTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "vTable"));
     }
 
     /**
@@ -116,7 +115,7 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         if (a.getDelta() != 0)
             knownCost += getwReconf();
         knownCost += getwResources() * StateUtils.computeDeploymentCostNormalized(pds, this);
-        double v = qTable.getQ(pds, new Action(0,0,0));
+        double v = vTable.getV(pds);
         return v + knownCost;
     }
 }

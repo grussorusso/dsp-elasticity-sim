@@ -6,7 +6,7 @@ import it.uniroma2.dspsim.dsp.edf.om.request.ReconfigurationScore;
 import it.uniroma2.dspsim.dsp.edf.om.request.RewardBasedOMRequest;
 import it.uniroma2.dspsim.dsp.edf.om.request.SplitQReconfigurationScore;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.MapBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
@@ -53,13 +53,13 @@ public class ValueIterationSplitQOM extends ValueIterationOM {
 	protected void buildQ() {
 		super.buildQ();
 
-		this.reconfigurationQ = new GuavaBasedQTable(0.0);
-		this.resourcesQ = new GuavaBasedQTable(0.0);
-		this.sloQ = new GuavaBasedQTable(0.0);
+		this.reconfigurationQ = new MapBasedQTable(0.0);
+		this.resourcesQ = new MapBasedQTable(0.0);
+		this.sloQ = new MapBasedQTable(0.0);
 
-		this.respTimeQ = new GuavaBasedQTable(0.0);
+		this.respTimeQ = new MapBasedQTable(0.0);
 
-		this.voidPolicyRespTimeQ = new GuavaBasedQTable(0.0);
+		this.voidPolicyRespTimeQ = new MapBasedQTable(0.0);
 	}
 
 		@Override

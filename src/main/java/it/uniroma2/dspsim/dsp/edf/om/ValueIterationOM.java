@@ -6,6 +6,7 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.ArrayBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.QTableFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
@@ -181,26 +182,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
     @Override
     protected void buildQ() {
-        int maxActionHash = -1;
-        int maxStateHash = -1;
-        StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
-        while (stateIterator.hasNext()) {
-            State state = stateIterator.next();
-            int h = state.hashCode();
-            if (h  > maxStateHash)
-                maxStateHash = h;
-            ActionIterator actionIterator = new ActionIterator();
-            while (actionIterator.hasNext()) {
-                Action action = actionIterator.next();
-                h = action.hashCode();
-                if (h > maxActionHash)
-                    maxActionHash = h;
-            }
-        }
-
-        //this.qTable = new GuavaBasedQTable(0.0);
-    	this.qTable = new ArrayBasedQTable(0.0, maxStateHash, maxActionHash);
+        this.qTable = QTableFactory.newQTable(operator.getMaxParallelism(), getInputRateLevels());
 
         if (PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
             this.qTable.load(PolicyIOUtils.getFileForLoading(this.operator, "qTable"));

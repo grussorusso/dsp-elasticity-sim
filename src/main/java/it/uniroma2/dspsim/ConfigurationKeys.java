@@ -100,7 +100,10 @@ public abstract class ConfigurationKeys {
 	/** Lambda levels */
 	public static final String RL_OM_INPUT_RATE_LEVELS_KEY = "edf.rl.om.input.rate.levels";
 	/** State representation */
+	@Deprecated
 	public static final String RL_OM_STATE_REPRESENTATION_KEY = "edf.rl.om.state.representation";
+
+	public static final String RL_DEFAULT_QTABLE_IMPL = "edf.rl.om.qtable.impl";
 
 	/**
 	 * Dynamic Programming params

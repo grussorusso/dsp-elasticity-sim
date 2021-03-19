@@ -8,7 +8,6 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
-import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
@@ -165,24 +164,6 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 	}
 
 	private QTable buildQ() {
-		int maxActionHash = -1;
-		int maxStateHash = -1;
-		StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, operator.getMaxParallelism(),
-				ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
-		while (stateIterator.hasNext()) {
-			State state = stateIterator.next();
-			int h = state.hashCode();
-			if (h  > maxStateHash)
-				maxStateHash = h;
-			ActionIterator actionIterator = new ActionIterator();
-			while (actionIterator.hasNext()) {
-				Action action = actionIterator.next();
-				h = action.hashCode();
-				if (h > maxActionHash)
-					maxActionHash = h;
-			}
-		}
-
 		this.transitionsMatrix = new int[getInputRateLevels()][getInputRateLevels()];
 		this.pMatrix = new double[getInputRateLevels()][getInputRateLevels()];
 
@@ -193,10 +174,8 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 			}
 		}
 
-		this.estimatedCost = new ArrayBasedVTable(0.0, maxStateHash);
-
-		//return new GuavaBasedQTable(0.0);
-		QTable q = new ArrayBasedQTable(0.0, maxStateHash, maxActionHash);
+		this.estimatedCost = VTableFactory.newVTable(operator.getMaxParallelism(), getInputRateLevels());
+		QTable q = QTableFactory.newQTable(operator.getMaxParallelism(), getInputRateLevels());
 
 		if (PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
 			q.load(PolicyIOUtils.getFileForLoading(this.operator, "qTable"));

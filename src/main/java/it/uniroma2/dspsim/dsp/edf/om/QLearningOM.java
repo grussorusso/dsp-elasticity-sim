@@ -4,8 +4,9 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
-import it.uniroma2.dspsim.dsp.edf.om.rl.GuavaBasedQTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.MapBasedQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
+import it.uniroma2.dspsim.dsp.edf.om.rl.QTableFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
@@ -32,7 +33,7 @@ public class QLearningOM extends ReinforcementLearningOM {
         // get configuration instance
         Configuration configuration = Configuration.getInstance();
 
-        this.qTable = new GuavaBasedQTable(0.0);
+        this.qTable = QTableFactory.newQTable(operator.getMaxParallelism(), getInputRateLevels());
 
         if (PolicyIOUtils.shouldLoadPolicy(configuration)) {
             this.qTable.load(PolicyIOUtils.getFileForLoading(this.operator, "qTable"));
