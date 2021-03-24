@@ -207,6 +207,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             if (batch != null) {
                 Pair<INDArray, INDArray> targets = getTargets(batch);
                 this.network.fit(targets.getLeft(), targets.getRight());
+                updateDeltaRunningAvg(network.score());
             }
         }
 

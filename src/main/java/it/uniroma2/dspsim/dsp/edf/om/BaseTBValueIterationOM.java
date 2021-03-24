@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyTy
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.concrete.EpsilonGreedyActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.StateType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
@@ -32,6 +33,8 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     protected long tbviMaxIterations;
     protected long tbviMillis;
     protected long tbviTrajectoryLength;
+
+    private double deltaRunningAvg = 0.0;
 
     public BaseTBValueIterationOM(Operator operator) {
         super(operator);
@@ -65,8 +68,9 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         long elapsedMillis = 0L;
 
         while ((maxIterations <= 0L || tbviIterations < maxIterations) && (millis <= 0L || elapsedMillis < millis)) {
-            if (tbviIterations % 10000 == 0)
-                System.out.println("TBVI: " + tbviIterations + " iteration completed");
+            if (tbviIterations % 10000 == 0) {
+                System.out.printf("TBVI: %d iterations (delta = %.4f)\n",tbviIterations, deltaRunningAvg);
+            }
 
             long startIteration = System.currentTimeMillis();
 
@@ -74,7 +78,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
                 tl = 0L;
             if (tl == 0L) {
                 resetTrajectoryData();
-                state = randomState();
+                state = randomInitialState(trajectoriesComputed);
 
                 trajectoriesComputed++;
             }
@@ -102,6 +106,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         double newQ = evaluateNewQ(s, a);
 
         double delta = newQ - oldQ;
+        updateDeltaRunningAvg(delta);
 
         learn(delta, newQ, s, a);
 
@@ -131,19 +136,30 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         return count;
     }
 
-    private State randomState() {
+    static private boolean RANDOM_NG = true;
+    private State randomInitialState(long trajectoriesCount) {
 
-        int randomIndex = rng.nextInt(this.statesCount);
-        StateIterator stateIterator = new StateIterator(getStateRepresentation(), this.operator.getMaxParallelism(),
-                ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
+        if (!RANDOM_NG) {
+            int randomIndex = rng.nextInt(this.statesCount);
+            StateIterator stateIterator = new StateIterator(getStateRepresentation(), this.operator.getMaxParallelism(),
+                    ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
 
-        State s = null;
-        while (stateIterator.hasNext()) {
-            s = stateIterator.next();
-            if (s.getIndex() == randomIndex)
-                return s;
+            State s = null;
+            while (stateIterator.hasNext()) {
+                s = stateIterator.next();
+                if (s.getIndex() == randomIndex)
+                    return s;
+            }
+            return s;
+        } else {
+            final int randomResType = rng.nextInt(ComputingInfrastructure.getInfrastructure().getNodeTypes().length);
+            final int parallelism = 1 + rng.nextInt(operator.getMaxParallelism());
+            final int rate = (int)trajectoriesCount % getInputRateLevels();
+            int k[] = new int[ComputingInfrastructure.getInfrastructure().getNodeTypes().length];
+            k[randomResType] = parallelism;
+            return StateFactory.createState(StateType.K_LAMBDA, -1, k, rate, getInputRateLevels()-1,
+                    operator.getMaxParallelism());
         }
-        return s;
     }
 
     protected State sampleNextState(State s, Action a) {
@@ -194,6 +210,11 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         }
 
         return cost;
+    }
+
+    protected void updateDeltaRunningAvg (double delta) {
+        final double alpha = 0.001;
+        deltaRunningAvg = alpha * Math.abs(delta) + (1.0-alpha) * deltaRunningAvg;
     }
 
     @Override
