@@ -8,6 +8,8 @@ public class LoadBalancerFactory {
         switch (type) {
             case ROUND_ROBIN_LB:
                 return new RoundRobinLoadBalancer();
+            case HEURISTIC_LB:
+                return new HeuristicLoadBalancer();
             default:
                 throw new IllegalArgumentException("Load Balancer type not known");
         }
