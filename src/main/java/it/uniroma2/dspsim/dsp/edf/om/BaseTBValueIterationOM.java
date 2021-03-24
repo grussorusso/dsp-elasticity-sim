@@ -136,6 +136,10 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         return count;
     }
 
+    protected double computeResourcesCost (State pds) {
+        return StateUtils.computeDeploymentCostNormalized(pds, this) * this.getwResources();
+    }
+
     static private boolean RANDOM_NG = true;
     private State randomInitialState(long trajectoriesCount) {
 
