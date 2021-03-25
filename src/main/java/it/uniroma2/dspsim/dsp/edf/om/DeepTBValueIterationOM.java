@@ -77,7 +77,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
     private double getQ(State state, Action action) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
         final double v = getV(postDecisionState);
-        return v + computeActionCost(action);
+        return v + computeResourcesCost(postDecisionState) + computeActionCost(action);
     }
 
     @Override
@@ -222,7 +222,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             INDArray trainingInput = buildInput(pds);
             inputs.putRow(row, trainingInput);
             // set label to reward
-            final double targetValue = evaluateNewQ(t.getS(), t.getA()) - computeActionCost(t.getA());
+            final double targetValue = evaluateNewQ(t.getS(), t.getA()) - computeActionCost(t.getA()) - computeResourcesCost(pds);
             labels.put(row, 0, targetValue);
 
             row++;
