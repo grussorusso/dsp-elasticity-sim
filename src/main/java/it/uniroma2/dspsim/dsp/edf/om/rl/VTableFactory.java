@@ -13,7 +13,7 @@ public class VTableFactory {
 
 	public static VTable newVTable(int maxParallelism, int lambdaLevels)
 	{
-		String impl = Configuration.getInstance().getString(ConfigurationKeys.RL_DEFAULT_QTABLE_IMPL, "guava");
+		String impl = Configuration.getInstance().getString(ConfigurationKeys.RL_DEFAULT_QTABLE_IMPL, "map");
 		if (impl.equalsIgnoreCase("array"))
 			return newArrayBasedVTable(maxParallelism, lambdaLevels);
 		else

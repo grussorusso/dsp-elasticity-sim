@@ -47,10 +47,13 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 	private int skipFullBackupAfter;
 	private int fullBackupEvery;
 	private int onlineVIMaxIter;
+	private int updatedStateActions = 0;
 
 	private int time = 0;
 	private Logger logger = LoggerFactory.getLogger(ModelBasedRLOM.class);
 
+
+	private static final int SINGLE_ITERATION_HARD_TIMEOUT_SEC = 60;
 
 	public ModelBasedRLOM(Operator operator) {
 		super(operator);
@@ -295,6 +298,8 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 	}
 
 	private double fullBackup() {
+		long _t0 = System.currentTimeMillis();
+
 		double delta = 0.0;
 		for (int iter = 0; iter < onlineVIMaxIter; ++iter) {
 			delta = 0.0;
@@ -306,12 +311,19 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 				State state = stateIterator.next();
 				double newDelta = computeValueIteration(state);
 				delta = Math.max(delta, newDelta);
+
+				if (System.currentTimeMillis() - _t0 > 1000.0*SINGLE_ITERATION_HARD_TIMEOUT_SEC)
+					throw new RuntimeException("ModelBased single iteration taking more than SINGLE_ITERATION_HARD_TIMEOUT_SEC");
 			}
 
 			logger.info("Delta: " + delta);
 			if (delta < 0.0001)
 				break;
 		}
+
+		this.trainingEpochsCount.update(updatedStateActions);
+		updatedStateActions = 0;
+		this.planningTimeMetric.update((int)(System.currentTimeMillis() - _t0));
 
 		return delta;
 	}
@@ -331,6 +343,7 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 			qTable.setQ(state, action, newQ);
 
 			delta = Math.max(delta, Math.abs(newQ - oldQ));
+			++updatedStateActions;
 		}
 
 		return delta;

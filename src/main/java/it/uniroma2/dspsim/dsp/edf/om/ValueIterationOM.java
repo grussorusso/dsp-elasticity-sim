@@ -35,6 +35,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
     protected QTable qTable;
     private Logger logger = LoggerFactory.getLogger(ValueIterationOM.class);
+    private int updatedStateActions = 0;
 
     public ValueIterationOM(Operator operator) {
         super(operator);
@@ -96,10 +97,9 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
      * @param theta accuracy threshold
      */
     private void valueIteration(int maxIterations, long maxTimeMillis, double theta) {
-        int stepsCounter = 0;
         long startIterationTime = 0L;
         double delta = Double.POSITIVE_INFINITY;
-        while (delta > theta && (maxIterations < 1 || stepsCounter < maxIterations) && maxTimeMillis > 0) {
+        while (delta > theta && (maxIterations < 1 || updatedStateActions < maxIterations) && maxTimeMillis > 0) {
             if (maxTimeMillis > 0L)
                 startIterationTime = System.currentTimeMillis();
 
@@ -107,13 +107,9 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);
-            stepsCounter++;
-            if (maxIterations > 0 && stepsCounter == maxIterations) {
-                break;
-            }
         }
 
-        this.trainingEpochsCount.update(stepsCounter);
+        this.trainingEpochsCount.update(updatedStateActions);
         this.planningTimeMetric.update((int)(System.currentTimeMillis() - startIterationTime));
     }
 
@@ -145,6 +141,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
             double oldQ = qTable.getQ(state, action);
             double newQ = evaluateQ(state, action);
             qTable.setQ(state, action, newQ);
+            updatedStateActions++;
 
             delta = Math.max(delta, Math.abs(newQ - oldQ));
         }
