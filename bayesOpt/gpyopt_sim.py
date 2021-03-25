@@ -4,75 +4,27 @@ import GPy
 from GPyOpt.methods import BayesianOptimization
 import numpy as np
 import argparse
-import subprocess
 import re
 from application import App
+from simulation import simulate
 
-JAR_FILE="/home/gabriele/Programmazione/dspelasticitysimulator/out/artifacts/dspelasticitysimulator_jar/dspelasticitysimulator.jar"
 
-def parse_output (s):
-    regex="AvgCost\s*=\s*(0.\d+)"
-    regexV="Violations = (\d+)"
-    regexR="Reconfigurations = (\d+)"
-    regexRC="ResourcesCost =\s*(\d+.\d+)"
 
-    m=re.search(regex, s)
-    cost = float(m.groups()[0])
-
-    m=re.search(regexV, s)
-    vio = int(m.groups()[0])
-
-    m=re.search(regexR, s)
-    rcf = int(m.groups()[0])
-
-    m=re.search(regexRC, s)
-    rc = float(m.groups()[0])
-
-    return (cost, (vio, rcf, rc))
-
-def simulate (app_file, base_conf, slo_setting_method = "fromfile", rmax=None, ompolicy="vi",  long_sim=False):
-    TEMP_CONF="/tmp/gp.properties"
-
-    # Temporary conf is used to specify the app file to load
-    with open(TEMP_CONF,"w") as tempf:
-        tempf.write("dsp.app.file = {}\n".format(app_file))
-        tempf.write("dsp.slo.operator.method = {}\n".format(slo_setting_method))
-
-        if long_sim:
-            tempf.write("simulation.stoptime = 999999\n")
-        if ompolicy != None:
-            tempf.write("edf.om.type = {}\n".format(ompolicy))
-        if rmax != None:
-            tempf.write("dsp.slo.latency = {}\n".format(rmax))
-
-    # Run the simulation
-    try:
-        cp = subprocess.run(["java", "-jar", JAR_FILE, base_conf, TEMP_CONF], capture_output=True, check=True)
-    except subprocess.CalledProcessError as e:
-        s = e.stderr.decode("utf-8")
-        print(s)
-        raise(e)
-
-    s = cp.stdout.decode("utf-8")
-    cost,stats = parse_output(s)
-
-    return (cost,stats)
-
-def simulate_with_quotas (quotas, app, base_conf, rmax=None, ompolicy="vi", long_sim=False):
+def simulate_with_quotas (quotas, app, base_confs, rmax=None, ompolicy="vi", long_sim=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write_with_quotas(quotas, TEMP_APP)
 
-    return simulate(TEMP_APP, base_conf, "fromfile", rmax, ompolicy, long_sim)
+    return simulate(TEMP_APP, base_confs, "fromfile", rmax, ompolicy, long_sim)
 
-def simulate_default_slo (app, base_conf, rmax=None, ompolicy="vi", long_sim=False):
+def simulate_default_slo (app, base_confs, rmax=None, ompolicy="vi", long_sim=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write(TEMP_APP)
 
-    return simulate(TEMP_APP, base_conf, "default", rmax, ompolicy, long_sim)
+    return simulate(TEMP_APP, base_confs, "default", rmax, ompolicy, long_sim)
 
-def simulate_heuristic (app, base_conf, rmax=None, ompolicy="vi", long_sim=False, approx=False):
+def simulate_heuristic (app, base_confs, rmax=None, ompolicy="vi", long_sim=False, approx=False):
     # Generate app file
     TEMP_APP="/tmp/gp.app"
     app.write(TEMP_APP)
@@ -81,17 +33,17 @@ def simulate_heuristic (app, base_conf, rmax=None, ompolicy="vi", long_sim=False
     if approx:
         alg="heuristic-approx"
 
-    return simulate(TEMP_APP, base_conf, alg, rmax, ompolicy, long_sim)
+    return simulate(TEMP_APP, base_confs, alg, rmax, ompolicy, long_sim)
 
-def evaluate (X, app, base_conf):
+def evaluate (X, app, base_confs):
     quotas = X[0]
-    cost,stats = simulate_with_quotas(quotas, app, base_conf)
+    cost,stats = simulate_with_quotas(quotas, app, base_confs)
 
     print("{} -> {}".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost))
     return np.array([cost])
 
 
-def optimize_quotas (app, base_conf, n_iterations):
+def optimize_quotas (app, base_confs, n_iterations):
     n_op = app.get_n_operators()
 
     # Create domain
@@ -122,7 +74,7 @@ def optimize_quotas (app, base_conf, n_iterations):
     kernel = GPy.kern.Matern52(input_dim=n_op, variance=1.0, lengthscale=1.0)
 
     # --- Solve your problem
-    myBopt = BayesianOptimization(f=lambda x : evaluate(x, app, base_conf),
+    myBopt = BayesianOptimization(f=lambda x : evaluate(x, app, base_confs),
             kernel=kernel,
             normalize_Y=True,
             maximize=False,
@@ -142,7 +94,7 @@ def optimize_quotas (app, base_conf, n_iterations):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--conf', action='store', required=True)
+    parser.add_argument('--conf', action='append', required=True)
     parser.add_argument('--app', action='store', required=True)
     parser.add_argument('--rmax', action='store', required=False, type=float)
     parser.add_argument('--iters', action='store', required=False, default=10, type=int)
@@ -151,12 +103,12 @@ def main():
     parser.add_argument('--approximate-model', action='store_true', required=False, default=False)
 
     args = parser.parse_args()
-    base_conf = args.conf
+    base_confs = args.conf
     rmax = args.rmax
     approximate_model = args.approximate_model
     omalg = args.omalg
 
-    print("Conf: {}".format(base_conf))
+    print("Conf: {}".format(base_confs))
     print("App: {}".format(args.app))
     print("Approximate: {}".format(approximate_model))
     print("RMax: {}".format(rmax))
@@ -165,23 +117,20 @@ def main():
     random.seed(args.seed)
 
     app = App(args.app)
-    if approximate_model:
-        eval_app = app.approximate()
-    else:
-        eval_app = app
+    eval_app = app.approximate() if approximate_model else app
 
-    opt_quotas = optimize_quotas(eval_app, base_conf, args.iters)
+    opt_quotas = optimize_quotas(eval_app, base_confs, args.iters)
 
     # Run final simulation
-    cost,stats = simulate_with_quotas(opt_quotas, app, base_conf, rmax, omalg, long_sim=True)
+    cost,stats = simulate_with_quotas(opt_quotas, app, base_confs, rmax, omalg, long_sim=True)
     print("Final cost: {} : {}".format(cost, stats))
 
     # Run baseline simulation
-    cost,stats = simulate_default_slo(app, base_conf, rmax, omalg, long_sim=True)
+    cost,stats = simulate_default_slo(app, base_confs, rmax, omalg, long_sim=True)
     print("Baseline cost: {} : {}".format(cost, stats))
 
     # Run heuristic simulation
-    cost,stats = simulate_heuristic (app, base_conf, rmax, omalg, approx=approximate_model, long_sim=True)
+    cost,stats = simulate_heuristic (app, base_confs, rmax, omalg, approx=approximate_model, long_sim=True)
     print("Heuristic cost: {} : {}".format(cost, stats))
     
 
