@@ -7,7 +7,9 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-public class CachedNeuralNetwork extends MultiLayerNetwork {
+public class CachedNeuralNetwork {
+
+	private MultiLayerNetwork network;
 
 	private long hits = 0l;
 
@@ -15,7 +17,8 @@ public class CachedNeuralNetwork extends MultiLayerNetwork {
 	private NeuralStateRepresentation neuralStateRepresentation;
 
 	public CachedNeuralNetwork(MultiLayerConfiguration conf, int cacheSize, NeuralStateRepresentation nnRepr) {
-		super(conf);
+		this.network = new MultiLayerNetwork(conf);
+		this.network.init();
 		if (cacheSize > 0)
 			this.networkCache = new HashCache<>(cacheSize);
 		this.neuralStateRepresentation = nnRepr;
@@ -28,7 +31,7 @@ public class CachedNeuralNetwork extends MultiLayerNetwork {
 		}
 
 		INDArray input = buildInput(s);
-		INDArray output = this.output(input);
+		INDArray output = this.network.output(input);
 
 		if (networkCache != null)
 			networkCache.put(s, output.dup());
@@ -41,17 +44,24 @@ public class CachedNeuralNetwork extends MultiLayerNetwork {
 	}
 
 
-	@Override
 	public void fit (INDArray input, INDArray labels)
 	{
-		super.fit(input,labels);
+		this.network.fit(input,labels);
 		flush();
 	}
 
-	@Override
-	public void setParameters (INDArray params) {
-		super.setParameters(params);
+	public void setParameters (CachedNeuralNetwork other) {
+		this.network = other.network.clone();
 		flush();
+	}
+
+	public void setParameters (INDArray params) {
+		this.network.setParameters(params);
+		flush();
+	}
+
+	public double getScore() {
+		return this.network.score();
 	}
 
 	private void flush()
@@ -65,4 +75,11 @@ public class CachedNeuralNetwork extends MultiLayerNetwork {
 		return this.hits;
 	}
 
+	public INDArray params() {
+		return this.network.params();
+	}
+
+	public MultiLayerConfiguration getLayerWiseConfigurations() {
+		return this.network.getLayerWiseConfigurations();
+	}
 }
