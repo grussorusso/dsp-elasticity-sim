@@ -139,6 +139,7 @@ public abstract class ConfigurationKeys {
 	public static final String MB_SKIP_ITER_AFTER = "edf.mb.skipafter";
 	public static final String MB_REDUCED_ITER_PERIOD = "edf.mb.reducedperiod";
 	public static final String MB_MAX_ONLINE_ITERS = "edf.mb.maxiters";
+	public static final String MB_REDUCED_PERIOD_UPDATE_COEFF = "edf.mb.reducedperiod.coeff";
 
 	/**
 	 * Q-learning operator manager params.

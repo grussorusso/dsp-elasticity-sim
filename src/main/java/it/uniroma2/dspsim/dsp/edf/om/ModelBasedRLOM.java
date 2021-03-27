@@ -44,9 +44,17 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 	private int alphaDecaySteps;
 	private int alphaDecayStepsCounter;
 
+	/**
+	 * FullBackup every time step while t <= skipFullBackupAfter.
+	 * Then, full backup every fullBackupInterval.
+	 * fullBackupInterval <- interval * updateCoeff every time
+	 */
 	private int skipFullBackupAfter;
-	private int fullBackupEvery;
+	private double fullBackupInterval;
+	private int nextFullBackupTime = 1;
+	private double fullBackupIntervalUpdateCoeff;
 	private int onlineVIMaxIter;
+
 	private int updatedStateActions = 0;
 
 	private int time = 0;
@@ -78,7 +86,9 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 		this.initWithVI = conf.getBoolean(ConfigurationKeys.MB_INIT_WITH_VI, false);
 		this.useApproximateInitModel = conf.getBoolean(ConfigurationKeys.MB_INIT_VI_APPROX, true);
 		this.skipFullBackupAfter = conf.getInteger(ConfigurationKeys.MB_SKIP_ITER_AFTER, 100);
-		this.fullBackupEvery = conf.getInteger(ConfigurationKeys.MB_REDUCED_ITER_PERIOD, 50);
+		this.fullBackupInterval = conf.getInteger(ConfigurationKeys.MB_REDUCED_ITER_PERIOD, 50);
+		this.fullBackupIntervalUpdateCoeff = conf.getDouble(ConfigurationKeys.MB_REDUCED_PERIOD_UPDATE_COEFF, 1.0);
+
 		this.onlineVIMaxIter = conf.getInteger(ConfigurationKeys.MB_MAX_ONLINE_ITERS, 1);
 		this.APPROXIMATION_SEED = conf.getInteger(ConfigurationKeys.MB_APPROX_MODEL_SEED, 123);
 		this.maxErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MAX_ERR, 0.1);
@@ -287,8 +297,16 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 		decrementAlpha();
 
 		/* Do a full backup */
-		if (time < skipFullBackupAfter || time % fullBackupEvery == 0)
+		if (time == nextFullBackupTime) {
 			this.fullBackup();
+			if (time < skipFullBackupAfter) {
+				this.nextFullBackupTime++;
+			} else {
+				this.nextFullBackupTime += Math.ceil(fullBackupInterval);
+				this.fullBackupInterval = Math.min(this.fullBackupInterval * this.fullBackupIntervalUpdateCoeff, 50000);
+			}
+
+		}
 	}
 
 

@@ -99,6 +99,8 @@ public class TestNeuralNetworkDL4j {
 
         MultiLayerNetwork network = buildNetwork();
         MultiLayerNetwork network2 = network.clone();
+        MultiLayerNetwork network3 = buildNetwork();
+        network3.setParameters(network.params());
 
         INDArray label = getLabel(7);
 

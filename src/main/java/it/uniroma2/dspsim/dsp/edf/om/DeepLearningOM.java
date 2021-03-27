@@ -10,7 +10,6 @@ import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.stats.metrics.RealValuedMetric;
 import org.apache.commons.lang3.tuple.Pair;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,9 +73,9 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
         final int cacheSize = configuration.getInteger(ConfigurationKeys.DL_OM_NETWORK_CACHE_SIZE, 0);
         this.network = new CachedNeuralNetwork(this.networkConf, cacheSize, neuralStateRepresentation);
-        this.network.init();
 
         if (PolicyIOUtils.shouldLoadPolicy(configuration)) {
+            System.out.println("Loading network from file...");
             try {
                 File f = PolicyIOUtils.getFileForLoading(this.operator, "network");
                 FileInputStream fileIn = new FileInputStream(f.getAbsolutePath());
@@ -94,7 +93,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
         if (useDoubleNetwork) {
             this.targetNetwork = new CachedNeuralNetwork(this.networkConf, cacheSize, neuralStateRepresentation);
-            this.targetNetwork.setParameters(this.network.params());
+            //this.targetNetwork.setParameters(this.network.params().dup());
         } else {
             this.targetNetwork = network;
         }
@@ -151,7 +150,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
             this.network.fit(targets.getLeft(), targets.getRight());
 
             if (this.networkScoreMetric != null) {
-                final double score = this.network.score();
+                final double score = this.network.getScore();
                 this.networkScoreMetric.update(score);
             }
 
@@ -159,7 +158,7 @@ public abstract class DeepLearningOM extends ReinforcementLearningOM {
 
             // sync models
             if (useDoubleNetwork && this.trainingEpochsCount.getCount().intValue() % this.doubleNetworkSyncPeriod == 0 ) {
-                this.targetNetwork.setParameters(this.network.params());
+                this.targetNetwork.setParameters(this.network);
             }
         }
     }

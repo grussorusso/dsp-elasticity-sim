@@ -103,7 +103,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
         final int cacheSize = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_NETWORK_CACHE_SIZE, 0);
         this.network = new CachedNeuralNetwork(config, cacheSize, neuralStateRepresentation);
-        network.init();
 
         if (PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
             try {
@@ -124,20 +123,6 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void dumpQOnFile(String filename) {
-        // create file
-        File file = new File(filename);
-        try {
-            if (!file.exists()) {
-                file.getParentFile().mkdirs();
-                file.createNewFile();
-            }
-            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File(filename), true));
-            printWriter.print(this.network.getLayerWiseConfigurations().toJson());
-            printWriter.flush();
-            printWriter.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -207,7 +192,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
             if (batch != null) {
                 Pair<INDArray, INDArray> targets = getTargets(batch);
                 this.network.fit(targets.getLeft(), targets.getRight());
-                updateDeltaRunningAvg(network.score());
+                updateDeltaRunningAvg(network.getScore());
             }
         }
 
