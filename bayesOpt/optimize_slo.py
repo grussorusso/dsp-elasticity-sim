@@ -62,11 +62,6 @@ def optimize_quotas (app, base_confs, n_iterations):
     constraints = [{'name': 'constr_1', 'constraint': c_ub},
                 {'name': 'constr_2', 'constraint': c_lb}]
 
-    # Additional model-based constraints
-    #for i in range(n_op-1):
-    #    c = "+x[:,{}]-x[:,{}]".format(i,i+1)
-    #    constraints.append({'name': 'constr_extra', 'constraint': c})
-
     for constr in constraints: 
         print(constr)
 
