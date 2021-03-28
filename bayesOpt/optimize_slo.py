@@ -4,7 +4,6 @@ import GPy
 from GPyOpt.methods import BayesianOptimization
 import numpy as np
 import argparse
-import re
 from application import App
 from simulation import simulate
 
@@ -42,9 +41,8 @@ def evaluate (X, app, base_confs):
     print("{} -> {}".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost))
     return np.array([cost])
 
-
-def optimize_quotas (app, base_confs, n_iterations):
-    assert(len(app.get_paths()) == 1)
+def optimize_quotas_multipath (app, base_confs, n_iterations, constraints_mode):
+    paths = app.get_paths()
     n_op = app.get_n_operators()
 
     # Create domain
@@ -54,14 +52,34 @@ def optimize_quotas (app, base_confs, n_iterations):
 
     #print("Domain: {}".format(domain))
 
-    c_ub = "-1"
-    c_lb = "0.99"
-    for i in range(n_op):
-        c_ub = c_ub + "+x[:,{}]".format(i)
-        c_lb = c_lb + "-x[:,{}]".format(i)
+    constraints = []
 
-    constraints = [{'name': 'constr_1', 'constraint': c_ub},
-                {'name': 'constr_2', 'constraint': c_lb}]
+    if constraints_mode > 0:
+        constr_index = 1
+        for p in paths:
+            c_ub = "-1.05"
+            c_lb = "0.95"
+            for op in p:
+                i = app.opname2index[op]
+                c_ub = c_ub + "+x[:,{}]".format(i)
+                c_lb = c_lb + "-x[:,{}]".format(i)
+            _constraints = [{'name': f'constr_{constr_index}', 'constraint': c_ub},
+                        {'name': f'constr_{constr_index+1}', 'constraint': c_lb}]
+            constr_index += 2
+            constraints.extend(_constraints)
+
+    # Additional pairwise constraints
+    if constraints_mode > 1:
+        for i in app.operators:
+            for j in app.operators:
+                if app.operators[i].service_rate() > app.operators[j].service_rate()*1.3:
+                    _constraint = {'name': f"{i}_{j}", 'constraint': f"x[:,{i}]-x[:,{j}]"}
+                    constraints.append(_constraint)
+                elif app.operators[i].service_rate() < app.operators[j].service_rate()*1.3:
+                    _constraint = {'name': f"{i}_{j}", 'constraint': f"-x[:,{i}]+x[:,{j}]"}
+                    constraints.append(_constraint)
+
+                
 
     for constr in constraints: 
         print(constr)
@@ -84,8 +102,16 @@ def optimize_quotas (app, base_confs, n_iterations):
     print("fx_opt = "+str(myBopt.fx_opt))
     print("="*20)
 
+    for p in paths:
+        for op in p:
+            index = app.opname2index[op]
+            slo = myBopt.x_opt[index]
+            print(f"{op}->{slo};", end='')
+        print("")
+
     #myBopt.plot_acquisition()
     return myBopt.x_opt
+
 
 
 def main():
@@ -96,7 +122,9 @@ def main():
     parser.add_argument('--iters', action='store', required=False, default=10, type=int)
     parser.add_argument('--seed', action='store', required=False, default=123, type=int)
     parser.add_argument('--omalg', action='store', required=False, default="vi")
+    parser.add_argument('--constraints_mode', action='store', required=False, default=1, type=int)
     parser.add_argument('--approximate-model', action='store_true', required=False, default=False)
+    parser.add_argument('--noevaluate', action='store_true', required=False, default=False)
 
     args = parser.parse_args()
     base_confs = args.conf
@@ -115,7 +143,10 @@ def main():
     app = App(args.app)
     eval_app = app.approximate() if approximate_model else app
 
-    opt_quotas = optimize_quotas(eval_app, base_confs, args.iters)
+    opt_quotas = optimize_quotas_multipath(eval_app, base_confs, args.iters, args.constraints_mode)
+
+    if args.noevaluate:
+        return
 
     # Run final simulation
     cost,stats = simulate_with_quotas(opt_quotas, app, base_confs, rmax, omalg, long_sim=True)

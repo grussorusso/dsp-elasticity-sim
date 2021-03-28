@@ -1,5 +1,6 @@
 import subprocess
-JAR_FILE="/home/gabriele/Programmazione/dspelasticitysimulator/out/artifacts/dspelasticitysimulator_jar/dspelasticitysimulator.jar"
+import re
+JAR_FILE="/home/gabriele/Programmazione/dspelasticitysimulator/target/dsp-elasticity-simulator-1.0-SNAPSHOT-shaded.jar"
 
 def parse_output (s):
     regex="AvgCost\s*=\s*(0.\d+)"

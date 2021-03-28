@@ -1,11 +1,23 @@
 import random
 
+class Operator:
+
+    def __init__ (self, index, name, raw_spec):
+        self.index = index
+        self.name = name
+        self.raw_spec = raw_spec
+
+    def service_rate (self):
+        return self.raw_spec[1]
+
 class App:
     def __init__ (self, file=None):
-        self.operators = []
+        self.operators = {}
+        self.opname2index = {}
         self.edges = []
         self.adj = {}
 
+        i=0
         if file != None:
             with open(file, "r") as f:
                 for line in f:
@@ -15,7 +27,9 @@ class App:
                         name = name.strip()
                         stmean = float(stmean)
                         stscv = float(stscv)
-                        self.operators.append((name, stmean, stscv))
+                        self.operators[i] = Operator(i, name, (name, stmean, stscv))
+                        self.opname2index[name] = i
+                        i = i + 1
                     else:
                         fields[1] = fields[1].strip()
                         fields[2] = fields[2].strip()
@@ -24,8 +38,8 @@ class App:
         self.build_adj_dict()
 
     def build_adj_dict(self):
-        for op in self.operators:
-            self.adj[op[0]] = set()
+        for op in self.operators.values():
+            self.adj[op.name] = set()
         for e in self.edges:
             i,j = e[1:3]
             self.adj[i].add(j)
@@ -35,9 +49,9 @@ class App:
 
     def write_with_quotas (self, quotas, outfile):
         with open(outfile, "w") as of:
-            for i in range(len(self.operators)):
+            for i in self.operators:
                 op = self.operators[i]
-                name,stmean,stscv=op
+                name,stmean,stscv=op.raw_spec
 
                 of.write("op,{},{},{},{}\n".format(name,stmean,stscv,quotas[i]))
             for e in self.edges:
@@ -45,19 +59,20 @@ class App:
 
     def write (self, outfile):
         with open(outfile, "w") as of:
-            for i in range(len(self.operators)):
-                op = self.operators[i]
+            for i in self.operators:
+                op = self.operators[i].raw_spec
                 of.write("op,{},{},{}\n".format(op[0],op[1],op[2]))
             for e in self.edges:
                 of.write("{}\n".format(",".join(e)))
 
     def approximate (self):
         new_app = App()
-        for op in self.operators:
-            name,stmean,stscv=op
+        for op in self.operators.values:
+            name,stmean,stscv=op.raw_spec
             stscv = 1.0
             stmean = stmean + 0.05*stmean*random.gauss(0.0,1.0)
-            new_app.operators.append((name, stmean, stscv))
+            new_app.operators[op.index] = Operator(op.index, name, (name, stmean, stscv))
+            new_app.opname2index[name] = op.index
         for e in self.edges:
             new_app.edges.append(e)
 
@@ -104,9 +119,10 @@ class App:
 
     def get_paths (self):
         srcs = self.find_sources()
-        visited = { op[0]:False for op in self.operators }
+        visited = { op.name:False for op in self.operators.values() }
         paths = []
         for src in srcs:
             paths.extend(self.dfs(src, [], visited, srcs))
         return paths
+
 
