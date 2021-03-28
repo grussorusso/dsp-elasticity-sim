@@ -44,6 +44,7 @@ def evaluate (X, app, base_confs):
 
 
 def optimize_quotas (app, base_confs, n_iterations):
+    assert(len(app.get_paths()) == 1)
     n_op = app.get_n_operators()
 
     # Create domain
