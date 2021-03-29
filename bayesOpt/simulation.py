@@ -22,7 +22,7 @@ def parse_output (s):
 
     return (cost, (vio, rcf, rc))
 
-def simulate (app_file, base_confs, slo_setting_method = "fromfile", rmax=None, ompolicy="vi",  long_sim=False):
+def simulate (app_file, base_confs, slo_setting_method = "fromfile", rmax=None, ompolicy="vi",  long_sim=False, weights=None):
     TEMP_CONF="/tmp/gp.properties"
 
     # Temporary conf is used to specify the app file to load
@@ -36,6 +36,12 @@ def simulate (app_file, base_confs, slo_setting_method = "fromfile", rmax=None, 
             tempf.write("edf.om.type = {}\n".format(ompolicy))
         if rmax != None:
             tempf.write("dsp.slo.latency = {}\n".format(rmax))
+
+        if weights is not None:
+            wres,wrcf,wslo = weights
+            tempf.write(f"edf.rl.om.resources.weight = {wres}\n")
+            tempf.write(f"edf.rl.om.reconfiguration.weight = {wrcf}\n")
+            tempf.write(f"edf.rl.om.slo.weight = {wslo}\n")
 
     # Run the simulation
     try:

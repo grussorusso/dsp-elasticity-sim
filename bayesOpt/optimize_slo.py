@@ -38,7 +38,7 @@ def evaluate (X, app, base_confs):
     quotas = X[0]
     cost,stats = simulate_with_quotas(quotas, app, base_confs)
 
-    print("{} -> {}".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost))
+    print("{} -> {} ({})".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost, stats))
     return np.array([cost])
 
 def optimize_quotas_multipath (app, base_confs, n_iterations, constraints_mode):
@@ -92,7 +92,7 @@ def optimize_quotas_multipath (app, base_confs, n_iterations, constraints_mode):
             kernel=kernel,
             normalize_Y=True,
             maximize=False,
-            initial_design_numdata=5,
+            initial_design_numdata=3,
             constraints=constraints,
             domain=domain)
     myBopt.run_optimization(max_iter=n_iterations)
