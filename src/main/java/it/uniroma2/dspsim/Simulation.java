@@ -216,6 +216,13 @@ public class Simulation {
 	}
 
 	private void dumpStats() {
+		/** Add dummy metric for time */
+		Statistics statistics = Statistics.getInstance();
+		CountMetric timeMetric = new CountMetric("SimulationTime");
+		statistics.registerMetricIfNotExists(timeMetric);
+		timeMetric.update((int)this.time);
+
+
 		File statsOutput = new File(String.format("%s/final_stats",
 				Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, "")));
 		if (!statsOutput.getParentFile().exists()) {
@@ -227,11 +234,11 @@ public class Simulation {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		}
-		Statistics.getInstance().dumpAll(fos);
+		statistics.dumpAll(fos);
 
 
 		// TODO: make this optional
-		Statistics.getInstance().dumpSorted();
+		statistics.dumpSorted();
 	}
 
 	public static void main (String[] args) {
