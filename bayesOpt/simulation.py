@@ -7,6 +7,7 @@ def parse_output (s):
     regexV="Violations = (\d+)"
     regexR="Reconfigurations = (\d+)"
     regexRC="ResourcesCost =\s*(\d+.\d+)"
+    regexTime="SimulationTime =\s*(\d+)"
 
     m=re.search(regex, s)
     cost = float(m.groups()[0])
@@ -20,7 +21,10 @@ def parse_output (s):
     m=re.search(regexRC, s)
     rc = float(m.groups()[0])
 
-    return (cost, (vio, rcf, rc))
+    m=re.search(regexTime, s)
+    time = int(m.groups()[0])
+
+    return (cost, (vio, rcf, rc, time))
 
 def simulate (app_file, base_confs, slo_setting_method = "fromfile", rmax=None, ompolicy="vi",  long_sim=False, weights=None):
     TEMP_CONF="/tmp/gp.properties"
