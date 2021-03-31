@@ -262,10 +262,7 @@ public class Simulation {
 		}
 
 		LoggingUtils.configureLogging();
-
-		ComputingInfrastructure.initCustomInfrastructure(
-				new double[]{1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5},
-				conf.getInteger(ConfigurationKeys.NODE_TYPES_NUMBER_KEY, 3));
+		ComputingInfrastructure.initDefaultInfrastructure();
 
 		Simulation simulation = null;
 

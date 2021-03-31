@@ -24,7 +24,7 @@ public class ApplicationBuilder {
 		if (appName.equalsIgnoreCase("single-operator")) {
 			application = singleOperatorApplication(1.0);
 		} else if (appName.equalsIgnoreCase("single-operator-fast")) {
-			application = singleOperatorApplication(5.0);
+			application = singleOperatorApplication(9.0);
 		} else if (appName.equalsIgnoreCase("fromfile")) {
 			application = buildApplicationFromFile();
 		} else if (appName.equalsIgnoreCase("fork-join")) {

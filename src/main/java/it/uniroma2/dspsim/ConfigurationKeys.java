@@ -39,6 +39,7 @@ public abstract class ConfigurationKeys {
 	 * Node types number.
 	 */
 	public static final String NODE_TYPES_NUMBER_KEY = "node.types.number";
+	public static final String NODE_TYPES_SCENARIO = "node.types.scenario";
 
 	/**
 	 * Operator.
