@@ -155,6 +155,10 @@ public abstract class RewardBasedOM extends OperatorManager {
                         ComputingInfrastructure.getInfrastructure().getNodeTypes()[action.getResTypeIndex()]);
     }
 
+    public void forgetLastAction() {
+        this.lastChosenAction = null;
+    }
+
     /**
      * ABSTRACT METHODS
      */

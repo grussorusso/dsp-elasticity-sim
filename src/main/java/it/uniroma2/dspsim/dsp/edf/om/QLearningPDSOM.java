@@ -4,18 +4,27 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
+import it.uniroma2.dspsim.dsp.edf.om.rl.QTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.VTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.VTableFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
+import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 public class QLearningPDSOM extends ReinforcementLearningOM {
     private VTable vTable;
@@ -23,6 +32,8 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
     private VariableParameter alpha;
     private int alphaDecaySteps;
     private int alphaDecayStepsCounter;
+
+    private boolean initWithVI;
 
     private double gamma;
 
@@ -45,16 +56,56 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 1.0);
         double alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
 
-        this.alpha = new VariableParameter(alphaInitValue, alphaMinValue, 1.0, alphaDecay);
-
-        logger.info("Alpha conf: init={}, decay={}, currValue={}", alphaInitValue,
-                alphaDecay, alpha.getValue());
 
 
         this.alphaDecaySteps = configuration.getInteger(ConfigurationKeys.QL_OM_ALPHA_DECAY_STEPS_KEY, -1);
         this.alphaDecayStepsCounter = 0;
 
+        this.initWithVI = configuration.getBoolean(ConfigurationKeys.MB_INIT_WITH_VI, false);
+
         this.gamma = configuration.getDouble(ConfigurationKeys.DP_GAMMA_KEY,0.99);
+
+        if (initWithVI) {
+            offlinePlanning();
+            alphaInitValue = alphaMinValue;
+        }
+
+        this.alpha = new VariableParameter(alphaInitValue, alphaMinValue, 1.0, alphaDecay);
+        logger.info("Alpha conf: init={}, decay={}, currValue={}", alphaInitValue,
+                alphaDecay, alpha.getValue());
+
+    }
+
+    private void offlinePlanning() {
+        ValueIterationOM viOM = new ValueIterationOM(operator);
+        QTable viQ = viOM.getQTable();
+
+        // init costs and transition estimates based on offline phase output
+        /* Update cost estimate */
+        StateIterator stateIterator = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
+                ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
+
+        while (stateIterator.hasNext()) {
+            State s = stateIterator.next();
+
+            ActionIterator actionIterator = new ActionIterator();
+            while (actionIterator.hasNext()) {
+                Action action = actionIterator.next();
+                if (!validateAction(s, action))
+                    continue;
+
+                double q = viQ.getQ(s, action);
+                State pds = StateUtils.computePostDecisionState(s, action, this);
+                double knownCost = 0.0;
+                if (action.getDelta() != 0)
+                    knownCost += getwReconf();
+                knownCost += getwResources() * StateUtils.computeDeploymentCostNormalized(pds, this);
+                double v = q - knownCost;
+
+                this.vTable.setV(pds, v);
+            }
+
+        }
     }
 
     @Override
@@ -63,6 +114,8 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
                 ActionSelectionPolicyType.GREEDY,
                 this
         );
+        // TODO
+        //return ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.EPSILON_GREEDY, this);
         return this.greedyActionSelection;
     }
 
@@ -75,7 +128,10 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
     protected void learningStep(State oldState, Action action, State currentState, double reward) {
         final State pds = StateUtils.computePostDecisionState(oldState, action, this);
 
-        double unknownCost = reward - getwResources()*StateUtils.computeDeploymentCostNormalized(pds,this);
+        double cRes = StateUtils.computeDeploymentCostNormalized(pds,this);
+        double unknownCost = reward - getwResources()*cRes;
+        //logger.info("{}+{}->{}: cRes={}", oldState, action, pds, cRes);
+
         if (action.getDelta()!=0)
             unknownCost -= getwReconf();
 
@@ -102,6 +158,35 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
     public void savePolicy()
     {
         this.vTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "vTable"));
+
+        // create file
+        File file = new File("/tmp/qpds");
+        try {
+            if (!file.exists()) {
+                file.getParentFile().mkdirs();
+                file.createNewFile();
+            }
+            PrintWriter printWriter = new PrintWriter(new FileOutputStream(new File("/tmp/qpds"), true));
+            StateIterator stateIterator = new StateIterator(getStateRepresentation(), operator.getMaxParallelism(),
+                    ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
+            while (stateIterator.hasNext()) {
+                State s = stateIterator.next();
+                // print state line
+                printWriter.println(s.dump());
+                ActionIterator ait = new ActionIterator();
+                while (ait.hasNext()) {
+                    Action a = ait.next();
+                    if (!s.validateAction(a))
+                        continue;
+                    double v = evaluateAction(s, a);
+                    printWriter.print(String.format("%s\t%f\n", a.dump(), v));
+                }
+            }
+            printWriter.flush();
+            printWriter.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     /**

@@ -84,13 +84,13 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 				alphaDecay, alpha.getValue());
 
 		this.initWithVI = conf.getBoolean(ConfigurationKeys.MB_INIT_WITH_VI, false);
-		this.useApproximateInitModel = conf.getBoolean(ConfigurationKeys.MB_INIT_VI_APPROX, true);
+		this.useApproximateInitModel = conf.getBoolean(ConfigurationKeys.VI_APPROX_MODEL, true);
 		this.skipFullBackupAfter = conf.getInteger(ConfigurationKeys.MB_SKIP_ITER_AFTER, 100);
 		this.fullBackupInterval = conf.getInteger(ConfigurationKeys.MB_REDUCED_ITER_PERIOD, 50);
 		this.fullBackupIntervalUpdateCoeff = conf.getDouble(ConfigurationKeys.MB_REDUCED_PERIOD_UPDATE_COEFF, 1.0);
 
 		this.onlineVIMaxIter = conf.getInteger(ConfigurationKeys.MB_MAX_ONLINE_ITERS, 1);
-		this.APPROXIMATION_SEED = conf.getInteger(ConfigurationKeys.MB_APPROX_MODEL_SEED, 123);
+		this.APPROXIMATION_SEED = conf.getInteger(ConfigurationKeys.VI_APPROX_MODEL_SEED, 123);
 		this.maxErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MAX_ERR, 0.1);
 		this.minErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MIN_ERR, 0.05);
 

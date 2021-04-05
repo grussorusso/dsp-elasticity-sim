@@ -23,6 +23,7 @@ public class ComputingInfrastructure {
 
 	static private final double scenarioAspeedups[] = {1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5};
 	static private final double scenarioBspeedups[] = {1.0, 0.05, 30.0, 0.1, 0.2, 0.4, 0.8, 2.0, 5.0, 10.0};
+	static private final double scenarioCspeedups[] = {1.0, 1.7, 3.0, 2.5, 5.0, 1.5, 8.0, 4.0, 6.0, 10.0};
 
 
 	static public ComputingInfrastructure initDefaultInfrastructure (int numOfResTypes) {
@@ -33,16 +34,21 @@ public class ComputingInfrastructure {
 
 		for (int i = 0; i < numOfResTypes; i++) {
 			final String name = String.format("Res-%d", i);
-			double cpuSpeedup;
+			double cpuSpeedup, cost;
 			if (confScenario.equalsIgnoreCase("A")) {
 				cpuSpeedup = scenarioAspeedups[i];
+				cost = cpuSpeedup;
 			} else if (confScenario.equalsIgnoreCase("B")) {
 				cpuSpeedup = scenarioBspeedups[i];
+				cost = cpuSpeedup;
+			} else if (confScenario.equalsIgnoreCase("C")) {
+				cpuSpeedup = scenarioCspeedups[i];
+				cost = cpuSpeedup;
 			} else {
 				cpuSpeedup = 1.0 + i*0.1; /* incremental (default) */
+				cost = cpuSpeedup;
 			}
-			System.out.printf("Speedup: %f\n", cpuSpeedup);
-			final double cost = cpuSpeedup;
+			System.out.printf("Speedup: %.2f, cost: %.2f\n", cpuSpeedup, cost);
 			infrastructure.nodeTypes[i] = new NodeType(i, name,  cost, cpuSpeedup);
 		}
 

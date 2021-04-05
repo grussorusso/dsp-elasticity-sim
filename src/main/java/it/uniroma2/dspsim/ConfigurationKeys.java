@@ -135,8 +135,6 @@ public abstract class ConfigurationKeys {
 	 * Model-based OM.
 	 */
 	public static final String MB_INIT_WITH_VI = "edf.mb.initvi.enabled";
-	public static final String MB_INIT_VI_APPROX = "edf.mb.initvi.approximate";
-	public static final String MB_APPROX_MODEL_SEED = "edf.mb.initvi.approximate.seed";
 	public static final String MB_SKIP_ITER_AFTER = "edf.mb.skipafter";
 	public static final String MB_REDUCED_ITER_PERIOD = "edf.mb.reducedperiod";
 	public static final String MB_MAX_ONLINE_ITERS = "edf.mb.maxiters";
