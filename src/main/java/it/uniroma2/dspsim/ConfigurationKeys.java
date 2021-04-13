@@ -106,6 +106,8 @@ public abstract class ConfigurationKeys {
 
 	public static final String RL_DEFAULT_QTABLE_IMPL = "edf.rl.om.qtable.impl";
 
+	public static final String PDS_ESTIMATE_COSTS = "edf.rl.pds.estimate.costs";
+
 	/**
 	 * Dynamic Programming params
 	 */

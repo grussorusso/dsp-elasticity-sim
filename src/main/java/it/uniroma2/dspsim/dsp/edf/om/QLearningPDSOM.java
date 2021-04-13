@@ -34,6 +34,7 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
     private int alphaDecayStepsCounter;
 
     private boolean initWithVI;
+    private boolean useEstimatedUnknownCost;
 
     private double gamma;
 
@@ -62,6 +63,11 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         this.alphaDecayStepsCounter = 0;
 
         this.initWithVI = configuration.getBoolean(ConfigurationKeys.MB_INIT_WITH_VI, false);
+        this.useEstimatedUnknownCost = configuration.getBoolean(ConfigurationKeys.PDS_ESTIMATE_COSTS, false);
+
+        if (initWithVI && useEstimatedUnknownCost) {
+            throw new IllegalArgumentException("Cannot use both initWithVI and useEstimatedUnknownCost!");
+        }
 
         this.gamma = configuration.getDouble(ConfigurationKeys.DP_GAMMA_KEY,0.99);
 
@@ -135,8 +141,11 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         if (action.getDelta()!=0)
             unknownCost -= getwReconf();
 
+        // Can be used to learn only the difference w.r.t to an estimate
+        final double diffCost = unknownCost - estimateUnknownCost(pds);
+
         final double oldV  = vTable.getV(oldState);
-        final double newV = (1.0 - alpha.getValue()) * oldV + alpha.getValue() * (unknownCost +
+        final double newV = (1.0 - alpha.getValue()) * oldV + alpha.getValue() * (diffCost +
                         this.gamma * evaluateAction(currentState, greedyActionSelection.selectAction(currentState)));
 
         vTable.setV(pds, newV);
@@ -189,6 +198,15 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
         }
     }
 
+    public double estimateUnknownCost (State pds) {
+        if (this.useEstimatedUnknownCost) {
+            // Here we assume that lambda does not change..
+            return this.getwSLO() * StateUtils.computeSLOCost(pds, this);
+        } else {
+            return 0.0;
+        }
+    }
+
     /**
      * ACTION SELECTION POLICY CALLBACK INTERFACE
      */
@@ -201,6 +219,6 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
             knownCost += getwReconf();
         knownCost += getwResources() * StateUtils.computeDeploymentCostNormalized(pds, this);
         double v = vTable.getV(pds);
-        return v + knownCost;
+        return v + estimateUnknownCost(pds) + knownCost;
     }
 }
