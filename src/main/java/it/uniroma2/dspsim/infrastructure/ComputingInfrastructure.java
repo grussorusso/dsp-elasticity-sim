@@ -4,10 +4,14 @@ import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 
 import java.util.Arrays;
+import java.util.Random;
 
 public class ComputingInfrastructure {
 
 	private NodeType[] nodeTypes;
+
+	/* A copy of nodeTypes with estimated speedups */
+	private NodeType[] estimatedNodeTypes = null;
 
 	private ComputingInfrastructure() {}
 
@@ -97,5 +101,43 @@ public class ComputingInfrastructure {
 		}
 
 		return nodeType;
+	}
+
+	public NodeType[] getEstimatedNodeTypes() {
+		if (this.estimatedNodeTypes == null) {
+			initEstimatedNodeTypes();
+		}
+
+		return this.estimatedNodeTypes;
+	}
+
+	private void initEstimatedNodeTypes() {
+		Configuration conf = Configuration.getInstance();
+		final int errorSeed = conf.getInteger(ConfigurationKeys.APPROX_SPEEDUPS_SEED, 123);
+		final double maxRelError = conf.getDouble(ConfigurationKeys.APPROX_SPEEDUPS_MAX_REL_ERR, 0.2);
+
+		Random rng = new Random(errorSeed);
+
+		this.estimatedNodeTypes = new NodeType[this.nodeTypes.length];
+
+		// Sort nodeTypes based on speedup
+		NodeType[] sortedNodeTypes = this.nodeTypes.clone();
+		Arrays.sort(sortedNodeTypes);
+
+		for (int i = 0; i<sortedNodeTypes.length; i++) {
+			final NodeType current = sortedNodeTypes[i];
+
+			final double maxAbsError = maxRelError * current.getCpuSpeedup();
+			double lb = current.getCpuSpeedup() - maxAbsError;
+			double ub = current.getCpuSpeedup() + maxAbsError;
+			if (i > 0)
+				lb = Math.max(lb, sortedNodeTypes[i-1].getCpuSpeedup());
+			if (i < sortedNodeTypes.length - 1)
+				ub = Math.min(ub, sortedNodeTypes[i+1].getCpuSpeedup());
+
+			final double newSpeedup = lb + rng.nextDouble()*(ub-lb);
+			System.out.printf("Estimated speedup: %.2f -> %.2f\n", sortedNodeTypes[i].getCpuSpeedup(), newSpeedup);
+			this.estimatedNodeTypes[current.getIndex()] = new NodeType(current.getIndex(), current.getName(), current.getCost(), newSpeedup);
+		}
 	}
 }

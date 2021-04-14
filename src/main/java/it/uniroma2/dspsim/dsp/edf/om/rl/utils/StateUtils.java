@@ -70,16 +70,32 @@ public class StateUtils {
         return operatorInstances;
     }
 
-    public static double computeSLOCost(State state, RewardBasedOM om) {
+    public static double computeSLOCost(State state, RewardBasedOM om, boolean approximateNodeSpeedups) {
         double cost = 0.0;
 
         List<NodeType> operatorInstances = getOperatorInstances(state);
+        if (approximateNodeSpeedups) {
+            ComputingInfrastructure infra = ComputingInfrastructure.getInfrastructure();
+            NodeType[] approxNodeTypes = infra.getEstimatedNodeTypes();
+
+            List<NodeType> approximateInstances = new ArrayList<>(operatorInstances.size());
+            for (NodeType nt : operatorInstances) {
+                approximateInstances.add(approxNodeTypes[nt.getIndex()]);
+            }
+            operatorInstances = approximateInstances;
+        }
+
         double inputRate = MathUtils.remapDiscretizedValue(om.getMaxInputRate(), state.getLambda(), om.getInputRateLevels());
 
-        if (om.getOperator().responseTime(inputRate, operatorInstances) > om.getOperator().getSloRespTime())
+        final double respTime = om.getOperator().responseTime(inputRate, operatorInstances);
+        if (respTime > om.getOperator().getSloRespTime())
             cost += 1.0;
 
         return cost;
+    }
+
+    public static double computeSLOCost (State state, RewardBasedOM om) {
+        return computeSLOCost(state, om, false);
     }
 
     public static double computeRespTime (State state, RewardBasedOM om) {

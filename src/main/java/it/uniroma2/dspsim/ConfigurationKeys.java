@@ -119,10 +119,18 @@ public abstract class ConfigurationKeys {
 	public static final String VI_MAX_ITERATIONS_KEY = "edf.vi.max.iterations";
 	public static final String VI_MAX_TIME_SECONDS_KEY = "edf.vi.max.time.seconds";
 	public static final String VI_THETA_KEY = "edf.vi.theta";
+
+	/**
+	 * Model approximation.
+ 	 */
 	public static final String VI_APPROX_MODEL = "edf.vi.approximate";
 	public static final String VI_APPROX_MODEL_SEED = "edf.vi.approximate.seed";
 	public static final String VI_APPROX_MODEL_MAX_ERR = "edf.vi.approximate.maxerr";
 	public static final String VI_APPROX_MODEL_MIN_ERR = "edf.vi.approximate.minerr";
+
+	public static final String APPROX_SPEEDUPS = "edf.approximate.speedup";
+	public static final String APPROX_SPEEDUPS_SEED = "edf.approximate.speedup.seed";
+	public static final String APPROX_SPEEDUPS_MAX_REL_ERR = "edf.approximate.speedups.maxrel";
 
 	/**
 	 * TBVI operator manager params

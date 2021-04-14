@@ -3,7 +3,7 @@ package it.uniroma2.dspsim.infrastructure;
 /**
  * Type of computing node.
  */
-public class NodeType {
+public class NodeType implements Comparable<NodeType> {
 
 	private String name;
 	private double cost;
@@ -35,5 +35,10 @@ public class NodeType {
 
 	public void setCpuSpeedup(double cpuSpeedup) {
 		this.cpuSpeedup = cpuSpeedup;
+	}
+
+	@Override
+	public int compareTo(NodeType o) {
+		return Double.compare(this.cpuSpeedup, o.cpuSpeedup);
 	}
 }

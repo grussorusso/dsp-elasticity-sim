@@ -35,6 +35,7 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
 
     private boolean initWithVI;
     private boolean useEstimatedUnknownCost;
+    private boolean approximateSpeedupsForCostEstimation;
 
     private double gamma;
 
@@ -64,6 +65,7 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
 
         this.initWithVI = configuration.getBoolean(ConfigurationKeys.MB_INIT_WITH_VI, false);
         this.useEstimatedUnknownCost = configuration.getBoolean(ConfigurationKeys.PDS_ESTIMATE_COSTS, false);
+        this.approximateSpeedupsForCostEstimation = configuration.getBoolean(ConfigurationKeys.APPROX_SPEEDUPS, true);
 
         if (initWithVI && useEstimatedUnknownCost) {
             throw new IllegalArgumentException("Cannot use both initWithVI and useEstimatedUnknownCost!");
@@ -201,7 +203,7 @@ public class QLearningPDSOM extends ReinforcementLearningOM {
     public double estimateUnknownCost (State pds) {
         if (this.useEstimatedUnknownCost) {
             // Here we assume that lambda does not change..
-            return this.getwSLO() * StateUtils.computeSLOCost(pds, this);
+            return this.getwSLO() * StateUtils.computeSLOCost(pds, this, approximateSpeedupsForCostEstimation);
         } else {
             return 0.0;
         }
