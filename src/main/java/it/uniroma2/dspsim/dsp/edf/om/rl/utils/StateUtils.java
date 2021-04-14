@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.states.factory.StateFactory;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.utils.MathUtils;
+import org.nd4j.linalg.api.ops.Op;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,7 +71,8 @@ public class StateUtils {
         return operatorInstances;
     }
 
-    public static double computeSLOCost(State state, RewardBasedOM om, boolean approximateNodeSpeedups) {
+    public static double computeSLOCost(State state, RewardBasedOM om, boolean approximateNodeSpeedups,
+                                        boolean approximateOperatorModel) {
         double cost = 0.0;
 
         List<NodeType> operatorInstances = getOperatorInstances(state);
@@ -87,7 +89,9 @@ public class StateUtils {
 
         double inputRate = MathUtils.remapDiscretizedValue(om.getMaxInputRate(), state.getLambda(), om.getInputRateLevels());
 
-        final double respTime = om.getOperator().responseTime(inputRate, operatorInstances);
+        Operator op = approximateOperatorModel? om.getApproximateOperator() : om.getOperator();
+
+        final double respTime = op.responseTime(inputRate, operatorInstances);
         if (respTime > om.getOperator().getSloRespTime())
             cost += 1.0;
 
@@ -95,7 +99,7 @@ public class StateUtils {
     }
 
     public static double computeSLOCost (State state, RewardBasedOM om) {
-        return computeSLOCost(state, om, false);
+        return computeSLOCost(state, om, false, false);
     }
 
     public static double computeRespTime (State state, RewardBasedOM om) {

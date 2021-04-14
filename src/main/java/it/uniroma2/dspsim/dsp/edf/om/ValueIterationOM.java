@@ -50,7 +50,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         final boolean useApproximateModel = configuration.getBoolean(ConfigurationKeys.VI_APPROX_MODEL, false);
         Operator realOperator = this.operator;
         if (useApproximateModel) {
-            this.operator = approximateOperatorModel(configuration);
+            this.operator = getApproximateOperator();
         }
 
         if (!PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
@@ -76,19 +76,6 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
         return pMatrix;
     }
 
-
-    private Operator approximateOperatorModel (Configuration conf)
-    {
-        Random r = new Random(conf.getInteger(ConfigurationKeys.VI_APPROX_MODEL_SEED, 123));
-        final double maxErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MAX_ERR, 0.1);
-        final double minErr = conf.getDouble(ConfigurationKeys.VI_APPROX_MODEL_MIN_ERR, 0.05);
-
-        OperatorQueueModel queueModel = operator.getQueueModel().getApproximateModel(r, maxErr, minErr);
-        logger.info("Approximate stMean: {} -> {}", operator.getQueueModel().getServiceTimeMean(), queueModel.getServiceTimeMean());
-        Operator tempOperator = new Operator("temp", queueModel, operator.getMaxParallelism());
-        tempOperator.setSloRespTime(operator.getSloRespTime());
-        return tempOperator;
-    }
 
     /**
      * VALUE ITERATION ALGORITHM
