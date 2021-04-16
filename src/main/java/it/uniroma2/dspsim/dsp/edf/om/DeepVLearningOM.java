@@ -7,6 +7,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCa
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
+import it.uniroma2.dspsim.dsp.edf.om.rl.utils.CachedNeuralNetwork;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.Transition;
 import org.apache.commons.lang3.tuple.Pair;
@@ -60,7 +61,7 @@ public class DeepVLearningOM extends DeepLearningOM {
 
                         @Override
                         public double evaluateAction(State s, Action a) {
-                            return getTargetQ(s, a);
+                            return getQ(s, a, targetNetwork);
                         }
                     }
             );
@@ -88,7 +89,7 @@ public class DeepVLearningOM extends DeepLearningOM {
             double cU = t.getReward() - computeActionCost(t.getA()) -
                     (StateUtils.computeDeploymentCostNormalized(pdState, this) * this.getwResources());
             Action greedyAction = this.targetGreedyASP.selectAction(t.getNextS());
-            double newV = getTargetQ(t.getNextS(), greedyAction) * gamma + cU;
+            double newV = getQ(t.getNextS(), greedyAction, this.targetNetwork) * gamma + cU;
 
             labels.put(row, 0, newV);
 
@@ -102,23 +103,21 @@ public class DeepVLearningOM extends DeepLearningOM {
         return Pair.of(inputs, labels);
     }
 
-    private double getV(State state) {
-        return network.output(state).getDouble(0);
+    private double getV(State state, CachedNeuralNetwork neuralNet) {
+        return neuralNet.output(state).getDouble(0);
     }
 
-    private double getTargetV (State state) {
-        return targetNetwork.output(state).getDouble(0);
+    private double getV(State state) {
+        return this.network.output(state).getDouble(0);
     }
 
     private double getQ(State state, Action action) {
-        State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
-        double v = getV(postDecisionState);
-        return v + computeActionCost(action) + (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
+        return getQ(state, action, this.network);
     }
 
-    private double getTargetQ(State state, Action action) {
+    private double getQ(State state, Action action, CachedNeuralNetwork neuralNet) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
-        double v = getTargetV(postDecisionState);
+        double v = getV(postDecisionState, neuralNet);
         return v + computeActionCost(action) + (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
     }
 
