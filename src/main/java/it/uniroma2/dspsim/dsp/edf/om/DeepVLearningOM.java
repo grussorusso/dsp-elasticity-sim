@@ -1,5 +1,7 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
@@ -34,8 +36,18 @@ public class DeepVLearningOM extends DeepLearningOM {
     private INDArray inputs;
     private INDArray labels;
 
+    private boolean useEstimatedUnknownCost;
+    private boolean approximateSpeedupsForCostEstimation;
+    private boolean approximateOperatorModel;
+
     public DeepVLearningOM(Operator operator) {
         super(operator);
+
+        Configuration configuration = Configuration.getInstance();
+
+        this.useEstimatedUnknownCost = configuration.getBoolean(ConfigurationKeys.PDS_ESTIMATE_COSTS, false);
+        this.approximateSpeedupsForCostEstimation = configuration.getBoolean(ConfigurationKeys.APPROX_SPEEDUPS, true);
+        this.approximateOperatorModel = configuration.getBoolean(ConfigurationKeys.VI_APPROX_MODEL, true);
 
         this.inputs = Nd4j.create(batchSize, neuralStateRepresentation.getRepresentationLength());
         this.labels = Nd4j.create(batchSize, 1);
@@ -88,8 +100,12 @@ public class DeepVLearningOM extends DeepLearningOM {
             // unknown cost
             double cU = t.getReward() - computeActionCost(t.getA()) -
                     (StateUtils.computeDeploymentCostNormalized(pdState, this) * this.getwResources());
+
+            // Can be used to learn only the difference w.r.t to an estimate
+            final double diffCost = cU - estimateUnknownCost(pdState);
+
             Action greedyAction = this.targetGreedyASP.selectAction(t.getNextS());
-            double newV = getQ(t.getNextS(), greedyAction, this.targetNetwork) * gamma + cU;
+            double newV = getQ(t.getNextS(), greedyAction, this.targetNetwork) * gamma + diffCost;
 
             labels.put(row, 0, newV);
 
@@ -117,9 +133,25 @@ public class DeepVLearningOM extends DeepLearningOM {
 
     private double getQ(State state, Action action, CachedNeuralNetwork neuralNet) {
         State postDecisionState = StateUtils.computePostDecisionState(state, action, this);
+        double knownCost = computeActionCost(action);
+        knownCost += (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
         double v = getV(postDecisionState, neuralNet);
-        return v + computeActionCost(action) + (StateUtils.computeDeploymentCostNormalized(postDecisionState, this) * this.getwResources());
+        return v + estimateUnknownCost(postDecisionState) + knownCost;
     }
+
+    public double estimateUnknownCost (State pds) {
+        if (this.useEstimatedUnknownCost) {
+            // Here we assume that lambda does not change..
+            return this.getwSLO() * StateUtils.computeSLOCost(pds, this, approximateSpeedupsForCostEstimation,
+                    approximateOperatorModel);
+        } else {
+            return 0.0;
+        }
+    }
+
+    /**
+     * ACTION SELECTION POLICY CALLBACK INTERFACE
+     */
 
     private double computeActionCost(Action action) {
         if (action.getDelta() != 0)
