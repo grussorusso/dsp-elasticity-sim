@@ -9,6 +9,7 @@ import java.util.Random;
 public class ComputingInfrastructure {
 
 	private NodeType[] nodeTypes;
+	private Double costNormalizationConstant = null;
 
 	/* A copy of nodeTypes with estimated speedups */
 	private NodeType[] estimatedNodeTypes = null;
@@ -26,7 +27,7 @@ public class ComputingInfrastructure {
 
 
 	static private final double scenarioAspeedups[] = {1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5};
-	static private final double scenarioBspeedups[] = {1.0, 0.05, 30.0, 0.1, 0.2, 0.4, 0.8, 2.0, 5.0, 10.0};
+	static private final double scenarioBspeedups[] = {1.0, 0.05, 7.0, 0.1, 0.2, 0.4, 0.8, 2.0, 5.0, 10.0};
 	static private final double scenarioCspeedups[] = {1.0, 1.7, 3.0, 2.5, 5.0, 1.5, 8.0, 4.0, 6.0, 10.0};
 
 
@@ -35,26 +36,31 @@ public class ComputingInfrastructure {
 		infrastructure.nodeTypes = new NodeType[numOfResTypes];
 
 		String confScenario = Configuration.getInstance().getString(ConfigurationKeys.NODE_TYPES_SCENARIO, "A");
+		double speedups[] = null;
+		if (confScenario.equalsIgnoreCase("A")) {
+			speedups = scenarioAspeedups;
+		} else if (confScenario.equalsIgnoreCase("B")) {
+			speedups = scenarioBspeedups;
+		} else if (confScenario.equalsIgnoreCase("C")) {
+			speedups = scenarioCspeedups;
+		} else {
+			speedups = new double[numOfResTypes];
+			for (int i = 0; i < numOfResTypes; i++) {
+				speedups[i] = 1.0 + i * 0.1; /* incremental (default) */
+			}
+		}
 
 		for (int i = 0; i < numOfResTypes; i++) {
 			final String name = String.format("Res-%d", i);
-			double cpuSpeedup, cost;
-			if (confScenario.equalsIgnoreCase("A")) {
-				cpuSpeedup = scenarioAspeedups[i];
-				cost = cpuSpeedup;
-			} else if (confScenario.equalsIgnoreCase("B")) {
-				cpuSpeedup = scenarioBspeedups[i];
-				cost = cpuSpeedup;
-			} else if (confScenario.equalsIgnoreCase("C")) {
-				cpuSpeedup = scenarioCspeedups[i];
-				cost = cpuSpeedup;
-			} else {
-				cpuSpeedup = 1.0 + i*0.1; /* incremental (default) */
-				cost = cpuSpeedup;
-			}
+			double cpuSpeedup = speedups[i];
+			double cost = cpuSpeedup;
 			System.out.printf("Speedup: %.2f, cost: %.2f\n", cpuSpeedup, cost);
 			infrastructure.nodeTypes[i] = new NodeType(i, name,  cost, cpuSpeedup);
 		}
+
+		/* Set cost normalization constant */
+		infrastructure.costNormalizationConstant = Arrays.stream(speedups).max().getAsDouble();
+		System.out.printf("Cost normalization constant: %.2f\n", infrastructure.costNormalizationConstant);
 
 		return infrastructure;
 	}
@@ -104,7 +110,10 @@ public class ComputingInfrastructure {
 	}
 
 	public double getCostNormalizationConstant() {
-		return getMostExpensiveResType().getCost();
+		if (this.costNormalizationConstant == null)
+			return getMostExpensiveResType().getCost();
+		else
+			return this.costNormalizationConstant;
 	}
 
 	public NodeType[] getEstimatedNodeTypes() {
