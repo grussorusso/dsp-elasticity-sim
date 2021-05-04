@@ -53,7 +53,7 @@ public class StateUtils {
     }
 
     public static double computeDeploymentCostNormalized(State state, int maxParallelism) {
-        double maxCost = maxParallelism * ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
+        double maxCost = maxParallelism * ComputingInfrastructure.getInfrastructure().getCostNormalizationConstant();
         return computeDeploymentCost(state) / maxCost;
     }
 

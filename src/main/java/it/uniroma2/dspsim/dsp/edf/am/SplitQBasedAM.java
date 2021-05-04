@@ -173,7 +173,7 @@ public class SplitQBasedAM extends ApplicationManager {
 				cResOp += currentDeployment[j]*nodeTypes[j].getCost();
 			}
 
-			cResOp /= op.getMaxParallelism()*ComputingInfrastructure.getInfrastructure().getMostExpensiveResType().getCost();
+			cResOp /= op.getMaxParallelism()*ComputingInfrastructure.getInfrastructure().getCostNormalizationConstant();
 			futureQres += (scoredRcfs[i].get(a[i]).getV().getqResources()-cResOp)/localGamma; /* account future cost only */
 			cRes += cResOp;
 		}

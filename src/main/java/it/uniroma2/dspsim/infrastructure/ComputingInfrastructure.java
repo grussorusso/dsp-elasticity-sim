@@ -103,6 +103,10 @@ public class ComputingInfrastructure {
 		return nodeType;
 	}
 
+	public double getCostNormalizationConstant() {
+		return getMostExpensiveResType().getCost();
+	}
+
 	public NodeType[] getEstimatedNodeTypes() {
 		if (this.estimatedNodeTypes == null) {
 			initEstimatedNodeTypes();
