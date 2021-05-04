@@ -1,5 +1,8 @@
 package it.uniroma2.dspsim.dsp.edf.om;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
+
 public enum OperatorManagerType {
     DO_NOTHING,
     THRESHOLD_BASED,
@@ -22,6 +25,15 @@ public enum OperatorManagerType {
             return DO_NOTHING;
         } else if (str.equalsIgnoreCase("threshold")) {
             return THRESHOLD_BASED;
+        } else if (str.equalsIgnoreCase("threshold-cost")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "cost");
+            return THRESHOLD_BASED;
+        } else if (str.equalsIgnoreCase("threshold-speedup")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "speedup");
+            return THRESHOLD_BASED;
+        } else if (str.equalsIgnoreCase("threshold-random")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "random");
+            return THRESHOLD_BASED;
         } else if (str.equalsIgnoreCase("optimal-allocation")) {
             return OPTIMAL_ALLOCATION;
         } else if (str.equalsIgnoreCase("model-based")) {
@@ -30,11 +42,17 @@ public enum OperatorManagerType {
             return Q_LEARNING;
         } else if (str.equalsIgnoreCase("q-learning-pds")) {
             return Q_LEARNING_PDS;
+        } else if (str.equalsIgnoreCase("q-learning-pds-ec")) {
+            Configuration.getInstance().setString(ConfigurationKeys.PDS_ESTIMATE_COSTS, "true");
+            return Q_LEARNING_PDS;
         } else if (str.equalsIgnoreCase("fa-q-learning")) {
             return FA_Q_LEARNING;
         } else if (str.equalsIgnoreCase("deep-q-learning")) {
             return DEEP_Q_LEARNING;
         } else if (str.equalsIgnoreCase("deep-v-learning")) {
+            return DEEP_V_LEARNING;
+        } else if (str.equalsIgnoreCase("deep-v-learning-ec")) {
+            Configuration.getInstance().setString(ConfigurationKeys.PDS_ESTIMATE_COSTS, "true");
             return DEEP_V_LEARNING;
         } else if (str.equalsIgnoreCase("vi")) {
             return VALUE_ITERATION;
