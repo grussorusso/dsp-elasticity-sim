@@ -2,6 +2,7 @@ package it.uniroma2.dspsim.dsp;
 
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
+import it.uniroma2.dspsim.dsp.queueing.FromFileQueueModel;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.utils.Tuple2;
@@ -117,10 +118,23 @@ public class ApplicationBuilder {
 		final double serviceTimeMean = 1/mu;
 		final double serviceTimeVariance = 1.0/mu*1.0/mu/2.0;
 
+		OperatorQueueModel opModel = null;
+		String fromFileRespTime = Configuration.getInstance().getString(ConfigurationKeys.OPERATOR_RESPTIME_FROM_FILE, "");
+		if (!fromFileRespTime.isEmpty()) {
+			/* EXPERIMENTAL */
+			try {
+				opModel = new FromFileQueueModel(fromFileRespTime);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+				System.exit(1);
+			}
+		} else {
+			opModel = new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance);
+		}
+
 		final int maxParallelism = Configuration.getInstance()
 				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
-		Operator op = new Operator("singleOp",
-				new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance), maxParallelism);
+		Operator op = new Operator("singleOp", opModel, maxParallelism);
 		app.addOperator(op);
 
 		return app;

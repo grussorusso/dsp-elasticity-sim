@@ -54,6 +54,8 @@ public abstract class ConfigurationKeys {
 	public static final String OPERATOR_SLO_COMPUTATION_METHOD = "dsp.slo.operator.method";
 	public static final String OPERATOR_SLO_COMPUTATION_CUSTOM_QUOTAS = "dsp.slo.operator.custom.quotas";
 
+	public static final String OPERATOR_RESPTIME_FROM_FILE = "operator.resptime.fromfile";
+
 
 	/**
 	 * Application.
