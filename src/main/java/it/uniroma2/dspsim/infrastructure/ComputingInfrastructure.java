@@ -54,13 +54,13 @@ public class ComputingInfrastructure {
 			final String name = String.format("Res-%d", i);
 			double cpuSpeedup = speedups[i];
 			double cost = cpuSpeedup;
-			System.out.printf("Speedup: %.2f, cost: %.2f\n", cpuSpeedup, cost);
+			//System.out.printf("Speedup: %.2f, cost: %.2f\n", cpuSpeedup, cost);
 			infrastructure.nodeTypes[i] = new NodeType(i, name,  cost, cpuSpeedup);
 		}
 
 		/* Set cost normalization constant */
 		infrastructure.costNormalizationConstant = Arrays.stream(speedups).max().getAsDouble();
-		System.out.printf("Cost normalization constant: %.2f\n", infrastructure.costNormalizationConstant);
+		//System.out.printf("Cost normalization constant: %.2f\n", infrastructure.costNormalizationConstant);
 
 		return infrastructure;
 	}

@@ -61,7 +61,7 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 	private Logger logger = LoggerFactory.getLogger(ModelBasedRLOM.class);
 
 
-	private static final int SINGLE_ITERATION_HARD_TIMEOUT_SEC = 60;
+	private static final int SINGLE_ITERATION_HARD_TIMEOUT_SEC = 30;
 
 	public ModelBasedRLOM(Operator operator) {
 		super(operator);

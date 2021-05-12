@@ -19,7 +19,7 @@ import java.io.File;
 
 public class TestQTable {
 
-    static private final int LAMBDA_LEVELS = 20;
+    static private final int LAMBDA_LEVELS = 30;
 
     @Test
     public void qTableHashingTest() {
@@ -48,7 +48,7 @@ public class TestQTable {
     @Test
     public void qSizeTest() {
         int arrResTypes[] = {1, 2, 4, 6, 8, 10};
-        int parallelism[] = {5,10,15,20};
+        int parallelism[] = {10,20};
 
         for (int p : parallelism)  {
             for (int resTypes : arrResTypes) {
