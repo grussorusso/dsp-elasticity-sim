@@ -11,10 +11,15 @@ import it.uniroma2.dspsim.dsp.edf.om.threshold.MinCostThresholdPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.threshold.RandomSelectionThresholdPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.threshold.ThresholdPolicy;
 
+import java.util.Random;
+
 public class ThresholdBasedOM extends OperatorManager {
 
 	private double scaleOutThreshold;
 	private ThresholdPolicy thresholdPolicy;
+
+	private boolean noisyUtilizationMonitoring;
+	private Random utilNoiseRng;
 
 	public ThresholdBasedOM(Operator operator) {
 		super(operator);
@@ -29,11 +34,22 @@ public class ThresholdBasedOM extends OperatorManager {
 		}
 
 		this.scaleOutThreshold = Configuration.getInstance().getDouble(ConfigurationKeys.OM_THRESHOLD_KEY, 0.7);
+		this.noisyUtilizationMonitoring = Configuration.getInstance().getBoolean(ConfigurationKeys.OM_THRESHOLD_UTIL_NOISE, false);
+		if (this.noisyUtilizationMonitoring) {
+			this.utilNoiseRng = new Random(this.operator.getName().hashCode());
+		}
 	}
 
 	@Override
 	public OMRequest pickReconfigurationRequest(OMMonitoringInfo monitoringInfo) {
-		final double u = monitoringInfo.getCpuUtilization();
+		double u = monitoringInfo.getCpuUtilization();
+
+		if (this.noisyUtilizationMonitoring) {
+			final double MAX_REL_ERR = 0.1;
+			final double err = -MAX_REL_ERR/2.0 + this.utilNoiseRng.nextDouble() * MAX_REL_ERR;
+			u = Math.max(0.0, u * (1.0 + err));
+		}
+
 		final double p = operator.getInstances().size();
 
 		Reconfiguration rcf = thresholdPolicy.applyThresholdPolicy(u, p, operator, this.scaleOutThreshold);

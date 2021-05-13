@@ -28,7 +28,8 @@ public class ComputingInfrastructure {
 
 	static private final double scenarioAspeedups[] = {1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5};
 	static private final double scenarioBspeedups[] = {1.0, 0.05, 7.0, 0.1, 0.2, 0.4, 0.8, 2.0, 5.0, 10.0};
-	static private final double scenarioCspeedups[] = {1.0, 1.7, 3.0, 2.5, 5.0, 1.5, 8.0, 4.0, 6.0, 10.0};
+	static private final double scenarioCspeedups[] = {1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5,
+	1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.55, 1.35, 1.25};
 
 
 	static public ComputingInfrastructure initDefaultInfrastructure (int numOfResTypes) {

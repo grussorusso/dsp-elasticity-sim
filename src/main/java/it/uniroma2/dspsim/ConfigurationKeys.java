@@ -88,6 +88,7 @@ public abstract class ConfigurationKeys {
 	 */
 	/** For ThresholdBasedOM, scaling threshold in (0,1). */
 	public static final String OM_THRESHOLD_KEY = "edf.om.threshold";
+	public static final String OM_THRESHOLD_UTIL_NOISE = "edf.om.threshold.monitoring.noisy";
 	public static final String OM_THRESHOLD_RESOURCE_SELECTION = "edf.om.threshold.resourceselection";
 
 	/**
