@@ -2,6 +2,10 @@ package it.uniroma2.dspsim.infrastructure;
 
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
+import it.uniroma2.dspsim.dsp.edf.om.OperatorManagerType;
+import it.uniroma2.dspsim.dsp.edf.om.threshold.MaxSpeedupThresholdPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.threshold.MinCostThresholdPolicy;
+import it.uniroma2.dspsim.dsp.edf.om.threshold.RandomSelectionThresholdPolicy;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -27,7 +31,7 @@ public class ComputingInfrastructure {
 
 
 	static private final double scenarioAspeedups[] = {1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5};
-	static private final double scenarioBspeedups[] = {1.0, 0.05, 7.0, 0.1, 0.2, 0.4, 0.8, 2.0, 5.0, 10.0};
+	static private final double scenarioBspeedups[] = {1.0, 0.05, 30.0, 0.1, 0.2, 0.4, 0.8, 2.0, 5.0, 7.0};
 	static private final double scenarioCspeedups[] = {1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5,
 	1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.55, 1.35, 1.25};
 
@@ -55,6 +59,7 @@ public class ComputingInfrastructure {
 			final String name = String.format("Res-%d", i);
 			double cpuSpeedup = speedups[i];
 			double cost = cpuSpeedup;
+			//double cost = Math.pow(cpuSpeedup, 1.3);
 			//System.out.printf("Speedup: %.2f, cost: %.2f\n", cpuSpeedup, cost);
 			infrastructure.nodeTypes[i] = new NodeType(i, name,  cost, cpuSpeedup);
 		}
@@ -108,6 +113,34 @@ public class ComputingInfrastructure {
 		}
 
 		return nodeType;
+	}
+
+	public NodeType getCheapestResType () {
+		Double cost = null;
+		NodeType nodeType = null;
+
+		for (NodeType nt : nodeTypes) {
+			if (nodeType == null || nt.getCost() < cost) {
+				cost = nt.getCost();
+				nodeType = nt;
+			}
+		}
+
+		return nodeType;
+	}
+
+	public NodeType getDefaultNodeType() {
+		OperatorManagerType omType = OperatorManagerType.fromString(Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""));
+		if (omType == OperatorManagerType.THRESHOLD_BASED) {
+			String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "cost");
+			if (resSelectionPolicy.equalsIgnoreCase("speedup")) {
+				return getMostExpensiveResType();
+			} else if (resSelectionPolicy.equalsIgnoreCase("cost")) {
+				return getCheapestResType();
+			}
+		}
+
+		return this.nodeTypes[0];
 	}
 
 	public double getCostNormalizationConstant() {

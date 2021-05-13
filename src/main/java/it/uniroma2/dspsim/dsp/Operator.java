@@ -64,7 +64,7 @@ public class Operator {
 				ConfigurationKeys.OPERATOR_VALUES_COMPUTING_CASE_KEY, "worst"));
 
 		/* Add initial replica */
-		NodeType defaultType = ComputingInfrastructure.getInfrastructure().getNodeTypes()[0];
+		NodeType defaultType = ComputingInfrastructure.getInfrastructure().getDefaultNodeType();
 		instances.add(defaultType);
 	}
 
