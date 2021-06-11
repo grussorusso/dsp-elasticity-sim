@@ -54,14 +54,14 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
         this.fitNetworkEvery = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_FIT_EVERY_ITERS, 5);
 
-        if (!PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
+        //if (!PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
             tbvi(this.tbviMaxIterations, this.tbviMillis, this.tbviTrajectoryLength);
-        }
+       // }
 
-        // dumpQOnFile(String.format("%s/%s/%s/policy",
-       //         Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
-       //         Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
-       //         "others"));
+         dumpQOnFile(String.format("%s/%s/%s/policy",
+                Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY, ""),
+                Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""),
+                "others"));
 
         //printTBVIResults();
     }
@@ -123,6 +123,33 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     @Override
     protected void dumpQOnFile(String filename) {
+        try {
+            File f = new File(filename);
+            FileOutputStream fileOut = new FileOutputStream(f.getAbsolutePath());
+            PrintWriter pw = new PrintWriter(fileOut);
+            StateIterator stateIterator = new StateIterator(getStateRepresentation(), this.operator.getMaxParallelism(),
+                    ComputingInfrastructure.getInfrastructure(), getInputRateLevels());
+            while (stateIterator.hasNext()) {
+                State s = stateIterator.next();
+                ActionIterator actionIterator = new ActionIterator();
+                while (actionIterator.hasNext()) {
+                    Action a = actionIterator.next();
+                    if (validateAction(s, a)) {
+                        //pw.println(s.dump() + "\t" + a.dump() + "\tV: " + getV(StateUtils.computePostDecisionState(s, a, this)));
+                        State pds = StateUtils.computePostDecisionState(s, a, this);
+                        pw.println(s.dump() + "\t" + a.dump() + "->" + pds.dump() + "\tV: " + getV(pds));
+                        pw.println(s.dump() + "\t" + a.dump() + "\tQ: " + getQ(s,a));
+                    }
+                }
+            }
+
+            pw.close();
+            fileOut.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

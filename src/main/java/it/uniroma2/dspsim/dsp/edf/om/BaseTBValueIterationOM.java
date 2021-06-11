@@ -42,6 +42,8 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         this.actionsCount = computeActionsCount();
         this.statesCount = computeStatesCount();
 
+        System.out.printf("States = %d, actions = %d\n", this.statesCount, this.actionsCount);
+
         Configuration configuration = Configuration.getInstance();
 
         this.tbviMaxIterations = configuration.getLong(ConfigurationKeys.TBVI_EXEC_ITERATIONS_KEY, 300000L);
@@ -54,7 +56,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
     protected void tbvi(long maxIterations, long millis, long trajectoryLength) {
         ActionSelectionPolicy epsGreedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.EPSILON_GREEDY, this);
-        ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilon(0.3);
+        ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilon(0.5);
         ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilonDecaySteps(-1);
         // get initial state
         State state = null;
@@ -79,6 +81,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
             if (tl == 0L) {
                 resetTrajectoryData();
                 state = randomInitialState(trajectoriesComputed);
+                //System.out.println("Initial state: " + state.toString());
 
                 trajectoriesComputed++;
             }
