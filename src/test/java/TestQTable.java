@@ -47,8 +47,8 @@ public class TestQTable {
 
     @Test
     public void qSizeTest() {
-        int arrResTypes[] = {1, 2, 4, 6, 8, 10};
-        int parallelism[] = {10,20};
+        int arrResTypes[] = {6, 8, 10};
+        int parallelism[] = {20};
 
         for (int p : parallelism)  {
             for (int resTypes : arrResTypes) {
@@ -93,7 +93,7 @@ public class TestQTable {
                 // output
                 weights += deepInput;
 
-                String out = String.format("%d;%d;%d;%d;%d;%.2f;%.2f;%.2f", resTypes, p, qEntries, faFeatures, weights,
+                String out = String.format("%d;%d;%d;%d;%d; %.2f;%.2f;%.2f", resTypes, p, qEntries, faFeatures, weights,
                         usedMemory(qEntries), usedMemory(faFeatures), usedMemory(weights));
                 System.out.println(out);
             }

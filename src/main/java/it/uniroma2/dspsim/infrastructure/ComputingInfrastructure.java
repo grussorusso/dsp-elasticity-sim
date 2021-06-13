@@ -130,14 +130,17 @@ public class ComputingInfrastructure {
 	}
 
 	public NodeType getDefaultNodeType() {
-		OperatorManagerType omType = OperatorManagerType.fromString(Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""));
-		if (omType == OperatorManagerType.THRESHOLD_BASED) {
-			String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "cost");
-			if (resSelectionPolicy.equalsIgnoreCase("speedup")) {
-				return getMostExpensiveResType();
-			} else if (resSelectionPolicy.equalsIgnoreCase("cost")) {
-				return getCheapestResType();
+		try {
+			OperatorManagerType omType = OperatorManagerType.fromString(Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""));
+			if (omType == OperatorManagerType.THRESHOLD_BASED) {
+				String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "cost");
+				if (resSelectionPolicy.equalsIgnoreCase("speedup")) {
+					return getMostExpensiveResType();
+				} else if (resSelectionPolicy.equalsIgnoreCase("cost")) {
+					return getCheapestResType();
+				}
 			}
+		} catch (IllegalArgumentException e) {
 		}
 
 		return this.nodeTypes[0];
