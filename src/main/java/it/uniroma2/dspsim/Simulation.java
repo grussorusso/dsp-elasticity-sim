@@ -58,8 +58,18 @@ public class Simulation {
 		logger.info("SLO latency: {}", LATENCY_SLO);
 	}
 
+	private void createOutputDirectoryIfNeeded()
+	{
+		final String outDir = Configuration.getInstance().getString(ConfigurationKeys.OUTPUT_BASE_PATH_KEY,".");
+		File f = new File(outDir);
+		if (!f.exists()) {
+			f.mkdirs();
+		}
+	}
+
 	private void registerMetrics () {
 		Statistics statistics = Statistics.getInstance();
+		createOutputDirectoryIfNeeded();
 
 		final String STAT_LATENCY_VIOLATIONS = "Violations";
 		final String STAT_RECONFIGURATIONS = "Reconfigurations";
