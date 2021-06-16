@@ -236,5 +236,23 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
     public void savePolicy()
     {
         this.qTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "qTable"));
+
+        //StateIterator stateIterator = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
+        //        ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
+
+        //long entries = 0;
+        //while (stateIterator.hasNext()) {
+        //    State state = stateIterator.next();
+        //    ActionIterator actionIterator = new ActionIterator();
+
+        //    while (actionIterator.hasNext()) {
+        //        Action action = actionIterator.next();
+        //        if (!validateAction(state, action))
+        //            continue;
+
+        //        entries++;
+        //    }
+        //}
+        //System.out.println("Real entries: " + entries);
     }
 }

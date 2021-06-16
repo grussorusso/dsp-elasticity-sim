@@ -9,7 +9,7 @@ import java.io.*;
 public class MapBasedQTable implements QTable {
 
 	private Table<Integer, Integer, Double> table = HashBasedTable.create();
-	private double initializationValue;
+	private final double initializationValue;
 
 	public MapBasedQTable(double initializationValue) {
 		this.initializationValue = initializationValue;
@@ -18,8 +18,10 @@ public class MapBasedQTable implements QTable {
 	@Override
 	public double getQ(State s, AbstractAction a) {
 		Double q = table.get(s.hashCode(),a.hashCode());
-		if (q == null)
+		if (q == null) {
+			table.put(s.hashCode(), a.hashCode(), initializationValue);
 			return initializationValue; // TODO put() before returning?
+		}
 
 		return q;
 	}
@@ -31,6 +33,7 @@ public class MapBasedQTable implements QTable {
 
 	@Override
 	public void dump(File f) {
+		//System.out.println("Entries: " + this.table.size());
 		try {
 			FileOutputStream fileOut = new FileOutputStream(f.getAbsolutePath());
 			ObjectOutputStream out = new ObjectOutputStream(fileOut);

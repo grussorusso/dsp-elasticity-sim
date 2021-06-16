@@ -1,7 +1,5 @@
 package it.uniroma2.dspsim.dsp.edf.om.rl;
 
-import com.google.common.collect.Table;
-import it.unimi.dsi.fastutil.Hash;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 
 import java.io.*;
@@ -11,7 +9,7 @@ import java.util.Map;
 public class MapBasedVTable implements VTable {
 
 	private Map<Integer, Double> table = new HashMap<>();
-	private double initializationValue;
+	private final double initializationValue;
 
 	public MapBasedVTable(double initializationValue) {
 		this.initializationValue = initializationValue;
@@ -20,8 +18,10 @@ public class MapBasedVTable implements VTable {
 	@Override
 	public double getV(State s) {
 		Double q = table.get(s.hashCode());
-		if (q == null)
+		if (q == null) {
+			table.put(s.hashCode(), initializationValue);
 			return initializationValue;
+		}
 
 		return q;
 	}
