@@ -6,7 +6,6 @@ import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.Reconfiguration;
 import it.uniroma2.dspsim.dsp.edf.EDF;
 import it.uniroma2.dspsim.dsp.edf.MonitoringInfo;
-import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.*;
 import it.uniroma2.dspsim.stats.metrics.*;
@@ -22,6 +21,7 @@ public class Simulation {
 
 	/** Simulated time */
 	private long time = 0l;
+	final private long infrastructureUpdateTime;
 
 	private final double LATENCY_SLO;
 
@@ -54,6 +54,8 @@ public class Simulation {
 		this.wRes = conf.getDouble(ConfigurationKeys.RL_OM_RESOURCES_WEIGHT_KEY, 0.33);
 
 		this.detailedScalingLog = conf.getBoolean(ConfigurationKeys.SIMULATION_DETAILED_SCALING_LOG, false);
+
+		this.infrastructureUpdateTime = conf.getLong(ConfigurationKeys.NODE_TYPES_UPDATE_TIME, -1l);
 
 		logger.info("SLO latency: {}", LATENCY_SLO);
 	}
@@ -172,10 +174,23 @@ public class Simulation {
 				System.out.print('|');
 
 			time++;
+
+
+			updateScenario(time);
 		}
 		System.out.print('\n');
 
 		edf.dumpPolicies();
+	}
+
+	private void updateScenario(long t) {
+		if (t == this.infrastructureUpdateTime) {
+			ComputingInfrastructure infra = ComputingInfrastructure.getInfrastructure();
+			for (int i = 0; i<infra.getNodeTypes().length-1; i++) {
+				infra.getNodeTypes()[i].setCost(99999.0);
+				infra.getNodeTypes()[i].setCpuSpeedup(0.00001);
+			}
+		}
 	}
 
 	private boolean checkReconfigurationPresence(Map<Operator, Reconfiguration> reconfigurations) {

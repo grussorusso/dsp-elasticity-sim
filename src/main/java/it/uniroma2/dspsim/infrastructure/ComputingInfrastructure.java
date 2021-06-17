@@ -148,9 +148,9 @@ public class ComputingInfrastructure {
 
 	public double getCostNormalizationConstant() {
 		if (this.costNormalizationConstant == null)
-			return getMostExpensiveResType().getCost();
-		else
-			return this.costNormalizationConstant;
+			this.costNormalizationConstant = getMostExpensiveResType().getCost();
+
+		return this.costNormalizationConstant;
 	}
 
 	public NodeType[] getEstimatedNodeTypes() {

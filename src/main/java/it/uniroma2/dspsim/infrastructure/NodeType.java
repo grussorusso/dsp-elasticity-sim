@@ -37,6 +37,10 @@ public class NodeType implements Comparable<NodeType> {
 		this.cpuSpeedup = cpuSpeedup;
 	}
 
+	public void setCost (double cost) {
+		this.cost = cost;
+	}
+
 	@Override
 	public int compareTo(NodeType o) {
 		return Double.compare(this.cpuSpeedup, o.cpuSpeedup);
