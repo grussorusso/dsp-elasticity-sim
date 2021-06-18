@@ -36,6 +36,8 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
     private Logger log = LoggerFactory.getLogger(DeepTBValueIterationOM.class);
 
+    private final int batchesPerIter;
+
     protected CachedNeuralNetwork network;
 
     public DeepTBValueIterationOM(Operator operator) {
@@ -53,6 +55,7 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
         this.labels = Nd4j.create(batchSize, 1);
 
         this.fitNetworkEvery = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_FIT_EVERY_ITERS, 5);
+        this.batchesPerIter = Configuration.getInstance().getInteger(ConfigurationKeys.DL_OM_FIT_BATCHES_PER_ITER, 1);
 
         //if (!PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
             tbvi(this.tbviMaxIterations, this.tbviMillis, this.tbviTrajectoryLength);
@@ -215,11 +218,13 @@ public class DeepTBValueIterationOM extends BaseTBValueIterationOM {
 
         // check if u want to perform an update
         if (fitNetworkEvery <= 1 || tbviIterations % fitNetworkEvery == 0) {
-            Collection<Transition> batch = expReplay.sampleBatch(this.batchSize);
-            if (batch != null) {
-                Pair<INDArray, INDArray> targets = getTargets(batch);
-                this.network.fit(targets.getLeft(), targets.getRight());
-                updateDeltaRunningAvg(network.getScore());
+            for (int i = 1; i<=this.batchesPerIter; i++) {
+                Collection<Transition> batch = expReplay.sampleBatch(this.batchSize);
+                if (batch != null) {
+                    Pair<INDArray, INDArray> targets = getTargets(batch);
+                    this.network.fit(targets.getLeft(), targets.getRight());
+                    updateDeltaRunningAvg(network.getScore());
+                }
             }
         }
 

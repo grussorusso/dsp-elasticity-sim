@@ -171,6 +171,7 @@ public abstract class ConfigurationKeys {
 	public static final String DL_OM_SAMPLES_MEMORY_SIZE_KEY = "edf.dl.samples.memory.size";
 	public static final String DL_OM_SAMPLES_MEMORY_BATCH_KEY = "edf.dl.samples.memory.batch";
 	public static final String DL_OM_FIT_EVERY_ITERS = "edf.dl.fit.every";
+	public static final String DL_OM_FIT_BATCHES_PER_ITER = "edf.dl.fit.batches.per.iter";
 	public static final String DL_OM_NETWORK_CACHE_SIZE = "edf.dl.network.cache.size";
 	public static final String DL_OM_NETWORK_HIDDEN_NODES1_COEFF = "edf.dl.network.hidden1.nodes.coeff";
 	public static final String DL_OM_NETWORK_HIDDEN_NODES2_COEFF = "edf.dl.network.hidden2.nodes.coeff";

@@ -36,6 +36,8 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
 
     private double deltaRunningAvg = 0.0;
 
+    final private boolean fallbackToVI = false;
+
     public BaseTBValueIterationOM(Operator operator) {
         super(operator);
 
@@ -54,7 +56,46 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         this.rng = new Random(seed);
     }
 
+    protected void vi(long maxIterations, long millis) {
+        // elapsed millis
+        long elapsedMillis = 0L;
+
+        while ((maxIterations <= 0L || tbviIterations < maxIterations) && (millis <= 0L || elapsedMillis < millis)) {
+            System.out.printf("TBVI: %d iterations (delta = %.4f)\n",tbviIterations, deltaRunningAvg);
+
+            long startIteration = System.currentTimeMillis();
+
+            StateIterator stateIterator = new StateIterator(this.getStateRepresentation(), this.operator.getMaxParallelism(),
+                    ComputingInfrastructure.getInfrastructure(), this.getInputRateLevels());
+            while (stateIterator.hasNext()) {
+                State s = stateIterator.next();
+                ActionIterator actionIterator = new ActionIterator();
+
+                while (actionIterator.hasNext()) {
+                    Action action = actionIterator.next();
+                    if (!validateAction(s, action))
+                        continue;
+
+                    tbviIteration(s,action);
+                    tbviIterations++;
+                }
+            }
+
+
+            elapsedMillis += (System.currentTimeMillis() - startIteration);
+        }
+
+        System.out.println("VI Total Iters: " + tbviIterations);
+        this.trainingEpochsCount.update((int)tbviIterations);
+        this.planningTimeMetric.update((int)(elapsedMillis));
+    }
+
     protected void tbvi(long maxIterations, long millis, long trajectoryLength) {
+        if (fallbackToVI) {
+            vi(maxIterations, millis);
+            return;
+        }
+
         ActionSelectionPolicy epsGreedyASP = ActionSelectionPolicyFactory.getPolicy(ActionSelectionPolicyType.EPSILON_GREEDY, this);
         ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilon(0.5);
         ((EpsilonGreedyActionSelectionPolicy) epsGreedyASP).setEpsilonDecaySteps(-1);
@@ -170,20 +211,33 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
     }
 
     protected State sampleNextState(State s, Action a) {
+        final boolean simplifiedSampling = false;
+
+        if (fallbackToVI)
+            return null;
+
         State pds = StateUtils.computePostDecisionState(s, a, this);
 
-        double randomN = rng.nextDouble();
-        double totalProb = 0.0;
         int nextLambda = 0;
-        Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
-        for (int lambda : possibleLambdas) {
-            nextLambda = lambda;
-            // get transition probability from s.lambda to lambda level
-            final double p = this.getpMatrix().getValue(s.getLambda(), lambda);
-            totalProb += p;
+        if (simplifiedSampling) {
+            nextLambda = s.getLambda() + (-1 + rng.nextInt() % 3);
+            if (nextLambda < 0)
+                nextLambda = 0;
+            if (nextLambda >= this.getInputRateLevels())
+                nextLambda = this.getInputRateLevels() - 1;
+        } else {
+            double randomN = rng.nextDouble();
+            double totalProb = 0.0;
+            Set<Integer> possibleLambdas = getpMatrix().getColLabels(s.getLambda());
+            for (int lambda : possibleLambdas) {
+                nextLambda = lambda;
+                // get transition probability from s.lambda to lambda level
+                final double p = this.getpMatrix().getValue(s.getLambda(), lambda);
+                totalProb += p;
 
-            if (totalProb > randomN)
-                break;
+                if (totalProb > randomN)
+                    break;
+            }
         }
 
         return StateFactory.createState(getStateRepresentation(), -1, pds.getActualDeployment(), nextLambda,
