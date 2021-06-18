@@ -179,6 +179,7 @@ public abstract class ConfigurationKeys {
 	public static final String DL_OM_NETWORK_ALPHA = "edf.dl.network.alpha";
 	public static final String DL_OM_NETWORK_LAMBDA_ONE_HOT = "edf.dl.network.input.lambda.onehot";
 	public static final String DL_OM_NETWORK_REDUCED_K_REPR = "edf.dl.network.input.k.reduced";
+	public static final String DL_OM_NETWORK_MINIMAL_INPUT_REPR = "edf.dl.network.input.minimal";
 	public static final String DL_OM_NETWORK_REDUCED_K_REPT_USE_RESOURCE_SET = "edf.dl.network.input.k.reduced.resourceset";
 	public static final String DL_OM_DOUBLE_NETWORK = "edf.dl.network.double.enabled";
 	public static final String DL_OM_DOUBLE_NETWORK_SYNC_PERIOD = "edf.dl.network.double.sync.period";

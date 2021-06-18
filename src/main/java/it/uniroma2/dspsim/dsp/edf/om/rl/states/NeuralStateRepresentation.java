@@ -10,6 +10,7 @@ public class NeuralStateRepresentation {
 	protected boolean oneHotForLambda;
 	protected boolean reducedDeploymentRepresentation;
 	protected boolean useResourceSetInReducedRepr;
+	protected boolean minimalRepresentation;
 
 	private int representationLength;
 	private int maxParallelism;
@@ -23,6 +24,10 @@ public class NeuralStateRepresentation {
 		this.oneHotForLambda = conf.getBoolean(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, true);
 		this.reducedDeploymentRepresentation = conf.getBoolean(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPR, true);
 		this.useResourceSetInReducedRepr = conf.getBoolean(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPT_USE_RESOURCE_SET, true);
+		this.minimalRepresentation = conf.getBoolean(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, false);
+
+		if (minimalRepresentation)
+			this.oneHotForLambda = false;
 
 		this.representationLength = computeArrayRepresentationLength();
 	}
@@ -45,19 +50,21 @@ public class NeuralStateRepresentation {
 
 	public int computeArrayRepresentationLength() {
 		int features;
+		final int nodeTypes = ComputingInfrastructure.getInfrastructure().getNodeTypes().length;
 
 		if (reducedDeploymentRepresentation) {
-			final int nodeTypes = ComputingInfrastructure.getInfrastructure().getNodeTypes().length;
 
 			features = maxParallelism * nodeTypes;
 
 			if (useResourceSetInReducedRepr)
-				features += Math.pow(2, nodeTypes)-1;
+				features += Math.pow(2, nodeTypes) - 1;
 			if (oneHotForLambda) {
 				features += lambdaLevels;
 			} else {
 				features += 1;
 			}
+		} else if (minimalRepresentation) {
+			features = nodeTypes + 1;
 		} else {
 			if (oneHotForLambda) {
 				features = (this.getTotalStates() / lambdaLevels) + lambdaLevels;

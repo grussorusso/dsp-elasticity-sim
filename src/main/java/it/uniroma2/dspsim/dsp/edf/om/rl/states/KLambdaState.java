@@ -19,7 +19,7 @@ public class KLambdaState extends State {
     public INDArray arrayRepresentation(NeuralStateRepresentation repr) throws IllegalArgumentException {
         final int features = repr.getRepresentationLength();
 
-        if (!repr.reducedDeploymentRepresentation && this.getIndex() < 0) {
+        if (!(repr.reducedDeploymentRepresentation || repr.minimalRepresentation) && this.getIndex() < 0) {
             StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
                     ComputingInfrastructure.getInfrastructure(), this.getMaxLambda() + 1);
             while (stateIterator.hasNext()) {
@@ -36,15 +36,18 @@ public class KLambdaState extends State {
 
         INDArray input = Nd4j.zeros(1, features);
         int offset = 0;
-        if (!repr.reducedDeploymentRepresentation) {
+        if (!repr.reducedDeploymentRepresentation && !repr.minimalRepresentation) {
             kToOneHotVector(input);
             final int kFeatures = repr.oneHotForLambda ? (features - (this.getMaxLambda() + 1)) : (features - 1);
             offset += kFeatures;
-        } else {
+        } else if (repr.reducedDeploymentRepresentation) {
             kToReducedOneHotVector(input, repr.useResourceSetInReducedRepr);
             offset = maxParallelism * actualDeployment.length;
             if (repr.useResourceSetInReducedRepr)
                 offset += (1 << actualDeployment.length) - 1;
+        } else if (repr.minimalRepresentation) {
+            kToNormalizedVector(input);
+            offset += this.actualDeployment.length;
         }
 
         if (!repr.oneHotForLambda) {
@@ -65,6 +68,11 @@ public class KLambdaState extends State {
         input.put(0, Math.floorDiv(this.getIndex(), this.getMaxLambda() + 1), 1);
     }
 
+    private void kToNormalizedVector (INDArray input) {
+        for (int i = 0; i < this.actualDeployment.length; i++)  {
+            input.put(0, i, (double)this.actualDeployment[i]/(double)maxParallelism);
+        }
+    }
     private void kToReducedOneHotVector (INDArray input, boolean useResourceSet) {
 
         int setOfTypesIndex = 0;
