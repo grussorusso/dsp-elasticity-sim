@@ -185,10 +185,14 @@ public class Simulation {
 
 	private void updateScenario(long t) {
 		if (t == this.infrastructureUpdateTime) {
+			System.out.println("Updating infrastructure");
+			final double costUpdateCoeff = Configuration.getInstance().getDouble(ConfigurationKeys.NODE_TYPES_UPDATE_COST_COEFF, 100.0);
+			final double speedupUpdateCoeff = Configuration.getInstance().getDouble(ConfigurationKeys.NODE_TYPES_UPDATE_SPEEDUP_COEFF, 1.0);
+
 			ComputingInfrastructure infra = ComputingInfrastructure.getInfrastructure();
 			for (int i = 0; i<infra.getNodeTypes().length-1; i++) {
-				infra.getNodeTypes()[i].setCost(99999.0);
-				infra.getNodeTypes()[i].setCpuSpeedup(0.00001);
+				infra.getNodeTypes()[i].setCost(infra.getNodeTypes()[i].getCost() * costUpdateCoeff);
+				infra.getNodeTypes()[i].setCpuSpeedup(infra.getNodeTypes()[i].getCpuSpeedup() * speedupUpdateCoeff);
 			}
 		}
 	}

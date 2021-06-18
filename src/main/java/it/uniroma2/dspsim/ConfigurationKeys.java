@@ -41,6 +41,8 @@ public abstract class ConfigurationKeys {
 	public static final String NODE_TYPES_NUMBER_KEY = "node.types.number";
 	public static final String NODE_TYPES_SCENARIO = "node.types.scenario";
 	public static final String NODE_TYPES_UPDATE_TIME = "node.types.update.time";
+	public static final String NODE_TYPES_UPDATE_COST_COEFF = "node.types.update.cost.coeff";
+	public static final String NODE_TYPES_UPDATE_SPEEDUP_COEFF = "node.types.update.speedup.coeff";
 
 	/**
 	 * Operator.
