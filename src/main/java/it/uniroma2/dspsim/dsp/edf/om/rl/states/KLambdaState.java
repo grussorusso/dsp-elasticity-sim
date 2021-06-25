@@ -40,14 +40,14 @@ public class KLambdaState extends State {
             kToOneHotVector(input);
             final int kFeatures = repr.oneHotForLambda ? (features - (this.getMaxLambda() + 1)) : (features - 1);
             offset += kFeatures;
-        } else if (repr.reducedDeploymentRepresentation) {
+        } else if (repr.minimalRepresentation) {
+            kToNormalizedVector(input);
+            offset += this.actualDeployment.length;
+        } else {
             kToReducedOneHotVector(input, repr.useResourceSetInReducedRepr);
             offset = maxParallelism * actualDeployment.length;
             if (repr.useResourceSetInReducedRepr)
                 offset += (1 << actualDeployment.length) - 1;
-        } else if (repr.minimalRepresentation) {
-            kToNormalizedVector(input);
-            offset += this.actualDeployment.length;
         }
 
         if (!repr.oneHotForLambda) {

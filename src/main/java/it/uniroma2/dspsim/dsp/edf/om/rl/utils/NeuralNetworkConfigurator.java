@@ -64,6 +64,7 @@ public class NeuralNetworkConfigurator {
 					.build();
 			LoggerFactory.getLogger(NeuralNetworkConfigurator.class).info("NeuralNet: {}-{}-{}-{}-{}",
 					inputLayerNodesNumber, hiddenNodes1, hiddenNodes2, hiddenNodes3, outputLayerNodesNumber);
+			System.out.printf("Network: %d-%d-%d-%d-%d\n", inputLayerNodesNumber, hiddenNodes1, hiddenNodes2, hiddenNodes3, outputLayerNodesNumber);
 		}else if (hiddenNodes2 > 0) {
 			netConf = new NeuralNetConfiguration.Builder()
 					.seed(conf.getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 12345))
@@ -92,6 +93,7 @@ public class NeuralNetworkConfigurator {
 					.build();
 			LoggerFactory.getLogger(NeuralNetworkConfigurator.class).info("NeuralNet: {}-{}-{}-{}",
 					inputLayerNodesNumber, hiddenNodes1, hiddenNodes2, outputLayerNodesNumber);
+			System.out.printf("Network: %d-%d-%d-%d\n", inputLayerNodesNumber, hiddenNodes1, hiddenNodes2, outputLayerNodesNumber);
 		} else {
 			netConf = new NeuralNetConfiguration.Builder()
 					.seed(conf.getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 12345))
@@ -115,6 +117,7 @@ public class NeuralNetworkConfigurator {
 					.build();
 			LoggerFactory.getLogger(NeuralNetworkConfigurator.class).info("NeuralNet: {}-{}-{}",
 					inputLayerNodesNumber, hiddenNodes1, outputLayerNodesNumber);
+			System.out.printf("Network: %d-%d-%d\n", inputLayerNodesNumber, hiddenNodes1, outputLayerNodesNumber);
 		}
 
 		return netConf;
