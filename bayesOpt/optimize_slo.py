@@ -155,12 +155,12 @@ opt_quotas, bOpt = optimize_quotas_multipath(eval_app, base_confs, args.iters, a
 if not args.noevaluate:
     # Run final simulation
     cost,stats = simulate_with_quotas(opt_quotas, app, base_confs, rmax, omalg, long_sim=True)
-    print("Final cost: {} : {}".format(cost, stats))
+    print("FINALCOST - BayesOpt: {} : {}".format(cost, stats))
 
     # Run baseline simulation
     cost,stats = simulate_default_slo(app, base_confs, rmax, omalg, long_sim=True)
-    print("Baseline cost: {} : {}".format(cost, stats))
+    print("FINALCOST - Baseline: {} : {}".format(cost, stats))
 
     # Run heuristic simulation
     cost,stats = simulate_heuristic (app, base_confs, rmax, omalg, approx=approximate_model, long_sim=True)
-    print("Heuristic cost: {} : {}".format(cost, stats))
+    print("FINALCOST - Heuristic: {} : {}".format(cost, stats))
