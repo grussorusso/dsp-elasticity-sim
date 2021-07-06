@@ -1,7 +1,7 @@
 #!/bin/bash
 
 function run {
-	time python gpyopt_sim.py $@
+	time python optimize_slo.py $@
 }
 
 ITERS=15

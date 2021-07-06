@@ -2,6 +2,8 @@ import subprocess
 import re
 JAR_FILE="/home/gabriele/Programmazione/dspelasticitysimulator/target/dsp-elasticity-simulator-1.0-SNAPSHOT-shaded.jar"
 
+DEBUG=False
+
 def parse_output (s):
     regex="AvgCost\s*=\s*(0.\d+)"
     regexV="Violations = (\d+)"
@@ -49,7 +51,10 @@ def simulate (app_file, base_confs, slo_setting_method = "fromfile", rmax=None, 
 
     # Run the simulation
     try:
-        cp = subprocess.run(["java", "-jar", JAR_FILE, *base_confs, TEMP_CONF], capture_output=True, check=True)
+        cmd_list = ["java", "-jar", JAR_FILE, *base_confs, TEMP_CONF]
+        if DEBUG:
+            print(cmd_list)
+        cp = subprocess.run(cmd_list, capture_output=True, check=True)
     except subprocess.CalledProcessError as e:
         s = e.stderr.decode("utf-8")
         print(s)

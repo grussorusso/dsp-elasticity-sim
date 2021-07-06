@@ -34,14 +34,14 @@ def simulate_heuristic (app, base_confs, rmax=None, ompolicy="vi", long_sim=Fals
 
     return simulate(TEMP_APP, base_confs, alg, rmax, ompolicy, long_sim)
 
-def evaluate (X, app, base_confs):
+def evaluate (X, app, base_confs, trainalg="vi"):
     quotas = X[0]
-    cost,stats = simulate_with_quotas(quotas, app, base_confs)
+    cost,stats = simulate_with_quotas(quotas, app, base_confs, ompolicy=trainalg)
 
     print("{} -> {} ({})".format(" ".join(["{:.3f}".format(q) for q in quotas]), cost, stats))
     return np.array([cost])
 
-def optimize_quotas_multipath (app, base_confs, n_iterations, constraints_mode):
+def optimize_quotas_multipath (app, base_confs, n_iterations, constraints_mode, train_only_conf=None, trainalg="vi"):
     paths = app.get_paths()
     n_op = app.get_n_operators()
 
@@ -87,8 +87,12 @@ def optimize_quotas_multipath (app, base_confs, n_iterations, constraints_mode):
 
     kernel = GPy.kern.Matern52(input_dim=n_op, variance=1.0, lengthscale=1.0)
 
+    confs_to_use = [c for c in base_confs]
+    if train_only_conf != None:
+        confs_to_use.append(train_only_conf)
+
     # --- Solve your problem
-    myBopt = BayesianOptimization(f=lambda x : evaluate(x, app, base_confs),
+    myBopt = BayesianOptimization(f=lambda x : evaluate(x, app, confs_to_use, trainalg),
             kernel=kernel,
             normalize_Y=True,
             maximize=False,
@@ -109,45 +113,46 @@ def optimize_quotas_multipath (app, base_confs, n_iterations, constraints_mode):
             print(f"{op}->{slo};", end='')
         print("")
 
+    #Only works with 1 or 2 vars....
     #myBopt.plot_acquisition()
-    return myBopt.x_opt
+
+    return (myBopt.x_opt, myBopt)
 
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--conf', action='append', required=True)
-    parser.add_argument('--app', action='store', required=True)
-    parser.add_argument('--rmax', action='store', required=False, type=float)
-    parser.add_argument('--iters', action='store', required=False, default=10, type=int)
-    parser.add_argument('--seed', action='store', required=False, default=123, type=int)
-    parser.add_argument('--omalg', action='store', required=False, default="vi")
-    parser.add_argument('--constraints_mode', action='store', required=False, default=1, type=int)
-    parser.add_argument('--approximate-model', action='store_true', required=False, default=False)
-    parser.add_argument('--noevaluate', action='store_true', required=False, default=False)
+parser = argparse.ArgumentParser()
+parser.add_argument('--conf', action='append', required=True)
+parser.add_argument('--trainonlyconf', action='store', required=False, default=None)
+parser.add_argument('--trainalg', action='store', required=False, default="vi")
+parser.add_argument('--app', action='store', required=True)
+parser.add_argument('--rmax', action='store', required=False, type=float)
+parser.add_argument('--iters', action='store', required=False, default=10, type=int)
+parser.add_argument('--seed', action='store', required=False, default=123, type=int)
+parser.add_argument('--omalg', action='store', required=False, default="vi")
+parser.add_argument('--constraints_mode', action='store', required=False, default=1, type=int)
+parser.add_argument('--approximate-model', action='store_true', required=False, default=False)
+parser.add_argument('--noevaluate', action='store_true', required=False, default=False)
 
-    args = parser.parse_args()
-    base_confs = args.conf
-    rmax = args.rmax
-    approximate_model = args.approximate_model
-    omalg = args.omalg
+args = parser.parse_args()
+base_confs = args.conf
+rmax = args.rmax
+approximate_model = args.approximate_model
+omalg = args.omalg
 
-    print("Conf: {}".format(base_confs))
-    print("App: {}".format(args.app))
-    print("Approximate: {}".format(approximate_model))
-    print("RMax: {}".format(rmax))
-    print("Testing algorithm: {}".format(omalg))
+print("Conf: {}".format(base_confs))
+print("App: {}".format(args.app))
+print("Approximate: {}".format(approximate_model))
+print("RMax: {}".format(rmax))
+print("Testing algorithm: {}".format(omalg))
 
-    random.seed(args.seed)
+random.seed(args.seed)
 
-    app = App(args.app)
-    eval_app = app.approximate() if approximate_model else app
+app = App(args.app)
+eval_app = app.approximate() if approximate_model else app
 
-    opt_quotas = optimize_quotas_multipath(eval_app, base_confs, args.iters, args.constraints_mode)
+opt_quotas, bOpt = optimize_quotas_multipath(eval_app, base_confs, args.iters, args.constraints_mode, args.trainonlyconf, args.trainalg, args.plotfile)
 
-    if args.noevaluate:
-        return
-
+if not args.noevaluate:
     # Run final simulation
     cost,stats = simulate_with_quotas(opt_quotas, app, base_confs, rmax, omalg, long_sim=True)
     print("Final cost: {} : {}".format(cost, stats))
@@ -159,8 +164,3 @@ def main():
     # Run heuristic simulation
     cost,stats = simulate_heuristic (app, base_confs, rmax, omalg, approx=approximate_model, long_sim=True)
     print("Heuristic cost: {} : {}".format(cost, stats))
-    
-
-main()
-
-

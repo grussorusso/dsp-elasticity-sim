@@ -49,9 +49,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
             this.operator = getApproximateOperator();
         }
 
-        if (!PolicyIOUtils.shouldLoadPolicy(Configuration.getInstance())) {
-            valueIteration(maxIterations, maxTimeMillis, theta);
-        }
+        valueIteration(maxIterations, maxTimeMillis, theta);
 
         this.operator = realOperator;
 
