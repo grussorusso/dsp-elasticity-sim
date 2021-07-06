@@ -1,6 +1,7 @@
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
+import it.uniroma2.dspsim.dsp.edf.om.FAQLearningOM;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.NeuralStateRepresentation;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
@@ -18,6 +19,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationReLU;
@@ -241,5 +243,81 @@ public class TestNeuralNetworkDL4j {
             dataset.put(0, i, i + 2);
         }
         return dataset;
+    }
+
+    @Test
+    public void testInputRepresentationsVaryingConf() {
+    	Configuration conf = Configuration.getInstance();
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPT_USE_RESOURCE_SET, "false");
+    	conf.setString(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, "true");
+    	testInputRepresentations(conf);
+
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, "false");
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPR, "true");
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, "false");
+        testInputRepresentations(conf);
+
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, "false");
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPR, "true");
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, "true");
+        testInputRepresentations(conf);
+
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, "false");
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPR, "false");
+        conf.setString(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, "true");
+        testInputRepresentations(conf);
+    }
+
+    private void testInputRepresentations(Configuration conf) {
+
+    	final int LAMBDA_LEVELS = 30;
+    	final int PARALLLELISM = 10;
+        int arrResTypes[] = {3, 6, 10};
+        int hiddenLayers[] = {1,2,3};
+
+        for (int h : hiddenLayers)  {
+            for (int resTypes : arrResTypes) {
+                ComputingInfrastructure.initDefaultInfrastructure(resTypes);
+
+                StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, PARALLLELISM,
+                        ComputingInfrastructure.getInfrastructure(), LAMBDA_LEVELS);
+                State s = stateIterator.next();
+                ActionIterator actionIterator = new ActionIterator();
+                Action a = actionIterator.next();
+
+                // NOTE: configuration is used here:
+                NeuralStateRepresentation repr = new NeuralStateRepresentation(PARALLLELISM, LAMBDA_LEVELS, conf);
+                long deepInput = repr.getRepresentationLength();
+                final long input0 = deepInput;
+                long layerNeurons = (long)(deepInput * 0.75);
+                // 1st hidden
+                long weights = layerNeurons * deepInput + layerNeurons;
+                deepInput = layerNeurons;
+                layerNeurons = (int) (layerNeurons * 0.75);
+                if (h > 1) {
+                    // 2nd hidden
+                    weights += layerNeurons * deepInput + layerNeurons;
+                    deepInput = layerNeurons;
+                    layerNeurons = (int)(layerNeurons * 0.75);
+                }
+                if (h > 2) {
+                    // 3rd hidden
+                    weights += layerNeurons * deepInput + layerNeurons;
+                    deepInput = layerNeurons;
+                }
+                // output
+                weights += deepInput;
+
+                //String out = String.format("%d;%d;%d;%d", resTypes, h, input0, weights);
+                String out = String.format("%d,%d,%d", resTypes, h, weights);
+                System.out.println(out);
+            }
+        }
+
+        System.out.println("\n");
+    }
+
+    private  double usedMemory(long params) {
+        return (double)params/1024.0/1024.0*Double.BYTES;
     }
 }

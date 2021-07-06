@@ -33,6 +33,22 @@ public class NeuralStateRepresentation {
 		this.representationLength = computeArrayRepresentationLength();
 	}
 
+	public NeuralStateRepresentation(int maxParallelism, int lambdaLevels, Configuration conf) {
+		this.maxParallelism = maxParallelism;
+		this.lambdaLevels = lambdaLevels;
+
+		this.oneHotForLambda = conf.getBoolean(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, true);
+		this.reducedDeploymentRepresentation = conf.getBoolean(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPR, true);
+		this.useResourceSetInReducedRepr = conf.getBoolean(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPT_USE_RESOURCE_SET, true);
+		this.minimalRepresentation = conf.getBoolean(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, false);
+
+		if (this.minimalRepresentation) {
+			this.oneHotForLambda = false;
+		}
+
+		this.representationLength = computeArrayRepresentationLength();
+	}
+
 	private int getTotalStates() {
 		StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, this.maxParallelism,
 				ComputingInfrastructure.getInfrastructure(), lambdaLevels);
