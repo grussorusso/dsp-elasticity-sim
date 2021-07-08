@@ -1,4 +1,5 @@
 import sys
+import time
 import random
 import GPy
 from GPyOpt.methods import BayesianOptimization
@@ -150,7 +151,10 @@ random.seed(args.seed)
 app = App(args.app)
 eval_app = app.approximate() if approximate_model else app
 
-opt_quotas, bOpt = optimize_quotas_multipath(eval_app, base_confs, args.iters, args.constraints_mode, args.trainonlyconf, args.trainalg, args.plotfile)
+t0 = time.time()
+opt_quotas, bOpt = optimize_quotas_multipath(eval_app, base_confs, args.iters, args.constraints_mode, args.trainonlyconf, args.trainalg)
+exectime_bayes = time.time()-t0
+print("EXECTIME - BayesOpt: {}".format(exectime_bayes))
 
 if not args.noevaluate:
     # Run final simulation
