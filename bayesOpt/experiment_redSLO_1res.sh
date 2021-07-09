@@ -1,5 +1,5 @@
-CONF="exp_paper/simulator_reducedSLO.properties"
-OUTDIR="exp_paper/results_reducedSLO"
+CONF="exp_paper/simulator_reducedSLO_1res.properties"
+OUTDIR="exp_paper/results_reducedSLO_1res"
 PDSEC="q-learning-pds-ec"
 
 [[ -d $OUTDIR ]] || mkdir -p $OUTDIR
@@ -17,7 +17,7 @@ time python optimize_slo.py --conf $CONF --app exp_paper/complex.app --iters 20 
 time python optimize_slo.py --conf $CONF --trainonlyconf exp_paper/train.properties --app exp_paper/complex.app --iters 25 --omalg $PDSEC  --trainalg $PDSEC > $OUTDIR/complex25_train25k.txt
 time python optimize_slo.py --conf $CONF --trainonlyconf exp_paper/train100.properties --app exp_paper/complex.app --iters 25 --omalg $PDSEC  --trainalg $PDSEC > $OUTDIR/complex25_train100k.txt
 
-time python optimize_slo.py --conf $CONF --trainonlyconf exp_paper/trainvi.properties --app exp_paper/complex.app --iters 25 --omalg $PDSEC  --trainalg vi > $OUTDIR/complex25_trainvi.txt
+#time python optimize_slo.py --conf $CONF --trainonlyconf exp_paper/trainvi.properties --app exp_paper/complex.app --iters 25 --omalg $PDSEC  --trainalg vi > $OUTDIR/complex25_trainvi.txt
 
 
 
