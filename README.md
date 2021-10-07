@@ -60,6 +60,16 @@ Available OM policies:
   <li>fa-hybrid (fa-tb-vi om for off-line training and fa-q-learning for on-line training)</li>
   </ul>
 
+## Docker ##
+
+You can build a Docker image:
+
+	docker build -t grussorusso/dspsim:1.0 .
+
+And use the example `docker.properties` to run the simulator:
+
+	docker run --rm -v "$(pwd)/docker.properties":/conf/conf.properties grussorusso/dspsim:1.0
+
 
 ## Known Issues ##
 
