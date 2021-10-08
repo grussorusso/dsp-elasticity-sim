@@ -7,6 +7,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.*;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.KLambdaState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
@@ -15,6 +16,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.utils.PolicyDumper;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
 import org.slf4j.Logger;
@@ -234,6 +236,7 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 		this.qTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "qTable"));
 		this.estimatedCost.dump(PolicyIOUtils.getFileForDumping(this.operator, "cost"));
 		dumpProbabilityMatrix(PolicyIOUtils.getFileForDumping(this.operator, "matrix"));
+
 	}
 
 	@Override
@@ -306,6 +309,9 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 				this.fullBackupInterval = Math.min(this.fullBackupInterval * this.fullBackupIntervalUpdateCoeff, 50000);
 			}
 
+			// XXX: Tutorial stuff
+			File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy%d", time));
+			PolicyDumper.dumpPolicy(this, f, this.getActionSelectionPolicy());
 		}
 	}
 

@@ -10,6 +10,7 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyCallback;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.KLambdaState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
@@ -17,14 +18,12 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateIterator;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.StateUtils;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.utils.PolicyDumper;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.util.Set;
 
 public class ValueIterationOM extends DynamicProgrammingOM implements ActionSelectionPolicyCallback {
@@ -78,6 +77,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
      * @param theta accuracy threshold
      */
     private void valueIteration(int maxIterations, long maxTimeMillis, double theta) {
+        long i = 1;
         long startIterationTime = 0L;
         double delta = Double.POSITIVE_INFINITY;
         while (delta > theta && (maxIterations < 1 || updatedStateActions < maxIterations) && maxTimeMillis > 0) {
@@ -88,6 +88,11 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
 
             if (maxTimeMillis > 0L)
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);
+
+            // XXX: Tutorial stuff
+            File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy%d", i++));
+            System.err.println(f.getAbsolutePath());
+            PolicyDumper.dumpPolicy(this, f, this.getActionSelectionPolicy());
         }
 
         this.trainingEpochsCount.update(updatedStateActions); // TODO: check if updatedStateActions is ever reset to 0

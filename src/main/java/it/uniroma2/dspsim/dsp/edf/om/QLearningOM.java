@@ -10,13 +10,18 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.QTableFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicy;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.factory.ActionSelectionPolicyFactory;
 import it.uniroma2.dspsim.dsp.edf.om.rl.action_selection.ActionSelectionPolicyType;
+import it.uniroma2.dspsim.dsp.edf.om.rl.states.KLambdaState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.State;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.PolicyIOUtils;
 import it.uniroma2.dspsim.stats.Statistics;
+import it.uniroma2.dspsim.utils.PolicyDumper;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
+
+import java.io.*;
 
 public class QLearningOM extends ReinforcementLearningOM {
     private QTable qTable;
+    private long time = 1;
 
     private VariableParameter alpha;
     private int alphaDecaySteps;
@@ -72,6 +77,11 @@ public class QLearningOM extends ReinforcementLearningOM {
         qTable.setQ(oldState, action, newQ);
 
         decrementAlpha();
+
+        // XXX: Tutorial stuff
+        File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy%d", this.time++));
+        System.err.println(f.getAbsolutePath());
+        PolicyDumper.dumpPolicy(this, f, this.greedyActionSelection);
     }
 
     private void decrementAlpha() {
@@ -88,6 +98,42 @@ public class QLearningOM extends ReinforcementLearningOM {
     public void savePolicy()
     {
         this.qTable.dump(PolicyIOUtils.getFileForDumping(this.operator, "qTable"));
+
+        // XXX: Tutorial stuff
+        File f = PolicyIOUtils.getFileForDumping(this.operator, "coloredPolicy");
+        try {
+            FileWriter fileOut = new FileWriter(f.getAbsolutePath());
+            BufferedWriter bw = new BufferedWriter(fileOut);
+
+            int lambda = 0;
+
+            while (lambda < this.getInputRateLevels()) {
+                // print column
+                for (int k = 1; k <= this.operator.getMaxParallelism(); ++k) {
+                    State s = new KLambdaState(-1, new int[]{k}, lambda, this.getInputRateLevels()-1, this.operator.getMaxParallelism() );
+                    Action a = this.greedyActionSelection.selectAction(s) ;
+                    String line;
+                    if (a.getDelta() == 0) {
+                       line = "255 255 255\n";
+                    } else if (a.getDelta() == 1) {
+                        line = "0 215 0\n";
+                    } else {
+                        line = "230 0 0\n";
+                    }
+                    bw.write(line);
+                }
+                bw.write("\n\n");
+                ++lambda;
+            }
+
+            bw.close();
+            fileOut.close();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 
 
