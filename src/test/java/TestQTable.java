@@ -1,3 +1,5 @@
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.Operator;
 import it.uniroma2.dspsim.dsp.edf.om.FAQLearningOM;
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
@@ -47,8 +49,8 @@ public class TestQTable {
 
     @Test
     public void qSizeTest() {
-        int arrResTypes[] = {6, 8, 10};
-        int parallelism[] = {20};
+        int arrResTypes[] = {1,2,4,6, 8, 10};
+        int parallelism[] = {10,20};
 
         for (int p : parallelism)  {
             for (int resTypes : arrResTypes) {
@@ -75,26 +77,35 @@ public class TestQTable {
                 FAQLearningOM faq = new FAQLearningOM(operator);
                 final int faFeatures = faq.getFeaturesCount();
 
+                Configuration conf = Configuration.getInstance();
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPT_USE_RESOURCE_SET, "false");
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, "true");
                 // NOTE: configuration is used here:
-                NeuralStateRepresentation repr = new NeuralStateRepresentation(p, LAMBDA_LEVELS);
-                int deepInput = repr.getRepresentationLength();
-                int layerNeurons = (int)(deepInput * 0.75);
-                // 1st hidden
-                long weights = layerNeurons * deepInput + layerNeurons;
-                deepInput = layerNeurons;
-                layerNeurons = (int)(layerNeurons * 0.75);
-                // 2nd hidden
-                weights += layerNeurons * deepInput + layerNeurons;
-                deepInput = layerNeurons;
-                layerNeurons = (int)(layerNeurons * 0.75);
-                // 3rd hidden
-                weights += layerNeurons * deepInput + layerNeurons;
-                deepInput = layerNeurons;
-                // output
-                weights += deepInput;
+                NeuralStateRepresentation repr = new NeuralStateRepresentation(p, LAMBDA_LEVELS, Configuration.getInstance());
+                long weightsMinimal = TestNeuralNetworkDL4j.numWeights(3, repr);
 
-                String out = String.format("%d;%d;%d;%d;%d; %.2f;%.2f;%.2f", resTypes, p, qEntries, faFeatures, weights,
-                        usedMemory(qEntries), usedMemory(faFeatures), usedMemory(weights));
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, "false");
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPR, "true");
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, "false");
+                // NOTE: configuration is used here:
+                repr = new NeuralStateRepresentation(p, LAMBDA_LEVELS, Configuration.getInstance());
+                long weightsReduced = TestNeuralNetworkDL4j.numWeights(3, repr);
+
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, "false");
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPR, "true");
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, "true");
+                // NOTE: configuration is used here:
+                repr = new NeuralStateRepresentation(p, LAMBDA_LEVELS, Configuration.getInstance());
+                long weightsReduced2 = TestNeuralNetworkDL4j.numWeights(3, repr);
+
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_MINIMAL_INPUT_REPR, "false");
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_REDUCED_K_REPR, "false");
+                conf.setString(ConfigurationKeys.DL_OM_NETWORK_LAMBDA_ONE_HOT, "true");
+                // NOTE: configuration is used here:
+                repr = new NeuralStateRepresentation(p, LAMBDA_LEVELS, Configuration.getInstance());
+                long weightsLarge = TestNeuralNetworkDL4j.numWeights(3, repr);
+
+                String out = String.format("%d;%d;%d;%d;%d;%d;%d;%d", resTypes, p, qEntries, faFeatures, weightsMinimal, weightsReduced, weightsReduced2, weightsLarge);
                 System.out.println(out);
             }
         }

@@ -279,42 +279,40 @@ public class TestNeuralNetworkDL4j {
             for (int resTypes : arrResTypes) {
                 ComputingInfrastructure.initDefaultInfrastructure(resTypes);
 
-                StateIterator stateIterator = new StateIterator(StateType.K_LAMBDA, PARALLLELISM,
-                        ComputingInfrastructure.getInfrastructure(), LAMBDA_LEVELS);
-                State s = stateIterator.next();
-                ActionIterator actionIterator = new ActionIterator();
-                Action a = actionIterator.next();
-
                 // NOTE: configuration is used here:
                 NeuralStateRepresentation repr = new NeuralStateRepresentation(PARALLLELISM, LAMBDA_LEVELS, conf);
-                long deepInput = repr.getRepresentationLength();
-                final long input0 = deepInput;
-                long layerNeurons = (long)(deepInput * 0.75);
-                // 1st hidden
-                long weights = layerNeurons * deepInput + layerNeurons;
-                deepInput = layerNeurons;
-                layerNeurons = (int) (layerNeurons * 0.75);
-                if (h > 1) {
-                    // 2nd hidden
-                    weights += layerNeurons * deepInput + layerNeurons;
-                    deepInput = layerNeurons;
-                    layerNeurons = (int)(layerNeurons * 0.75);
-                }
-                if (h > 2) {
-                    // 3rd hidden
-                    weights += layerNeurons * deepInput + layerNeurons;
-                    deepInput = layerNeurons;
-                }
-                // output
-                weights += deepInput;
+                long weights = numWeights(h, repr);
 
-                //String out = String.format("%d;%d;%d;%d", resTypes, h, input0, weights);
                 String out = String.format("%d,%d,%d", resTypes, h, weights);
                 System.out.println(out);
             }
         }
 
         System.out.println("\n");
+    }
+
+    public static long numWeights(int hiddenLayers, NeuralStateRepresentation repr) {
+
+        long deepInput = repr.getRepresentationLength();
+        long layerNeurons = (long)(deepInput * 0.75);
+        // 1st hidden
+        long weights = layerNeurons * deepInput + layerNeurons;
+        deepInput = layerNeurons;
+        layerNeurons = (int) (layerNeurons * 0.75);
+        if (hiddenLayers > 1) {
+            // 2nd hidden
+            weights += layerNeurons * deepInput + layerNeurons;
+            deepInput = layerNeurons;
+            layerNeurons = (int)(layerNeurons * 0.75);
+        }
+        if (hiddenLayers > 2) {
+            // 3rd hidden
+            weights += layerNeurons * deepInput + layerNeurons;
+            deepInput = layerNeurons;
+        }
+        // output
+        weights += deepInput;
+        return weights;
     }
 
     private  double usedMemory(long params) {
