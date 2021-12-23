@@ -45,7 +45,7 @@ public abstract class BaseTBValueIterationOM extends DynamicProgrammingOM implem
         this.tbviMillis = configuration.getLong(ConfigurationKeys.TBVI_EXEC_SECONDS_KEY, 60L) * 1000;
         this.tbviTrajectoryLength = configuration.getLong(ConfigurationKeys.TBVI_TRAJECTORY_LENGTH_KEY, 512L);
 
-        final int seed = configuration.getInteger(ConfigurationKeys.DL_OM_ND4j_RANDOM_SEED_KET, 1) + 5;
+        final int seed =  123;
         this.rng = new Random(seed);
     }
 

@@ -20,7 +20,6 @@ import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.stats.Statistics;
 import it.uniroma2.dspsim.utils.matrix.DoubleMatrix;
-import org.nd4j.linalg.api.ops.Op;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

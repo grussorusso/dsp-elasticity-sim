@@ -2,7 +2,6 @@ package it.uniroma2.dspsim.dsp.edf.om.rl.states;
 
 import it.uniroma2.dspsim.dsp.edf.om.rl.Action;
 import it.uniroma2.dspsim.utils.MathUtils;
-import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.Arrays;
 
@@ -110,5 +109,4 @@ public abstract class State {
         return h;
     }
 
-    public abstract INDArray arrayRepresentation(NeuralStateRepresentation repr) throws IllegalArgumentException;
 }

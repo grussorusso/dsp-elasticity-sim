@@ -11,12 +11,6 @@ those described in [FGCS2018].
 	mvn install package -DskipTests
 	java -jar target/dsp-elasticity-simulator-1.0-SNAPSHOT-shaded.jar
 
-To reduce the size of the JAR, you can add the following flag, excluding native
-libraries for platforms different than Linux x86-64:
-
-	 -Djavacpp.platform=linux-x86_64
-
-
 
 ## Configuration ##
 
@@ -60,11 +54,6 @@ Available OM policies:
   <li>fa-hybrid (fa-tb-vi om for off-line training and fa-q-learning for on-line training)</li>
   </ul>
 
-
-## Known Issues ##
-
-- Double Q Network (`edf.dl.network.double.enabled`) does not work well with `deep-v-learning` OM
-- Deeplearning4j beyond version `0.9.x` is not supported
 
 
 ## References ##

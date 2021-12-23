@@ -8,7 +8,6 @@ package it.uniroma2.dspsim;
  * 	- SLO : Service Level Objective
  * 	- R : Random
  * 	- EG : Epsilon Greedy
- * 	- DQL : Deep Q-Learning
  */
 public abstract class ConfigurationKeys {
 
@@ -145,25 +144,6 @@ public abstract class ConfigurationKeys {
 	public static final String QL_OM_ALPHA_MIN_VALUE_KEY = "edf.ql.om.alpha.min.value";
 	public static final String QL_OM_ALPHA_DECAY_STEPS_KEY = "edf.ql.om.alpha.decay.steps";
 
-	/**
-	 * Deep-learning operator manager params.
-	 */
-	public static final String DL_OM_ND4j_RANDOM_SEED_KET = "edf.dl.om.nd4j.random.seed";
-	public static final String DL_OM_ENABLE_NETWORK_UI_KEY = "edf.dl.om.enable.network.ui";
-	public static final String DL_OM_SAMPLES_MEMORY_SIZE_KEY = "edf.dl.samples.memory.size";
-	public static final String DL_OM_SAMPLES_MEMORY_BATCH_KEY = "edf.dl.samples.memory.batch";
-	public static final String DL_OM_FIT_EVERY_ITERS = "edf.dl.fit.every";
-	public static final String DL_OM_NETWORK_CACHE_SIZE = "edf.dl.network.cache.size";
-	public static final String DL_OM_NETWORK_HIDDEN_NODES1_COEFF = "edf.dl.network.hidden1.nodes.coeff";
-	public static final String DL_OM_NETWORK_HIDDEN_NODES2_COEFF = "edf.dl.network.hidden2.nodes.coeff";
-	public static final String DL_OM_NETWORK_HIDDEN_NODES3_COEFF = "edf.dl.network.hidden3.nodes.coeff";
-	public static final String DL_OM_NETWORK_SAMPLE_SCORE = "edf.dl.network.score.sample";
-	public static final String DL_OM_NETWORK_ALPHA = "edf.dl.network.alpha";
-	public static final String DL_OM_NETWORK_LAMBDA_ONE_HOT = "edf.dl.network.input.lambda.onehot";
-	public static final String DL_OM_NETWORK_REDUCED_K_REPR = "edf.dl.network.input.k.reduced";
-	public static final String DL_OM_NETWORK_REDUCED_K_REPT_USE_RESOURCE_SET = "edf.dl.network.input.k.reduced.resourceset";
-	public static final String DL_OM_DOUBLE_NETWORK = "edf.dl.network.double.enabled";
-	public static final String DL_OM_DOUBLE_NETWORK_SYNC_PERIOD = "edf.dl.network.double.sync.period";
 
 	/**
 	 * Type of ActionSelectionPolicy (ASP) to use

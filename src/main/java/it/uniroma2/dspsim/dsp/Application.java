@@ -2,7 +2,6 @@ package it.uniroma2.dspsim.dsp;
 
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
-import org.nd4j.linalg.api.ops.Op;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
