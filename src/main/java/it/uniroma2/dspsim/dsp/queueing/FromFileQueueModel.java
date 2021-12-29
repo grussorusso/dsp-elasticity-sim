@@ -11,6 +11,7 @@ import java.util.*;
  * Col 0: <speedup 1>, opStMean, opStScv, <speedup 2> opStMean opStScv ....
  * Col i: i==rate, util w speedup 1 and rate i, RT w speedup 1 and rate i, i, util w speedup 2, ...
  */
+@Deprecated
 public class FromFileQueueModel implements OperatorQueueModel {
 
 	private Map<Double,PerformanceTable> tables = new HashMap<>();
@@ -96,7 +97,7 @@ public class FromFileQueueModel implements OperatorQueueModel {
 
 			for (int i = 0; i<validRates; i++) {
 				this.utilizations[i] = utils[i];
-				this.responseTimes[i] = utils[i];
+				this.responseTimes[i] = respTimes[i];
 			}
 		}
 
