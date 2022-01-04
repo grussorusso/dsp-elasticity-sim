@@ -123,13 +123,14 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 		private double responseTimes[];
 
 		public PerformanceTable(Double[] rates, Double[] utils, Double[] respTimes) {
-			int validRates = 0;
-			for (int i = 0; i<rates.length; i++) {
-				if (rates[i] < 1.0)	 {
-					break;
-				}
-				++validRates;
-			}
+			int validRates = rates.length;
+			//int validRates = 0;
+			//for (int i = 0; i<rates.length; i++) {
+			//	if (rates[i] < 1.0)	 {
+			//		break;
+			//	}
+			//	++validRates;
+			//}
 
 			this.utilizations = new double[validRates];
 			this.responseTimes = new double[validRates];
