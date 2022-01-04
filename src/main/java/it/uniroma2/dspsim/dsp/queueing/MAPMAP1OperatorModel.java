@@ -1,8 +1,12 @@
 package it.uniroma2.dspsim.dsp.queueing;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -15,7 +19,7 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 	private Map<Double,PerformanceTable> speedup2perf = new HashMap<>();
 	private double serviceTimeMean;
 
-	public MAPMAP1OperatorModel(double serviceTimeMean, double serviceTimeVariance) {
+	public MAPMAP1OperatorModel(double serviceTimeMean, double serviceTimeVariance) throws IOException, InterruptedException {
 		this.serviceTimeMean = serviceTimeMean;
 
 		for (NodeType nt : ComputingInfrastructure.getInfrastructure().getNodeTypes()) {
@@ -27,19 +31,37 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 	}
 
 	// TODO: invoke Python
-	private static PerformanceTable computePerf(double stMean, double stVar) {
+	private static PerformanceTable computePerf(double stMean, double stVar) throws IOException, InterruptedException {
 
+		Configuration conf = Configuration.getInstance();
 		final String TEMP_FILE = "/tmp/perf";
+		final String pythonScript = conf.getString(ConfigurationKeys.OPERATOR_RESPTIME_EVALUATION_SCRIPT, "");
+		final String workloadArgs = conf.getString(ConfigurationKeys.OPERATOR_RESPTIME_EVALUATION_SCRIPT_WORKLOAD_ARGS, "");
 
-		// TODO: read python script from conf
-		// TODO: execute script
+		StringBuilder cmd = new StringBuilder();
+		cmd.append("python3 ");
+		cmd.append(pythonScript);
+		cmd.append(" ");
+		cmd.append(TEMP_FILE);
+		cmd.append(" ");
+		cmd.append(stMean);
+		cmd.append(" ");
+		cmd.append(stVar);
+		cmd.append(" ");
+		cmd.append(workloadArgs);
+		System.out.println("Running: " + cmd.toString());
+		Process p = Runtime.getRuntime().exec(cmd.toString());
+		p.waitFor();
+		if (p.exitValue() != 0) {
+			throw new RuntimeException("solver failed with code " + p.exitValue());
+		}
 
 		ArrayList<Double> rates = new ArrayList<>();
 		ArrayList<Double> utils = new ArrayList<>();
 		ArrayList<Double> respTimes = new ArrayList<>();
 
 		// ROW: rate; util; respT
-		Scanner myReader = new Scanner(TEMP_FILE);
+		Scanner myReader = new Scanner(new File(TEMP_FILE));
 		while (myReader.hasNextLine()) {
 			/* Speedup date */
 			String line = myReader.nextLine();
@@ -86,7 +108,14 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 		double error = sign * (minPercErr + (maxPercErr - minPercErr) * sampledValue);
 		double newMean = this.serviceTimeMean + this.serviceTimeMean*error;
 		double newVar = newMean*newMean;
-		return new MAPMAP1OperatorModel(this.serviceTimeMean, newVar);
+		try {
+			return new MAPMAP1OperatorModel(this.serviceTimeMean, newVar);
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+
+		return null; // never reached
 	}
 
 	static class PerformanceTable {

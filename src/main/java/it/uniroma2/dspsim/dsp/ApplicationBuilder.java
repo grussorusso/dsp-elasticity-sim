@@ -3,6 +3,7 @@ package it.uniroma2.dspsim.dsp;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.queueing.FromFileQueueModel;
+import it.uniroma2.dspsim.dsp.queueing.MAPMAP1OperatorModel;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
 import it.uniroma2.dspsim.utils.Tuple2;
@@ -62,7 +63,8 @@ public class ApplicationBuilder {
 		final int maxParallelism = Configuration.getInstance()
 				.getInteger(ConfigurationKeys.OPERATOR_MAX_PARALLELISM_KEY, 3);
 
-		double appSLO = Configuration.getInstance().getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.1);
+		final Configuration conf = Configuration.getInstance();
+		double appSLO = conf.getDouble(ConfigurationKeys.SLO_LATENCY_KEY, 0.1);
 
 		try {
 			BufferedReader br = new BufferedReader(new FileReader(file));
@@ -80,7 +82,21 @@ public class ApplicationBuilder {
 					final double opStMean = 1.0/Double.parseDouble(tokens[2]);
 					final double opStSCV = Double.parseDouble(tokens[3]);
 					final double opStVar = opStSCV*opStMean*opStMean;
-					Operator op = new Operator(opName, new MG1OperatorQueueModel(opStMean, opStVar), maxParallelism);
+
+					final String fromScriptRespTime = conf.getString(ConfigurationKeys.OPERATOR_RESPTIME_EVALUATION_SCRIPT, "");
+					OperatorQueueModel opModel = null;
+					if (!fromScriptRespTime.isEmpty()) {
+						/* EXPERIMENTAL */
+						try {
+							opModel = new MAPMAP1OperatorModel(opStMean, opStVar);
+						} catch (Exception e) {
+							e.printStackTrace();
+							System.exit(1);
+						}
+					} else {
+						opModel = new MG1OperatorQueueModel(opStMean, opStVar);
+					}
+					Operator op = new Operator(opName, opModel, maxParallelism);
 
 					if (name2op.containsKey(opName))
 						throw new RuntimeException("Already used operator name!");
@@ -119,15 +135,25 @@ public class ApplicationBuilder {
 		final double serviceTimeVariance = 1.0/mu*1.0/mu/2.0;
 
 		OperatorQueueModel opModel = null;
-		String fromFileRespTime = Configuration.getInstance().getString(ConfigurationKeys.OPERATOR_RESPTIME_FROM_FILE, "");
-		if (!fromFileRespTime.isEmpty()) {
+		Configuration conf = Configuration.getInstance();
+		final String fromFileRespTime = conf.getString(ConfigurationKeys.OPERATOR_RESPTIME_FROM_FILE, "");
+		final String fromScriptRespTime = conf.getString(ConfigurationKeys.OPERATOR_RESPTIME_EVALUATION_SCRIPT, "");
+		if (!fromScriptRespTime.isEmpty()) {
 			/* EXPERIMENTAL */
 			try {
-				opModel = new FromFileQueueModel(fromFileRespTime);
-			} catch (FileNotFoundException e) {
+				opModel = new MAPMAP1OperatorModel(serviceTimeMean, serviceTimeVariance);
+			} catch (Exception e) {
 				e.printStackTrace();
 				System.exit(1);
 			}
+		} else if (!fromFileRespTime.isEmpty()) {
+				/* EXPERIMENTAL */
+				try {
+					opModel = new FromFileQueueModel(fromFileRespTime);
+				} catch (FileNotFoundException e) {
+					e.printStackTrace();
+					System.exit(1);
+				}
 		} else {
 			opModel = new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance);
 		}

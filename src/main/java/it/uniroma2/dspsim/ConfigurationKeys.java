@@ -58,6 +58,8 @@ public abstract class ConfigurationKeys {
 	public static final String OPERATOR_SLO_COMPUTATION_CUSTOM_QUOTAS = "dsp.slo.operator.custom.quotas";
 
 	public static final String OPERATOR_RESPTIME_FROM_FILE = "operator.resptime.fromfile";
+	public static final String OPERATOR_RESPTIME_EVALUATION_SCRIPT = "operator.resptime.script";
+	public static final String OPERATOR_RESPTIME_EVALUATION_SCRIPT_WORKLOAD_ARGS = "operator.resptime.script.workload.args";
 
 
 	/**
