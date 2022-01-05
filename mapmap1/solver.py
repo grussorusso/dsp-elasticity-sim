@@ -1,5 +1,6 @@
 import math
 import sys
+import butools
 from butools.queues import MMAPPH1FCFS, MAPMAP1
 import numpy.matlib as ml
 import numpy as np
@@ -15,6 +16,7 @@ def map_scale(d0, d1, new_mean):
 
 
 
+butools.checkPrecision = 10**-7
 
 
 def evaluate (d0, d1, alpha, A, arrival_rate):
@@ -63,12 +65,15 @@ stMom2 = stMean**2 * (stSCV + 1)
 stMoms = [stMean, stMom2]
 alpha,A = APHFrom2Moments(stMoms)
 
+MAX_RATE = 5000
 
 with open(sys.argv[1], "w") as of:
-    for rate in range(0,math.ceil(mu)):
+    maxRate = min(math.ceil(mu), MAX_RATE)
+    for rate in range(0,maxRate):
         util = stMoms[0]*rate
         if util == 0.0:
             respT = 0
         else:
             respT = evaluate(D0, D1, alpha, A, rate)
         print(f"{rate};{util};{respT}", file=of)
+        of.flush()

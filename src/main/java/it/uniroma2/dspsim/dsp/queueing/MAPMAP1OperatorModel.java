@@ -5,8 +5,7 @@ import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
 import it.uniroma2.dspsim.infrastructure.NodeType;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 /**
@@ -44,13 +43,25 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 		cmd.append(" ");
 		cmd.append(TEMP_FILE);
 		cmd.append(" ");
-		cmd.append(stMean);
+		cmd.append(String.format(Locale.ROOT, "%.8f",stMean));
 		cmd.append(" ");
-		cmd.append(stVar);
+		cmd.append(String.format(Locale.ROOT, "%.8f",stVar));
 		cmd.append(" ");
 		cmd.append(workloadArgs);
 		System.out.println("Running: " + cmd.toString());
 		Process p = Runtime.getRuntime().exec(cmd.toString());
+
+		// just consume output
+		BufferedReader b = new BufferedReader(new InputStreamReader(p.getInputStream()));
+		String l;
+		while ((l = b.readLine()) != null) {
+		}
+		b.close();
+		b = new BufferedReader(new InputStreamReader(p.getErrorStream()));
+		while ((l = b.readLine()) != null) {
+		}
+		b.close();
+
 		p.waitFor();
 		if (p.exitValue() != 0) {
 			throw new RuntimeException("solver failed with code " + p.exitValue());
@@ -63,7 +74,6 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 		// ROW: rate; util; respT
 		Scanner myReader = new Scanner(new File(TEMP_FILE));
 		while (myReader.hasNextLine()) {
-			/* Speedup date */
 			String line = myReader.nextLine();
 			double values[] = Arrays.stream(line.split(";")).mapToDouble(Double::parseDouble).toArray();
 			rates.add(values[0]);
@@ -108,14 +118,7 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 		double error = sign * (minPercErr + (maxPercErr - minPercErr) * sampledValue);
 		double newMean = this.serviceTimeMean + this.serviceTimeMean*error;
 		double newVar = newMean*newMean;
-		try {
-			return new MAPMAP1OperatorModel(this.serviceTimeMean, newVar);
-		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
-			System.exit(1);
-		}
-
-		return null; // never reached
+		return new MG1OperatorQueueModel(newMean, newVar); // TODO: we lose the MAP-based representation
 	}
 
 	static class PerformanceTable {
