@@ -46,6 +46,8 @@ public class ComputingInfrastructure {
 			speedups = scenarioAspeedups;
 		} else if (confScenario.equalsIgnoreCase("B")) {
 			speedups = scenarioBspeedups;
+		} else if (confScenario.equalsIgnoreCase("B2")) {
+			speedups = scenarioBspeedups;
 		} else if (confScenario.equalsIgnoreCase("C")) {
 			speedups = scenarioCspeedups;
 		} else {
@@ -58,9 +60,14 @@ public class ComputingInfrastructure {
 		for (int i = 0; i < numOfResTypes; i++) {
 			final String name = String.format("Res-%d", i);
 			double cpuSpeedup = speedups[i];
-			double cost = cpuSpeedup;
+			double cost;
+			if (confScenario.equalsIgnoreCase("B2")) {
+				cost = Math.pow(cpuSpeedup, 1.5);
+			}  else {
+				cost = cpuSpeedup;
+			}
 			//double cost = Math.pow(cpuSpeedup, 1.3);
-			//System.out.printf("Speedup: %.2f, cost: %.2f\n", cpuSpeedup, cost);
+			System.out.printf("Speedup: %.2f, cost: %.2f\n", cpuSpeedup, cost);
 			infrastructure.nodeTypes[i] = new NodeType(i, name,  cost, cpuSpeedup);
 		}
 
