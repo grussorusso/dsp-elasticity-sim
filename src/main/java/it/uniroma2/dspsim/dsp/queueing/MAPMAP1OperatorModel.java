@@ -17,19 +17,30 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 
 	private Map<Double,PerformanceTable> speedup2perf = new HashMap<>();
 	private double serviceTimeMean;
+	private double serviceTimeVar;
 
 	public MAPMAP1OperatorModel(double serviceTimeMean, double serviceTimeVariance) throws IOException, InterruptedException {
 		this.serviceTimeMean = serviceTimeMean;
+		this.serviceTimeVar = serviceTimeVariance;
 
 		for (NodeType nt : ComputingInfrastructure.getInfrastructure().getNodeTypes()) {
 			final double speedup = nt.getCpuSpeedup();
-			final double st_mean = serviceTimeMean / speedup;
-			final double st_var = serviceTimeVariance / (speedup * speedup);
-			speedup2perf.put(speedup, computePerf(st_mean, st_var));
+			computePerfForSpeedup(speedup);
 		}
 	}
 
-	// TODO: invoke Python
+	private void computePerfForSpeedup (double speedup) {
+		final double st_mean = this.serviceTimeMean / speedup;
+		final double st_var = this.serviceTimeVar / (speedup * speedup);
+
+		try {
+			speedup2perf.put(speedup, computePerf(st_mean, st_var));
+		} catch (IOException | InterruptedException e) {
+			e.printStackTrace();
+			System.exit(3);
+		}
+	}
+
 	private static PerformanceTable computePerf(double stMean, double stVar) throws IOException, InterruptedException {
 
 		Configuration conf = Configuration.getInstance();
@@ -87,12 +98,16 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 
 	public double responseTime(double arrivalRate, double speedup)
 	{
+		if (!speedup2perf.containsKey(speedup))
+			computePerfForSpeedup(speedup);
 		PerformanceTable table = speedup2perf.get(speedup);
 		return table.getRespTime(arrivalRate);
 	}
 
 	public double utilization(double arrivalRate, double speedup)
 	{
+		if (!speedup2perf.containsKey(speedup))
+			computePerfForSpeedup(speedup);
 		PerformanceTable table = speedup2perf.get(speedup);
 		return table.getUtil(arrivalRate);
 	}
