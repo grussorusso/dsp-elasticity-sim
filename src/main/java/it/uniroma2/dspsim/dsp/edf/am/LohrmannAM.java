@@ -22,7 +22,7 @@ public class LohrmannAM extends ApplicationManager {
 	private int nOperators;
 	private int maxParallelism[];
 
-	private int maxInputRate;
+	private final int maxInputRate;
 
 
 	private Operator[] operators;

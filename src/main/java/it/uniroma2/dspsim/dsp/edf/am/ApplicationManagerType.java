@@ -4,6 +4,7 @@ public enum ApplicationManagerType {
     DO_NOTHING,
     CENTRALIZED,
     SECOND_OPPORTUNITY,
+    LOHRMANN,
     SPLITQ_BASED;
 
     public static ApplicationManagerType fromString(String str) throws IllegalArgumentException {
@@ -15,6 +16,8 @@ public enum ApplicationManagerType {
             return CENTRALIZED;
         } else if (str.equalsIgnoreCase("second-opportunity")) {
             return SECOND_OPPORTUNITY;
+        } else if (str.equalsIgnoreCase("lohrmann")) {
+            return LOHRMANN;
         } else {
             throw new IllegalArgumentException("Not valid application manager type " + str);
         }
