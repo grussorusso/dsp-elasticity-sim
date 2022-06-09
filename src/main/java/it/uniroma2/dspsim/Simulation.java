@@ -300,6 +300,12 @@ public class Simulation {
 					.getString(ConfigurationKeys.INPUT_FILE_PATH_KEY, "/home/gabriele/profile.dat");
 			InputRateFileReader inputRateFileReader = new InputRateFileReader(inputFile);
 
+			// TODO: remove (just for debugging)
+			double wRcf = conf.getDouble(ConfigurationKeys.RL_OM_RECONFIG_WEIGHT_KEY, -1.0);
+			double wRes = conf.getDouble(ConfigurationKeys.RL_OM_RESOURCES_WEIGHT_KEY, -1.0);
+			double wSlo = conf.getDouble(ConfigurationKeys.RL_OM_SLO_WEIGHT_KEY, -1.0);
+			System.out.println(String.format("wRcf=%f, wRes=%f, wSlo=%f", wRcf, wRes, wSlo));
+
 			Application app = ApplicationBuilder.buildApplication();
 			simulation = new Simulation(inputRateFileReader, app);
 

@@ -107,6 +107,7 @@ public class ApplicationBuilder {
 					if (tokens.length > 4) {
 						final double sloQuota = Double.parseDouble(tokens[4]);
 						op.setSloRespTime(sloQuota * appSLO);
+						System.out.println(String.format("Setting SLO from file: %s->%f", opName, sloQuota));
 					}
 				} else if (tokens[0].equalsIgnoreCase("EDGE")) {
 					/* edge spec */
