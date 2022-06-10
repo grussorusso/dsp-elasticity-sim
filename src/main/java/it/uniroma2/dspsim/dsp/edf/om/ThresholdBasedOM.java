@@ -24,7 +24,7 @@ public class ThresholdBasedOM extends OperatorManager {
 	public ThresholdBasedOM(Operator operator) {
 		super(operator);
 
-		String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "cost");
+		String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "cost");
 		if (resSelectionPolicy.equalsIgnoreCase("speedup")) {
 			this.thresholdPolicy = new MaxSpeedupThresholdPolicy();
 		} else if (resSelectionPolicy.equalsIgnoreCase("random")) {

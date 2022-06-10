@@ -26,13 +26,13 @@ public enum OperatorManagerType {
         } else if (str.equalsIgnoreCase("threshold")) {
             return THRESHOLD_BASED;
         } else if (str.equalsIgnoreCase("threshold-cost")) {
-            Configuration.getInstance().setString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "cost");
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "cost");
             return THRESHOLD_BASED;
         } else if (str.equalsIgnoreCase("threshold-speedup")) {
-            Configuration.getInstance().setString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "speedup");
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "speedup");
             return THRESHOLD_BASED;
         } else if (str.equalsIgnoreCase("threshold-random")) {
-            Configuration.getInstance().setString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "random");
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "random");
             return THRESHOLD_BASED;
         } else if (str.equalsIgnoreCase("optimal-allocation")) {
             return OPTIMAL_ALLOCATION;

@@ -252,6 +252,10 @@ public class Operator {
 		return deployment;
 	}
 
+	public int getCurrentParallelism () {
+		return instances.size();
+	}
+
 	public double getCurrentMaxThroughput () {
 		double thr = 0.0;
 		for (NodeType nt : instances) {

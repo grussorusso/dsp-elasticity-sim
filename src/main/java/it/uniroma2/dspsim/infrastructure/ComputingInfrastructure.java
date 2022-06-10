@@ -3,9 +3,6 @@ package it.uniroma2.dspsim.infrastructure;
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
 import it.uniroma2.dspsim.dsp.edf.om.OperatorManagerType;
-import it.uniroma2.dspsim.dsp.edf.om.threshold.MaxSpeedupThresholdPolicy;
-import it.uniroma2.dspsim.dsp.edf.om.threshold.MinCostThresholdPolicy;
-import it.uniroma2.dspsim.dsp.edf.om.threshold.RandomSelectionThresholdPolicy;
 
 import java.util.Arrays;
 import java.util.Random;
@@ -140,7 +137,7 @@ public class ComputingInfrastructure {
 		try {
 			OperatorManagerType omType = OperatorManagerType.fromString(Configuration.getInstance().getString(ConfigurationKeys.OM_TYPE_KEY, ""));
 			if (omType == OperatorManagerType.THRESHOLD_BASED) {
-				String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_THRESHOLD_RESOURCE_SELECTION, "cost");
+				String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "cost");
 				if (resSelectionPolicy.equalsIgnoreCase("speedup")) {
 					return getMostExpensiveResType();
 				} else if (resSelectionPolicy.equalsIgnoreCase("cost")) {
