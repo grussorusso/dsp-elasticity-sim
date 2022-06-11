@@ -5,6 +5,11 @@ import java.util.Random;
 public class MG1OperatorQueueModel implements OperatorQueueModel {
 
 	private double serviceTimeMean = 1.0;
+
+	public double getServiceTimeVariance() {
+		return serviceTimeVariance;
+	}
+
 	private double serviceTimeVariance = 0.0;
 
 	public MG1OperatorQueueModel(double serviceTimeMean, double serviceTimeVariance) {

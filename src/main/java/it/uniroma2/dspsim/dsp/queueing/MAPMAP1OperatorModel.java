@@ -17,6 +17,11 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 
 	private Map<Double,PerformanceTable> speedup2perf = new HashMap<>();
 	private double serviceTimeMean;
+
+	public double getServiceTimeVar() {
+		return serviceTimeVar;
+	}
+
 	private double serviceTimeVar;
 
 	public MAPMAP1OperatorModel(double serviceTimeMean, double serviceTimeVariance) throws IOException, InterruptedException {

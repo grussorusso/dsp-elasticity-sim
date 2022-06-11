@@ -125,7 +125,7 @@ public class Operator {
 				if (max.isPresent()) {
 					return max.getAsDouble();
 				} else {
-					throw new RuntimeException("Error while computing response time");
+					throw new RuntimeException("Error while computing response time: " + values.length);
 				}
 		}
 	}
