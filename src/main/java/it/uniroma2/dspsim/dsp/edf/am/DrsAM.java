@@ -16,9 +16,9 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 
-public class LohrmannAM extends ApplicationManager {
+public class DrsAM extends ApplicationManager {
 
-	static private final Logger logger = LoggerFactory.getLogger(LohrmannAM.class);
+	static private final Logger logger = LoggerFactory.getLogger(DrsAM.class);
 
 	private int nOperators;
 	private int maxParallelism[];
@@ -26,8 +26,9 @@ public class LohrmannAM extends ApplicationManager {
 	private Random random = null;
 
 	private Operator[] operators;
+	private int Kmax;
 
-	public LohrmannAM(Application application, double sloLatency) {
+	public DrsAM(Application application, double sloLatency) {
 		super(application, sloLatency);
 		this.nOperators = application.getOperators().size();
 		this.operators = application.getOperators().toArray(new Operator[]{});
@@ -37,6 +38,7 @@ public class LohrmannAM extends ApplicationManager {
 		this.maxParallelism = new int[nOperators];
 		for (int i = 0; i<nOperators; i++) {
 			maxParallelism[i] = application.getOperators().get(i).getMaxParallelism();
+			this.Kmax += maxParallelism[i];
 		}
 
 		String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "cost");
@@ -98,17 +100,14 @@ public class LohrmannAM extends ApplicationManager {
 	}
 
 	protected Map<Operator, Integer> scalingPolicy(Map<Operator, OMMonitoringInfo> omMonitoringInfo, Map<Operator, Integer> minParallelism) {
-		Map<Operator, Integer> newParallelism = new HashMap<>(minParallelism);
+		Map<Operator, Integer> newParallelism = new HashMap<>();
 
 		for (Operator op : operators)	 {
 			newParallelism.put(op, minParallelism.get(op));
 		}
 
 		for (List<Operator> path : application.getAllPaths()) {
-			if (hasBottleneck(path, omMonitoringInfo)) {
-				resolveBottlenecks(path, omMonitoringInfo, newParallelism);
-			}
-			rebalance(path, omMonitoringInfo, newParallelism);
+			scale(path, omMonitoringInfo, newParallelism);
 		}
 
 		for (Operator op : newParallelism.keySet()) {
@@ -120,78 +119,44 @@ public class LohrmannAM extends ApplicationManager {
 		return newParallelism;
 	}
 
-	private void rebalance(List<Operator> path, Map<Operator, OMMonitoringInfo> omMonitoringInfo, Map<Operator, Integer> newParallelism) {
-		// Check with max parallelism
-		Map<Operator, Integer> maxPar = new HashMap<>();
+	private void scale(List<Operator> path, Map<Operator, OMMonitoringInfo> omMonitoringInfo, Map<Operator, Integer> newParallelism) {
+		int K = 0;
 		for (Operator op: path) {
-			maxPar.put(op, op.getMaxParallelism());
+			int p = (int)Math.floor(omMonitoringInfo.get(op).getInputRate()*op.getQueueModel().getServiceTimeMean()) + 1;
+			p = Math.max(newParallelism.get(op), p);
+			K += p;
+			newParallelism.put(op, p);
 		}
-		if (evaluateLatency(path, omMonitoringInfo, maxPar) >= sloLatency) {
-			newParallelism.putAll(maxPar);
+		if (evaluateLatency(path, omMonitoringInfo, newParallelism) >= sloLatency) {
+			// unfeasible requirement
 			return;
 		}
 
 		while (evaluateLatency(path, omMonitoringInfo, newParallelism) > sloLatency) {
-			Set<Operator> scalableOperators = new HashSet<>();
-			for (Operator op : path) {
-				if (newParallelism.get(op) < op.getMaxParallelism())
-					scalableOperators.add(op);
-			}
+			K++;
+			assignProcessors(path, omMonitoringInfo,  newParallelism);
+		}
+	}
 
-			Map<Operator,Double> latencyGains = new HashMap<>();
-			for (Operator op: scalableOperators) {
-				double gain = evaluateLatencyOp(op, omMonitoringInfo.get(op), newParallelism.get(op)) -
-						evaluateLatencyOp(op, omMonitoringInfo.get(op), newParallelism.get(op) + 1);
-				latencyGains.put(op, gain);
-			}
+	private void assignProcessors(List<Operator> path, Map<Operator, OMMonitoringInfo> omMonitoringInfo, Map<Operator, Integer> newParallelism) {
+		Map<Operator,Double> latencyGains = new HashMap<>();
+		for (Operator op: path) {
+			if (newParallelism.get(op) == op.getMaxParallelism())
+				continue;
+			double gain = evaluateLatencyOp(op, omMonitoringInfo.get(op), newParallelism.get(op)) -
+					evaluateLatencyOp(op, omMonitoringInfo.get(op), newParallelism.get(op) + 1);
+			latencyGains.put(op, gain);
+		}
 
-			// pick op with maximum gain
-			Map.Entry<Operator, Double> maxEntry = null;
-			for (Map.Entry<Operator, Double> entry : latencyGains.entrySet()) {
-				if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0) {
-					maxEntry = entry;
-				}
-			}
-			final Operator maxOp = maxEntry.getKey();
-			double serviceVar = maxOp.getQueueModel().getServiceTimeVariance();
-			double serviceSCV = serviceVar / Math.pow(maxOp.getQueueModel().getServiceTimeMean(),2);
-			final double b = omMonitoringInfo.get(maxOp).getInputRate() *
-					maxOp.getQueueModel().getServiceTimeMean() * newParallelism.get(maxOp);
-			double a = b * maxOp.getQueueModel().getServiceTimeMean();
-			a *= (maxOp.getQueueModel().getArrivalSCV() + serviceSCV)/2.0;
-
-			if (scalableOperators.size() > 1) {
-				// we have more than a scalable op
-				Map.Entry<Operator, Double> secondEntry = null;
-				for (Map.Entry<Operator, Double> entry : latencyGains.entrySet()) {
-					if (entry.equals(maxEntry))
-						continue;
-					if (secondEntry == null || entry.getValue().compareTo(secondEntry.getValue()) > 0) {
-						secondEntry = entry;
-					}
-				}
-
-				double pc = (2*b-1)/2.0;
-				pc += Math.sqrt(Math.pow((1-2*b)/2.0, 2) -
-								1.0/secondEntry.getValue()*(a + secondEntry.getValue()*(b*b-b))
-						);
-				int newP = (int)Math.ceil(pc);
-				if (newP < 1) {
-					throw new RuntimeException();
-				}
-				newParallelism.put(maxOp, Math.min(maxOp.getMaxParallelism(), newP));
-			} else {
-				double w = sloLatency - evaluateLatency(path, omMonitoringInfo, newParallelism) +
-						evaluateLatencyOp(maxOp, omMonitoringInfo.get(maxOp),
-								newParallelism.get(maxOp));
-				int newP = (int)Math.ceil(a/w + b);
-				if (newP < 1) {
-					System.out.printf("a=%f, b=%f, w=%f, newp=%d", a, b, w, newP);
-					throw new RuntimeException();
-				}
-				newParallelism.put(maxEntry.getKey(), newP);
+		// pick op with maximum gain
+		Map.Entry<Operator, Double> maxEntry = null;
+		for (Map.Entry<Operator, Double> entry : latencyGains.entrySet()) {
+			if (maxEntry == null || entry.getValue().compareTo(maxEntry.getValue()) > 0) {
+				maxEntry = entry;
 			}
 		}
+		final Operator maxOp = maxEntry.getKey();
+		newParallelism.put(maxOp, newParallelism.get(maxOp) + 1);
 	}
 
 	private double evaluateLatencyOp(Operator op, OMMonitoringInfo omMonitoringInfo, int p) {
@@ -202,14 +167,29 @@ public class LohrmannAM extends ApplicationManager {
 		if (rho >= 1.0) {
 			return 999;
 		}
-		double r = rho * op.getQueueModel().getServiceTimeMean()/ (1.0 - rho);
-		r *= (op.getQueueModel().getArrivalSCV() + serviceSCV)/2.0;
+		double p0 = 0;
+		for (int l = 0; l<=p-1; l++) {
+			p0 +=Math.pow(p*rho, l)/fact(l);
+		}
+		p0 += Math.pow(p*rho, p)/fact(p)/(1-rho);
+		p0 = 1.0/p0;
+		double qtime = p0*Math.pow(p*rho,p)/(fact(p)*(1-rho)*(1-rho)/op.getQueueModel().getServiceTimeMean()*p);
+		double r = op.getQueueModel().getServiceTimeMean() + qtime*(op.getQueueModel().getArrivalSCV() + serviceSCV)/2.0;
 
 		if (Double.isNaN(r) || Double.isInfinite(r)) {
 			System.out.printf("rho=%f, r=%f", rho, r);
 			throw new RuntimeException();
 		}
 		return r;
+	}
+
+	private static long fact(int p) {
+		long f = 1;
+		while (p >= 1) {
+			f = f*p;
+			p--;
+		}
+		return f;
 	}
 
 	private double evaluateLatency(List<Operator> path, Map<Operator, OMMonitoringInfo> omMonitoringInfo, Map<Operator, Integer> par) {
@@ -221,29 +201,6 @@ public class LohrmannAM extends ApplicationManager {
 		return r;
 	}
 
-	private void resolveBottlenecks(List<Operator> path, Map<Operator, OMMonitoringInfo> monitoringInfo, Map<Operator, Integer> newParallelism) {
-		for (Operator op : path) {
-			double rho = monitoringInfo.get(op).getCpuUtilization();
-			if (rho > 0.99) {
-				int newP = (int)Math.ceil(
-						Math.min(op.getMaxParallelism(),
-						Math.max(2*op.getCurrentParallelism(),
-								2*op.getCurrentParallelism()*rho)));
-				//System.out.println(String.format("Scaling bottleneck %s to %d", op.getName(), newP));
-				newParallelism.put(op, newP);
-			}
-		}
-	}
-
-	private boolean hasBottleneck(List<Operator> path, Map<Operator, OMMonitoringInfo> monitoringInfo) {
-		for (Operator op : path) {
-			if (monitoringInfo.get(op).getInputRate() * op.getQueueModel().getServiceTimeMean() > 0.99) {
-				return true;
-			}
-		}
-
-		return false;
-	}
 
 	@Override
 	final protected Map<Operator, Reconfiguration> plan(Map<OperatorManager, OMRequest> omRequestMap,

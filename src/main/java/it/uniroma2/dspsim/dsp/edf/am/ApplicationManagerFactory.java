@@ -21,6 +21,8 @@ public class ApplicationManagerFactory {
                 return new SecondOpportunityAM(app, sloLatency);
             case LOHRMANN:
                 return new LohrmannAM(app, sloLatency);
+            case DRS:
+                return new DrsAM(app, sloLatency);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not supported application manager type: " + appManagerType.toString());
