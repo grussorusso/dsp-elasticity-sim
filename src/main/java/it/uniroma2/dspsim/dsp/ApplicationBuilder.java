@@ -2,7 +2,6 @@ package it.uniroma2.dspsim.dsp;
 
 import it.uniroma2.dspsim.Configuration;
 import it.uniroma2.dspsim.ConfigurationKeys;
-import it.uniroma2.dspsim.dsp.queueing.FromFileQueueModel;
 import it.uniroma2.dspsim.dsp.queueing.MAPMAP1OperatorModel;
 import it.uniroma2.dspsim.dsp.queueing.MG1OperatorQueueModel;
 import it.uniroma2.dspsim.dsp.queueing.OperatorQueueModel;
@@ -137,7 +136,6 @@ public class ApplicationBuilder {
 
 		OperatorQueueModel opModel = null;
 		Configuration conf = Configuration.getInstance();
-		final String fromFileRespTime = conf.getString(ConfigurationKeys.OPERATOR_RESPTIME_FROM_FILE, "");
 		final String fromScriptRespTime = conf.getString(ConfigurationKeys.OPERATOR_RESPTIME_EVALUATION_SCRIPT, "");
 		if (!fromScriptRespTime.isEmpty()) {
 			/* EXPERIMENTAL */
@@ -147,14 +145,6 @@ public class ApplicationBuilder {
 				e.printStackTrace();
 				System.exit(1);
 			}
-		} else if (!fromFileRespTime.isEmpty()) {
-				/* EXPERIMENTAL */
-				try {
-					opModel = new FromFileQueueModel(fromFileRespTime);
-				} catch (FileNotFoundException e) {
-					e.printStackTrace();
-					System.exit(1);
-				}
 		} else {
 			opModel = new MG1OperatorQueueModel(serviceTimeMean, serviceTimeVariance);
 		}

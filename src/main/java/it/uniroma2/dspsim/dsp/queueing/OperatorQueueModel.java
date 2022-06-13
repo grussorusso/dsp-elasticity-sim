@@ -8,6 +8,9 @@ public interface OperatorQueueModel {
 	double utilization (double arrivalRate, double speedup);
 
 	double getServiceTimeMean();
+	double getServiceTimeVariance();
+
+	double getArrivalSCV();
 
 	OperatorQueueModel getApproximateModel (Random r, double minPercErr, double maxPercErr);
 }

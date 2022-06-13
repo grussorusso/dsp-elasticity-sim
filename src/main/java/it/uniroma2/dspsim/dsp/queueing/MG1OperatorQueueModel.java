@@ -10,6 +10,11 @@ public class MG1OperatorQueueModel implements OperatorQueueModel {
 		return serviceTimeVariance;
 	}
 
+	@Override
+	public double getArrivalSCV() {
+		return 1;
+	}
+
 	private double serviceTimeVariance = 0.0;
 
 	public MG1OperatorQueueModel(double serviceTimeMean, double serviceTimeVariance) {

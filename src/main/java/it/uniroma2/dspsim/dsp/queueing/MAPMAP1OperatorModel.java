@@ -17,9 +17,15 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 
 	private Map<Double,PerformanceTable> speedup2perf = new HashMap<>();
 	private double serviceTimeMean;
+	private Double mapSCV = null;
 
-	public double getServiceTimeVar() {
+	public double getServiceTimeVariance() {
 		return serviceTimeVar;
+	}
+
+	@Override
+	public double getArrivalSCV() {
+		return mapSCV;
 	}
 
 	private double serviceTimeVar;
@@ -46,7 +52,7 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 		}
 	}
 
-	private static PerformanceTable computePerf(double stMean, double stVar) throws IOException, InterruptedException {
+	private PerformanceTable computePerf(double stMean, double stVar) throws IOException, InterruptedException {
 
 		Configuration conf = Configuration.getInstance();
 		final String TEMP_FILE = "/tmp/perf";
@@ -91,11 +97,16 @@ public class MAPMAP1OperatorModel implements OperatorQueueModel {
 		Scanner myReader = new Scanner(new File(TEMP_FILE));
 		while (myReader.hasNextLine()) {
 			String line = myReader.nextLine();
-			double values[] = Arrays.stream(line.split(";")).mapToDouble(Double::parseDouble).toArray();
-			rates.add(values[0]);
-			utils.add(values[1]);
-			respTimes.add(values[2]);
-
+			if (line.startsWith("SCV:")) {
+				String[] fields = line.split(":");
+				this.mapSCV = Double.parseDouble(fields[1]);
+				System.out.println("MAP SCV: " + this.mapSCV);
+			} else {
+				double values[] = Arrays.stream(line.split(";")).mapToDouble(Double::parseDouble).toArray();
+				rates.add(values[0]);
+				utils.add(values[1]);
+				respTimes.add(values[2]);
+			}
 		}
 		myReader.close();
 		return new PerformanceTable(rates.toArray(new Double[0]), utils.toArray(new Double[0]), respTimes.toArray(new Double[0]));

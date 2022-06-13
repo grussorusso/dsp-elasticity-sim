@@ -28,9 +28,6 @@ public class LohrmannAM extends ApplicationManager {
 	private final int maxInputRate;
 	private Random random = null;
 
-	// TODO: configurable
-	private double arrivalsSCV = 1.0;
-
 	private Operator[] operators;
 
 	public LohrmannAM(Application application, double sloLatency) {
@@ -162,17 +159,12 @@ public class LohrmannAM extends ApplicationManager {
 				}
 			}
 			final Operator maxOp = maxEntry.getKey();
-			double serviceVar;
-			if (maxOp.getQueueModel() instanceof MAPMAP1OperatorModel) {
-				serviceVar = ((MAPMAP1OperatorModel)maxOp.getQueueModel()).getServiceTimeVar();
-			} else {
-				serviceVar = ((MG1OperatorQueueModel)maxOp.getQueueModel()).getServiceTimeVariance();
-			}
+			double serviceVar = maxOp.getQueueModel().getServiceTimeVariance();
 			double serviceSCV = serviceVar / Math.pow(maxOp.getQueueModel().getServiceTimeMean(),2);
 			final double b = omMonitoringInfo.get(maxOp).getInputRate() *
 					maxOp.getQueueModel().getServiceTimeMean() * newParallelism.get(maxOp);
 			double a = b * maxOp.getQueueModel().getServiceTimeMean();
-			a *= (arrivalsSCV + serviceSCV)/2.0;
+			a *= (maxOp.getQueueModel().getArrivalSCV() + serviceSCV)/2.0;
 
 			if (scalableOperators.size() > 1) {
 				// we have more than a scalable op
@@ -209,12 +201,7 @@ public class LohrmannAM extends ApplicationManager {
 	}
 
 	private double evaluateLatencyOp(Operator op, OMMonitoringInfo omMonitoringInfo, int p) {
-		double serviceVar;
-		if (op.getQueueModel() instanceof MAPMAP1OperatorModel) {
-			serviceVar = ((MAPMAP1OperatorModel)op.getQueueModel()).getServiceTimeVar();
-		} else {
-			serviceVar = ((MG1OperatorQueueModel)op.getQueueModel()).getServiceTimeVariance();
-		}
+		double serviceVar = op.getQueueModel().getServiceTimeVariance();
 		double serviceSCV = serviceVar / Math.pow(op.getQueueModel().getServiceTimeMean(),2);
 
 		double rho = omMonitoringInfo.getInputRate()/p * op.getQueueModel().getServiceTimeMean();
@@ -222,7 +209,7 @@ public class LohrmannAM extends ApplicationManager {
 			return 999;
 		}
 		double r = rho * op.getQueueModel().getServiceTimeMean()/ (1.0 - rho);
-		r *= (arrivalsSCV + serviceSCV)/2.0;
+		r *= (op.getQueueModel().getArrivalSCV() + serviceSCV)/2.0;
 
 		if (Double.isNaN(r) || Double.isInfinite(r)) {
 			System.out.printf("rho=%f, r=%f", rho, r);

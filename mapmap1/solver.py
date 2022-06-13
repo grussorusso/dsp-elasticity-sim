@@ -9,6 +9,12 @@ from butools.map import MarginalMomentsFromMAP, CheckMAPRepresentation, MAPFromF
 
 def map_mean (d0, d1):
     return MarginalMomentsFromMAP(d0, d1, 1)[0]
+def map_var (d0, d1):
+    moms = MarginalMomentsFromMAP(d0, d1, 2)
+    return moms[1] - moms[0]**2
+
+def map_scv (d0, d1):
+    return map_var(d0,d1)/map_mean(d0,d1)**2
 
 def map_scale(d0, d1, new_mean):
     ratio=map_mean(d0,d1)/new_mean;
@@ -69,6 +75,7 @@ MAX_RATE = 5000
 
 with open(sys.argv[1], "w") as of:
     maxRate = min(math.ceil(mu), MAX_RATE)
+    print("SCV:" + str(map_scv(D0,D1)), file=of)
     for rate in range(0,maxRate):
         util = stMoms[0]*rate
         if util == 0.0:
