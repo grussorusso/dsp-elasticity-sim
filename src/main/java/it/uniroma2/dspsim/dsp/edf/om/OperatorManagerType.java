@@ -18,6 +18,7 @@ public enum OperatorManagerType {
     FA_TRAJECTORY_BASED_VALUE_ITERATION,
     DEEP_TRAJECTORY_BASED_VALUE_ITERATION,
     FA_HYBRID,
+    HEINZE,
     DEEP_HYBRID;
 
     public static OperatorManagerType fromString(String str) throws IllegalArgumentException {
@@ -66,6 +67,8 @@ public enum OperatorManagerType {
             return FA_HYBRID;
         } else if (str.equalsIgnoreCase("deep-hybrid")){
             return DEEP_HYBRID;
+        } else if (str.equalsIgnoreCase("heinze")){
+            return HEINZE;
         } else {
             throw new IllegalArgumentException("Not valid operator manager type " + str);
         }

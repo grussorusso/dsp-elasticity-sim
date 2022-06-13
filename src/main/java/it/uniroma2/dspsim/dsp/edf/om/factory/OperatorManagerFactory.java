@@ -42,6 +42,8 @@ public class OperatorManagerFactory {
                 return new FAHybridRewardBasedOM(operator);
             case DEEP_HYBRID:
                 return new DeepHybridRewardBasedOM(operator);
+            case HEINZE:
+                return new HeinzeOM(operator);
             default:
                 // throw "Not valid om type" exception
                 throw new IllegalArgumentException("Not valid operator manager type: " + operatorManagerType.toString());
