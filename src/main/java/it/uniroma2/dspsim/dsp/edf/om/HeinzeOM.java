@@ -98,7 +98,7 @@ public class HeinzeOM extends OperatorManager {
         if (lastChosenAction != null) {
             // compute reconfiguration's cost and use it as reward
             double reward = computeCost(lastChosenAction, lastState, newState);
-            System.out.printf("U: %.2f -> %s (cost: %f)\n", newState.getUtil(), best.toString(), reward);
+            //System.out.printf("U: %.2f -> %s (cost: %f)\n", newState.getUtil(), best.toString(), reward);
 
             final double oldQ  = qTable.getQ(lastState, lastChosenAction);
             final double newQ = (1.0 - alpha.getValue()) * oldQ + alpha.getValue() * (reward +

@@ -69,6 +69,12 @@ public enum OperatorManagerType {
             return DEEP_HYBRID;
         } else if (str.equalsIgnoreCase("heinze")){
             return HEINZE;
+        } else if (str.equalsIgnoreCase("heinze-cost")){
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "cost");
+            return HEINZE;
+        } else if (str.equalsIgnoreCase("heinze-speedup")){
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "speedup");
+            return HEINZE;
         } else {
             throw new IllegalArgumentException("Not valid operator manager type " + str);
         }
