@@ -2,6 +2,7 @@ package it.uniroma2.dspsim.dsp.edf.om.rl.states;
 
 public enum  StateType {
     K_LAMBDA,
+    HEINZE,
     REDUCED_K_LAMBDA,
     GENERAL_RESOURCES;
 
