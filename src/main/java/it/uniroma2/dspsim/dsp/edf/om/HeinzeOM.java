@@ -37,9 +37,28 @@ public class HeinzeOM extends OperatorManager {
         this.targetUtil = configuration.getDouble(ConfigurationKeys.OM_THRESHOLD_KEY, 0.7);
         this.qTable = new HeinzeQTable(0.0);
 
-        // TODO: preinitialize qTable
+        // preinitialize qTable
+        for (double u = 0.0; u <= 5.0; u+=HeinzeState.UTIL_STEP_SIZE/100.0) {
+            HeinzeState s = new HeinzeState(u);
+            Action scaleIn = new Action(0, -1, 0);
+            Action scaleOut = new Action(0, 1, 0);
+            Action nop = new Action(0,0,0);
+            if (u > this.targetUtil)  {
+                qTable.setQ(s, scaleOut, 0);
+                qTable.setQ(s, scaleIn, 1);
+                qTable.setQ(s, nop, 1);
+            } else if (u < this.targetUtil/2)  {
+                qTable.setQ(s, scaleIn, 0);
+                qTable.setQ(s, scaleOut, 1);
+                qTable.setQ(s, nop, 1);
+            } else {
+                qTable.setQ(s, scaleIn, 1);
+                qTable.setQ(s, scaleOut, 1);
+                qTable.setQ(s, nop, 0);
+            }
+        }
 
-        double alphaInitValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_KEY, 1.0);
+        double alphaInitValue = 0.3;
         double alphaDecay = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_DECAY_KEY, 0.98);
         double alphaMinValue = configuration.getDouble(ConfigurationKeys.QL_OM_ALPHA_MIN_VALUE_KEY, 0.1);
 
@@ -67,6 +86,7 @@ public class HeinzeOM extends OperatorManager {
             if (this.operator.getCurrentParallelism() + a.getDelta() > operator.getMaxParallelism())
                 continue;
             double q = qTable.getQ(newState, a);
+            //System.out.printf("S: %f, a: %s: Q=%f\n", newState.getUtil(), a.toString(), q);
             if (best == null || q < minCost) {
                 best = a;
                 minCost = q;
@@ -78,6 +98,7 @@ public class HeinzeOM extends OperatorManager {
         if (lastChosenAction != null) {
             // compute reconfiguration's cost and use it as reward
             double reward = computeCost(lastChosenAction, lastState, newState);
+            System.out.printf("U: %.2f -> %s (cost: %f)\n", newState.getUtil(), best.toString(), reward);
 
             final double oldQ  = qTable.getQ(lastState, lastChosenAction);
             final double newQ = (1.0 - alpha.getValue()) * oldQ + alpha.getValue() * (reward +
@@ -85,7 +106,21 @@ public class HeinzeOM extends OperatorManager {
 
             qTable.setQ(lastState, lastChosenAction, newQ);
 
-            // TODO: enforce monotonicity
+            // enforce monotonicity
+            if (newAction.getDelta() > 0) {
+                // you should scale out for higher utils as well
+                for (double u = lastState.getUtil(); u <= 5.0; u+=HeinzeState.UTIL_STEP_SIZE/100.0) {
+                    HeinzeState other = new HeinzeState(u);
+                    Action scaleIn = new Action(0, -1, 0);
+                    qTable.setQ(other, scaleIn, qTable.getQ(other, newAction) + 0.1);
+                }
+            } else if (newAction.getDelta() < 0) {
+                for (double u = lastState.getUtil(); u >= 0.0; u-=HeinzeState.UTIL_STEP_SIZE/100.0) {
+                    HeinzeState other = new HeinzeState(u);
+                    Action scaleOut = new Action(0, 1, 0);
+                    qTable.setQ(other, scaleOut, qTable.getQ(other, newAction) + 0.1);
+                }
+            }
         }
 
 
