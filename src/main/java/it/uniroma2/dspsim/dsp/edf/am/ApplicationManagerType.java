@@ -1,5 +1,8 @@
 package it.uniroma2.dspsim.dsp.edf.am;
 
+import it.uniroma2.dspsim.Configuration;
+import it.uniroma2.dspsim.ConfigurationKeys;
+
 public enum ApplicationManagerType {
     DO_NOTHING,
     CENTRALIZED,
@@ -19,7 +22,19 @@ public enum ApplicationManagerType {
             return SECOND_OPPORTUNITY;
         } else if (str.equalsIgnoreCase("lohrmann")) {
             return LOHRMANN;
+        } else if (str.equalsIgnoreCase("lohrmann-cost")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "cost");
+            return LOHRMANN;
+        } else if (str.equalsIgnoreCase("lohrmann-speedup")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "speedup");
+            return LOHRMANN;
         } else if (str.equalsIgnoreCase("drs")) {
+            return DRS;
+        } else if (str.equalsIgnoreCase("drs-cost")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "cost");
+            return DRS;
+        } else if (str.equalsIgnoreCase("drs-speedup")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "speedup");
             return DRS;
         } else {
             throw new IllegalArgumentException("Not valid application manager type " + str);
