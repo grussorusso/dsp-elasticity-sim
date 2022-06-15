@@ -5,9 +5,11 @@ import java.util.Objects;
 public class HeinzeState {
 
     static public final int UTIL_STEP_SIZE = 5;
+    static public final double MAX_UTIL = 10.0;
     private int utilLevel;
 
     public HeinzeState(double util) {
+        util = Math.min(MAX_UTIL, util);
         this.utilLevel = (int)(util*100/UTIL_STEP_SIZE);
     }
 

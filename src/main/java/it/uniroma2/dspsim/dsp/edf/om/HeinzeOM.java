@@ -42,7 +42,7 @@ public class HeinzeOM extends OperatorManager {
         this.qTable = new HeinzeQTable(0.0);
 
         // preinitialize qTable
-        for (double u = 0.0; u <= 5.0; u+=HeinzeState.UTIL_STEP_SIZE/100.0) {
+        for (double u = 0.0; u <= HeinzeState.MAX_UTIL; u+=HeinzeState.UTIL_STEP_SIZE/100.0) {
             HeinzeState s = new HeinzeState(u);
             Action scaleIn = new Action(0, -1, 0);
             Action scaleOut = new Action(0, 1, 0);
@@ -118,7 +118,7 @@ public class HeinzeOM extends OperatorManager {
             // enforce monotonicity
             if (newAction.getDelta() > 0) {
                 // you should scale out for higher utils as well
-                for (double u = lastState.getUtil(); u <= 5.0; u+=HeinzeState.UTIL_STEP_SIZE/100.0) {
+                for (double u = lastState.getUtil(); u <= HeinzeState.MAX_UTIL; u+=HeinzeState.UTIL_STEP_SIZE/100.0) {
                     HeinzeState other = new HeinzeState(u);
                     Action scaleIn = new Action(0, -1, 0);
                     qTable.setQ(other, scaleIn, qTable.getQ(other, newAction) + 0.1);
