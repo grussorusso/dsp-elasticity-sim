@@ -89,7 +89,9 @@ public class DrsAM extends ApplicationManager {
 				rcf = Reconfiguration.scaleOut(newInstances);
 			} else {
 				NodeType[] newInstances = new NodeType[op.getCurrentParallelism() - newP];
-				Arrays.fill(newInstances, nodeToUse);
+				for (int i = 0; i<newInstances.length; i++) {
+					newInstances[i] = op.getInstances().get(i);
+				}
 				rcf = Reconfiguration.scaleIn(newInstances);
 			}
 

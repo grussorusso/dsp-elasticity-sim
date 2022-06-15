@@ -12,10 +12,14 @@ import it.uniroma2.dspsim.dsp.edf.om.rl.HeinzeQTable;
 import it.uniroma2.dspsim.dsp.edf.om.rl.states.HeinzeState;
 import it.uniroma2.dspsim.dsp.edf.om.rl.utils.ActionIterator;
 import it.uniroma2.dspsim.infrastructure.ComputingInfrastructure;
+import it.uniroma2.dspsim.infrastructure.NodeType;
 import it.uniroma2.dspsim.utils.parameter.VariableParameter;
+
+import java.util.Random;
 
 public class HeinzeOM extends OperatorManager {
 
+    private final Random random = new Random(1234);
     protected Action lastChosenAction;
     protected HeinzeState lastState;
 
@@ -68,6 +72,7 @@ public class HeinzeOM extends OperatorManager {
         this.alphaDecayStepsCounter = 0;
 
         this.gamma = configuration.getDouble(ConfigurationKeys.DP_GAMMA_KEY,0.99);
+
     }
 
     @Override
@@ -81,6 +86,8 @@ public class HeinzeOM extends OperatorManager {
         double minCost = -1.0;
         while (ait.hasNext()) {
             Action a = ait.next();
+            if (a.getResTypeIndex() > 0)
+                continue; // ignore heterogeneity here
             if (this.operator.getCurrentParallelism() + a.getDelta() < 1)
                 continue;
             if (this.operator.getCurrentParallelism() + a.getDelta() > operator.getMaxParallelism())
@@ -91,6 +98,8 @@ public class HeinzeOM extends OperatorManager {
                 best = a;
                 minCost = q;
             }
+
+
         }
         Action newAction = best;
 
@@ -157,18 +166,34 @@ public class HeinzeOM extends OperatorManager {
         return cost;
     }
 
-    static public Reconfiguration action2reconfiguration(Action action) {
+    public Reconfiguration action2reconfiguration(Action action) {
         int delta = action.getDelta();
 
         if (delta > 1 || delta < -1) throw new RuntimeException("Unsupported action!");
 
         if (delta == 0) return Reconfiguration.doNothing();
 
+        String resSelectionPolicy = Configuration.getInstance().getString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "cost");
+        NodeType nodeToUse = null;
+        if (resSelectionPolicy.equalsIgnoreCase("speedup")) {
+            for (NodeType nt : ComputingInfrastructure.getInfrastructure().getNodeTypes()) {
+                if (nodeToUse == null || nodeToUse.getCpuSpeedup() < nt.getCpuSpeedup())	{
+                    nodeToUse = nt;
+                }
+            }
+        } else if (resSelectionPolicy.equalsIgnoreCase("random")) {
+            nodeToUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[this.random.nextInt(ComputingInfrastructure.getInfrastructure().getNodeTypes().length)];
+        } else {
+            for (NodeType nt : ComputingInfrastructure.getInfrastructure().getNodeTypes()) {
+                if (nodeToUse == null || nodeToUse.getCost() > nt.getCost())	{
+                    nodeToUse = nt;
+                }
+            }
+        }
+
         return delta > 0 ?
-                Reconfiguration.scaleOut(
-                        ComputingInfrastructure.getInfrastructure().getNodeTypes()[action.getResTypeIndex()]) :
-                Reconfiguration.scaleIn(
-                        ComputingInfrastructure.getInfrastructure().getNodeTypes()[action.getResTypeIndex()]);
+                Reconfiguration.scaleOut(nodeToUse):
+                Reconfiguration.scaleIn(this.operator.getInstances().get(0));
     }
 
 }
