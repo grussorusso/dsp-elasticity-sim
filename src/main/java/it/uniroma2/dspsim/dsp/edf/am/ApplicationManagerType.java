@@ -28,6 +28,9 @@ public enum ApplicationManagerType {
         } else if (str.equalsIgnoreCase("lohrmann-speedup")) {
             Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "speedup");
             return LOHRMANN;
+        } else if (str.equalsIgnoreCase("lohrmann-zero")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "zero");
+            return LOHRMANN;
         } else if (str.equalsIgnoreCase("drs")) {
             return DRS;
         } else if (str.equalsIgnoreCase("drs-cost")) {
@@ -35,6 +38,9 @@ public enum ApplicationManagerType {
             return DRS;
         } else if (str.equalsIgnoreCase("drs-speedup")) {
             Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "speedup");
+            return DRS;
+        } else if (str.equalsIgnoreCase("drs-zero")) {
+            Configuration.getInstance().setString(ConfigurationKeys.OM_BASIC_RESOURCE_SELECTION, "zero");
             return DRS;
         } else {
             throw new IllegalArgumentException("Not valid application manager type " + str);

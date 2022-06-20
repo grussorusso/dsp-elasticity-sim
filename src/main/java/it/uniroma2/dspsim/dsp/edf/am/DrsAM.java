@@ -69,6 +69,8 @@ public class DrsAM extends ApplicationManager {
 			}
 		} else if (resSelectionPolicy.equalsIgnoreCase("random")) {
 			nodeToUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[this.random.nextInt(ComputingInfrastructure.getInfrastructure().getNodeTypes().length)];
+		} else if (resSelectionPolicy.equalsIgnoreCase("zero")) {
+			nodeToUse = ComputingInfrastructure.getInfrastructure().getNodeTypes()[0];
 		} else {
 			for (NodeType nt : ComputingInfrastructure.getInfrastructure().getNodeTypes()) {
 				if (nodeToUse == null || nodeToUse.getCost() > nt.getCost())	{
