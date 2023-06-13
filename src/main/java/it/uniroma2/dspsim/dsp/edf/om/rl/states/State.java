@@ -40,6 +40,8 @@ public abstract class State {
         int delta = a.getDelta();
         if (delta == 0)
             return true;
+        if (a.getResTypeIndex() >= this.actualDeployment.length)
+            return false;
         if (delta < 0) {
             if (this.actualDeployment[a.getResTypeIndex()] + delta < 0)
                 return false;

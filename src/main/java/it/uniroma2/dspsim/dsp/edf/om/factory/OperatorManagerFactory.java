@@ -20,6 +20,8 @@ public class OperatorManagerFactory {
                 return new OptimalAllocationOM(operator);
             case MODEL_BASED:
                 return new ModelBasedRLOM(operator);
+            case HOMO_MODEL_BASED:
+                return new HomoModelBasedRLOM(operator);
             case Q_LEARNING:
                 return new QLearningOM(operator);
             case Q_LEARNING_PDS:

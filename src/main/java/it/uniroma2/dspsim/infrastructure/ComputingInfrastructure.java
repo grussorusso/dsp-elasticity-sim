@@ -26,16 +26,24 @@ public class ComputingInfrastructure {
 		throw new RuntimeException("Infrastructure has not been initialized!");
 	}
 
+	public ComputingInfrastructure cloneWithSingleNodeType (int nodeTypeIndex) {
+			ComputingInfrastructure infra = new ComputingInfrastructure();
+			NodeType nt = new NodeType(0, "", this.nodeTypes[nodeTypeIndex].getCost(),
+					this.nodeTypes[nodeTypeIndex].getCpuSpeedup());
+			infra.nodeTypes = new NodeType[] {nt};
+			infra.costNormalizationConstant = this.getCostNormalizationConstant();
+			return infra;
+	}
+
 
 	static private final double scenarioAspeedups[] = {1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5};
 	static private final double scenarioBspeedups[] = {1.0, 0.05, 30.0, 0.1, 0.2, 0.4, 0.8, 2.0, 5.0, 7.0};
 	static private final double scenarioCspeedups[] = {1.0, 0.7, 1.3, 0.9, 1.7, 0.8, 1.8, 2.0, 1.65, 1.5,
 	1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.55, 1.35, 1.25};
 
-
-	static public ComputingInfrastructure initDefaultInfrastructure (int numOfResTypes) {
-		infrastructure = new ComputingInfrastructure();
-		infrastructure.nodeTypes = new NodeType[numOfResTypes];
+	static private ComputingInfrastructure newDefaultInfrastructure (int numOfResTypes) {
+		ComputingInfrastructure infra = new ComputingInfrastructure();
+		infra.nodeTypes = new NodeType[numOfResTypes];
 
 		String confScenario = Configuration.getInstance().getString(ConfigurationKeys.NODE_TYPES_SCENARIO, "A");
 		double speedups[] = null;
@@ -65,13 +73,18 @@ public class ComputingInfrastructure {
 			}
 			//double cost = Math.pow(cpuSpeedup, 1.3);
 			System.out.printf("Speedup: %.2f, cost: %.2f\n", cpuSpeedup, cost);
-			infrastructure.nodeTypes[i] = new NodeType(i, name,  cost, cpuSpeedup);
+			infra.nodeTypes[i] = new NodeType(i, name,  cost, cpuSpeedup);
 		}
 
 		/* Set cost normalization constant */
-		infrastructure.costNormalizationConstant = Arrays.stream(speedups).max().getAsDouble();
+		infra.costNormalizationConstant = Arrays.stream(speedups).max().getAsDouble();
 		//System.out.printf("Cost normalization constant: %.2f\n", infrastructure.costNormalizationConstant);
 
+		return infra;
+	}
+
+	static public ComputingInfrastructure initDefaultInfrastructure (int numOfResTypes) {
+		infrastructure = newDefaultInfrastructure(numOfResTypes);
 		return infrastructure;
 	}
 
@@ -131,6 +144,36 @@ public class ComputingInfrastructure {
 		}
 
 		return nodeType;
+	}
+
+	public int getMostExpensiveResTypeIndex () {
+		Double cost = null;
+		int nodeIndex = -1;
+
+		for (int index = 0; index < nodeTypes.length; index++) {
+			NodeType nt = nodeTypes[index];
+			if (nodeIndex == -1 || nt.getCost() > cost) {
+				cost = nt.getCost();
+				nodeIndex = index;
+			}
+		}
+
+		return nodeIndex;
+	}
+
+	public int getCheapestResTypeIndex () {
+		Double cost = null;
+		int nodeIndex = -1;
+
+		for (int index = 0; index < nodeTypes.length; index++) {
+			NodeType nt = nodeTypes[index];
+			if (nodeIndex == -1 || nt.getCost() < cost) {
+				cost = nt.getCost();
+				nodeIndex = index;
+			}
+		}
+
+		return nodeIndex;
 	}
 
 	public NodeType getDefaultNodeType() {
