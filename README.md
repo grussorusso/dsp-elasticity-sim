@@ -3,8 +3,19 @@
 This software is used to evaluate elasticity policies for distributed Data
 Stream Processing applications.
 
-The system model and control architecture used in this software corresponds to
-those described in [FGCS2018].
+The system model and auto-scaling policies implemented are described
+in the following paper:
+
+    Gabriele Russo Russo, Valeria Cardellini, Francesco Lo Presti:
+    Hierarchical Auto-Scaling Policies for Data Stream Processing on Heterogeneous Resources. ACM Trans. Auton. Adapt. Syst.  (2023)
+
+
+Some of the algorithms (specifically, those based on tabular reinforcement
+learning) are described here:
+
+    Valeria Cardellini, Francesco Lo Presti, Matteo Nardelli, Gabriele Russo Russo:
+    Decentralized self-adaptation for elastic Data Stream Processing. Future Gener. Comput. Syst. 87: 171-185 (2018)
+
 
 ## Building ##
 
@@ -77,7 +88,3 @@ And use the example `docker.properties` to run the simulator:
 - Deeplearning4j beyond version `0.9.x` is not supported
 
 
-## References ##
-
-[FGCS2018] Valeria Cardellini, Francesco Lo Presti, Matteo Nardelli, Gabriele Russo Russo:
-Decentralized self-adaptation for elastic Data Stream Processing. Future Gener. Comput. Syst. 87: 171-185 (2018)
