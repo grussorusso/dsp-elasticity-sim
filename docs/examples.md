@@ -61,3 +61,20 @@ Edit the `edf.om.type`:
 - `model-based`
 
 Edit `node.types.number = M` to set `M` types of computing resources.
+
+## Visualizing the cumulative average cost
+
+Obtain the `plot_avg.py` script from the root directory of this repository.
+
+Create a `results` directory in the current directory:
+
+    mkdir results
+
+Run the simulator as follows:
+
+	docker run --rm -v "$(pwd)/docker.properties":/conf/conf.properties\
+          -v "$(pwd)/results":/tmp/results grussorusso/dspsim:1.0
+
+After the simulation:
+
+    python plot_avg.py
