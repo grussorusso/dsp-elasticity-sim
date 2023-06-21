@@ -27,6 +27,8 @@ public class QLearningOM extends ReinforcementLearningOM {
     private int alphaDecaySteps;
     private int alphaDecayStepsCounter;
 
+    private long iters = 0;
+
     private double gamma;
 
     private ActionSelectionPolicy greedyActionSelection;
@@ -79,9 +81,12 @@ public class QLearningOM extends ReinforcementLearningOM {
         decrementAlpha();
 
         // XXX: Tutorial stuff
-        File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy%d", this.time++));
-        System.err.println(f.getAbsolutePath());
-        PolicyDumper.dumpPolicy(this, f, this.greedyActionSelection);
+	if (this.time % 100 == 0) {
+		File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy-%d", this.time));
+		System.err.println(f.getAbsolutePath());
+		PolicyDumper.dumpPolicy(this, f, this.greedyActionSelection);
+	}
+	this.time++;
     }
 
     private void decrementAlpha() {

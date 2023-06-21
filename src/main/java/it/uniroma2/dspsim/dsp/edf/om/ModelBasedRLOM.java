@@ -310,8 +310,10 @@ public class ModelBasedRLOM extends ReinforcementLearningOM {
 			}
 
 			// XXX: Tutorial stuff
-			File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy%d", time));
-			PolicyDumper.dumpPolicy(this, f, this.getActionSelectionPolicy());
+			if (this.time % 100 == 0) {
+				File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy-%d", time));
+				PolicyDumper.dumpPolicy(this, f, this.getActionSelectionPolicy());
+			}
 		}
 	}
 

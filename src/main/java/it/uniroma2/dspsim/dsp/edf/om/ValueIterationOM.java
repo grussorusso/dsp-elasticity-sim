@@ -90,7 +90,7 @@ public class ValueIterationOM extends DynamicProgrammingOM implements ActionSele
                 maxTimeMillis -= (System.currentTimeMillis() - startIterationTime);
 
             // XXX: Tutorial stuff
-            File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy%d", i++));
+            File f = PolicyIOUtils.getFileForDumping(this.operator, String.format("coloredPolicy-%d", i++));
             System.err.println(f.getAbsolutePath());
             PolicyDumper.dumpPolicy(this, f, this.getActionSelectionPolicy());
         }
