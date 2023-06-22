@@ -95,6 +95,7 @@ public abstract class ConfigurationKeys {
 	public static final String OM_THRESHOLD_KEY = "edf.om.threshold";
 	public static final String OM_THRESHOLD_UTIL_NOISE = "edf.om.threshold.monitoring.noisy";
 	public static final String OM_BASIC_RESOURCE_SELECTION = "edf.om.threshold.resourceselection";
+	public static final String THRESHOLD_LOWER_COEFF = "edf.om.threshold.lower.coeff";
 
 	/**
 	 * Reinforcement learning operator manager params.
